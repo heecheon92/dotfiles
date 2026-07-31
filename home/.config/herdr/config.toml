@@ -1,0 +1,26 @@
+[ui]
+agent_panel_sort = "spaces"
+
+show_agent_labels_on_pane_borders = true
+[ui.toast]
+delivery = "system"
+
+[[keys.command]]
+key = "prefix+t"
+type = "popup"
+command = "exec \"${SHELL:-sh}\""
+description = "open scratch terminal"
+width = "85%"
+height = "80%"
+
+[[keys.command]]
+key = "prefix+f"
+type = "popup"
+command = "exec \"$HOME/.config/herdr/scripts/open-file-viewer-popup.sh\""
+description = "open file viewer popup"
+width = "90%"
+height = "90%"
+
+[theme]
+name = "catppuccin-latte"
+auto_switch = false

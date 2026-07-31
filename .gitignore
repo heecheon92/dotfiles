@@ -1,0 +1,26 @@
+# macOS metadata
+.DS_Store
+
+# Nix build output symlinks
+result
+result-*
+
+# Common credentials and machine-local secrets
+.env
+.env.*
+!.env.example
+*.key
+*.p12
+*.pem
+home/.codex/
+home/.ssh/
+home/.git-credentials
+home/.netrc
+home/.config/gh/hosts.yml
+
+# Herdr machine-local runtime state. Track only the portable configuration and
+# intentional helper scripts from this otherwise live, generated directory.
+home/.config/herdr/*
+!home/.config/herdr/config.toml
+!home/.config/herdr/scripts/
+!home/.config/herdr/scripts/**
