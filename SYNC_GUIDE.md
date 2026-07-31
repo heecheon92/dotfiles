@@ -307,6 +307,22 @@ associated files.
 Reference:
 [nix-homebrew](https://github.com/zhaofengli/nix-homebrew)
 
+## Herdr integrations
+
+Herdr calls its Claude, Codex, and OpenCode hooks **integrations** rather than
+plugins. Their desired set is declared in `home.nix`. During Home Manager
+activation, Herdr installs missing integrations, refreshes outdated ones, and
+records which integrations are Nix-managed.
+
+The generated hook scripts and agent-local settings remain local because they
+are produced by the installed Herdr version and may coexist with other local
+agent configuration. Removing an integration from the Nix list causes a later
+rebuild to uninstall only integrations previously recorded as Nix-managed.
+
+Herdr's marketplace plugin registry (`plugins.json`), plugin configuration, and
+plugin runtime state also remain local to each Mac. Do not add them to the
+repository; plugin configuration may contain machine-specific paths or secrets.
+
 ## Rollback
 
 List system generations:

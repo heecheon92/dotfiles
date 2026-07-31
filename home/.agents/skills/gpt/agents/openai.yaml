@@ -1,0 +1,7 @@
+interface:
+  display_name: "GPT Adversarial Review"
+  short_description: "Independent GPT review with repository verification"
+  default_prompt: "Use $gpt, identify Codex as the sender unless I explicitly request otherwise, and verify every material claim against repository evidence."
+
+policy:
+  allow_implicit_invocation: false
