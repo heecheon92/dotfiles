@@ -10,4 +10,3 @@ return {
     opts = { current_line_blame = true },  -- who last touched this line
   },
 }
-
