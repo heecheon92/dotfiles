@@ -10,3 +10,5 @@ statusLine:
 tier:
   openai: priority
 autocompleteMaxVisible: 20
+dev:
+  autoqaConsent: granted
