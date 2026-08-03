@@ -274,6 +274,49 @@ nix build ".#darwinConfigurations.${HOST_LABEL}.system" --dry-run
 Review and commit the resulting `flake.lock` change only after the rebuild
 succeeds.
 
+## Pi agent configuration
+
+Home Manager links the authored Pi resources from `home/.pi/agent/`: the
+`themes/` and `extensions/` directories plus `models.json` and `settings.json`.
+Pi writes settings changes directly into the tracked `settings.json`, so review
+and intentionally commit those changes after upgrades or interactive settings
+edits.
+
+Pi loads skills from the shared `~/.agents/skills` and `~/.codex/skills`
+directories, explicitly selected Codex system skills under the hidden
+`~/.codex/skills/.system` directory, and the installed Codex bundled,
+primary-runtime, and remote-plugin caches. The remote-plugin parent directory is
+loaded as one root so skills from newly installed Codex plugins become visible
+to Pi without another dotfiles edit. Plugin caches remain machine-local:
+install the matching Codex plugins on a new Mac before expecting their skills
+to appear in Pi.
+
+Codex namespaces plugin skills, while Pi uses one flat skill-name namespace.
+If two Codex plugins provide the same frontmatter `name`, Pi reports a
+collision and keeps the first one in the configured order. User and shared
+skills take precedence over plugin copies.
+
+The repository also tracks the Rose Pine Moon theme and the Lantern skill.
+Lantern remains hidden from model-driven skill selection and must be invoked by
+the human with:
+
+```text
+/skill:lantern
+```
+
+Pi installs the pinned third-party packages declared in the portable settings
+on each machine. Review package updates before changing their pinned versions.
+
+These Pi files remain machine-local and must never be committed:
+
+- `~/.pi/agent/auth.json`
+- `~/.pi/agent/sessions/`
+- trust decisions, caches, downloaded packages, and generated model catalogs
+
+After applying the dotfiles on a new Mac, authenticate Pi locally. Review the
+worktree after starting a new Pi version because it may update tracked settings
+bookkeeping.
+
 ## Homebrew policy
 
 `nix-homebrew` and nix-darwin's Homebrew module have different jobs:

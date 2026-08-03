@@ -1,0 +1,26 @@
+{
+  "lastChangelogVersion": "0.83.0",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.6-sol",
+  "defaultThinkingLevel": "high",
+  "theme": "rose-pine-moon",
+  "quietStartup": false,
+  "collapseChangelog": true,
+  "enableSkillCommands": true,
+  "skills": [
+    "~/.agents/skills",
+    "~/.codex/skills",
+    "~/.codex/skills/.system/imagegen",
+    "~/.codex/skills/.system/openai-docs",
+    "~/.codex/skills/.system/plugin-creator",
+    "~/.codex/skills/.system/skill-creator",
+    "~/.codex/skills/.system/skill-installer",
+    "~/.codex/plugins/cache/openai-bundled",
+    "~/.codex/plugins/cache/openai-primary-runtime",
+    "~/.codex/plugins/cache/openai-curated-remote"
+  ],
+  "packages": [
+    "npm:pi-web-access@0.14.0",
+    "npm:@ryan_nookpi/pi-extension-codex-fast-mode@0.2.6"
+  ]
+}

@@ -1,6 +1,7 @@
 ---
 name: lantern
 description: Human-invoked requirements interview that illuminates a vague or underspecified idea through one focused question at a time, then crystallizes it into an execution-ready specification with explicit boundaries, assumptions, and acceptance criteria. Use only when the human explicitly invokes `$lantern` or unambiguously asks to run Lantern. Never infer activation from ambiguity, complexity, risk, or a general request for clarification.
+disable-model-invocation: true
 ---
 
 # Lantern
@@ -66,37 +67,58 @@ Keep the skill self-contained:
 
 ## Question Surface
 
-Use the richest input surface already provided by the host.
+Choose the richest callable question surface by capability, not by model
+provider or brand. The host runtime determines which tools exist; an OpenAI,
+Anthropic, or Google model running inside Pi still uses Pi's surfaces. Inspect
+the tools available in the current session and never infer availability from
+environment variables or host names.
 
-### Codex native structured input
+Use this order:
 
-When the current agent is Codex and `request_user_input` is callable, use it as
-the preferred question surface. In Codex Default mode, availability may depend
-on the `default_mode_request_user_input` feature. If the tool is unavailable,
-continue with the portable chat fallback; do not modify the user's Codex
-configuration.
+1. `request_user_input`, when callable
+2. Pi's `question` tool, when callable, for a bounded single-choice decision
+3. Pi's `questionnaire` tool, when callable, for one structured question with
+   stable ids/values, or when `question` is unavailable
+4. portable chat
 
-For each `request_user_input` call:
+The Pi tools are optional extensions, not guaranteed built-ins. Do not install,
+enable, or configure them during a Lantern interview. If a preferred tool is
+absent or rejects the needed interaction, continue with the next surface.
 
-1. Ask exactly one interview round per tool call.
-2. Use a short header that names the clarity dimension.
-3. Provide 2-3 bounded, concrete options when the decision space is genuinely
-   known.
+### Structured question contract
+
+For every structured tool call:
+
+1. Ask exactly one interview round. Lantern must not batch multiple primary
+   questions even when a tool supports questionnaires.
+2. Show a short header naming the clarity dimension. If the surface has no
+   header field, prepend `Round N | Target: Dimension | Ambiguity: NN%` to the
+   displayed prompt.
+3. Provide 2-3 bounded, concrete options only when the decision space is known.
 4. Keep options mutually exclusive for a single-choice question.
-5. Explain the consequence or tradeoff of each option in one short sentence.
-6. Preserve the host's custom-answer or `Other` path.
-7. Use multi-select only when the host supports it and multiple constraints may
-   legitimately coexist.
-8. Do not duplicate the same question in assistant prose before or after the
-   structured UI.
+5. Put each consequence or tradeoff in the option description when supported;
+   otherwise append it briefly to the label.
+6. Preserve a custom-answer or `Other` path.
+7. Use multi-select only when the callable surface genuinely supports it and
+   multiple constraints may coexist. Pi's shipped `question.ts` and
+   `questionnaire.ts` examples do not provide multi-select; use chat instead.
+8. Do not repeat the question in assistant prose before or after the tool call.
 
-Do not invent options merely to display a selector. Ask an open question when
-the valid answer space is not yet known.
+For Pi `question`, pass the round prompt as `question` and options as
+`{ label, description? }`; its UI supplies the custom-answer path. For Pi
+`questionnaire`, pass exactly one item in `questions`, use the clarity dimension
+as `label`, assign a stable `id`, give each option a stable `value`, and keep
+`allowOther: true` unless a custom answer would be invalid.
+
+Do not invent options merely to display a selector. Ask an open question in
+chat when predefined choices would bias discovery. Treat structured-tool
+cancellation like an interview stop request and return a concise partial
+synthesis.
 
 ### Portable chat fallback
 
-When native structured input is unavailable, render the same decision directly
-in chat:
+When no suitable structured surface is callable, render the same decision
+directly in chat:
 
 ```text
 Round 2 | Target: Scope | Ambiguity: 34%
@@ -216,7 +238,7 @@ Use this loop:
    - clarify a fuzzy or conflicting term
    - test one realistic edge-case scenario
 3. **Ask one question**
-   - use native structured input when available and appropriate
+   - negotiate the question surface using the capability order above
    - otherwise use the portable chat fallback
 4. **Integrate the answer**
    - record the decision in conversation context
@@ -312,7 +334,8 @@ Before closing, verify:
 
 - Lantern was activated directly by the human
 - exactly one primary question was asked per round
-- Codex `request_user_input` was used when callable and appropriate
+- the richest suitable callable question surface was used
+- Pi `questionnaire` never batched multiple primary questions
 - the chat fallback remained usable without external dependencies
 - no external CLI, terminal multiplexer, shell renderer, state store, or
   workflow runtime was required

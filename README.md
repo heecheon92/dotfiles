@@ -21,6 +21,7 @@
 - Homebrew formula 및 cask
 - Zsh와 Starship 설정
 - WezTerm, Neovim 등 개발 도구 설정
+- Pi의 모델, 테마, 스킬 및 확장 패키지 기본 설정
 
 비밀번호, API 키, 인증 토큰, 회사 전용 정보처럼 외부에 공유하면 안
 되는 값은 이 저장소에 포함하지 않는 것을 원칙으로 합니다. 이러한
