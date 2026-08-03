@@ -31,6 +31,9 @@ in
   ];
   fonts.fontconfig.enable = true;
   home.sessionVariables.EDITOR = "nvim";
+  home.sessionPath = [
+    "${config.home.homeDirectory}/.bun/bin"
+  ];
 
   # Keep user.name and user.email machine-specific. The company identity
   # remains in this Mac's existing global Git configuration.
