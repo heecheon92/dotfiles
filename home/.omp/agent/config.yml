@@ -9,3 +9,4 @@ statusLine:
   preset: nerd
 tier:
   openai: priority
+autocompleteMaxVisible: 20
