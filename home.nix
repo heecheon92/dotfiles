@@ -44,11 +44,15 @@ in
     autosuggestion.enable = true;      # ghost text from history
     syntaxHighlighting.enable = true;  # commands turn green when valid
     initContent = lib.mkBefore ''
-      # Transitional migration: preserve company-specific SDK initialization
-      # and local secrets without copying them into this repository.
-      if [[ -r "$HOME/.zshrc.before-home-manager" ]]; then
-        source "$HOME/.zshrc.before-home-manager"
+      # Keep machine-specific SDK initialization and secrets outside this
+      # repository while sharing the portable shell configuration.
+      if [[ -r "$HOME/.config/zsh/local.zsh" ]]; then
+        source "$HOME/.config/zsh/local.zsh"
       fi
+
+      # macOS login-shell initialization may rebuild PATH after .zshenv has
+      # loaded Home Manager's session variables, so restore Bun for Zsh here.
+      path=("$HOME/.bun/bin" $path)
 
       bindkey '^f' autosuggest-accept
     '';
