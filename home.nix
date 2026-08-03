@@ -8,7 +8,9 @@ let
   herdrIntegrations = [
     "claude"
     "codex"
+    "omp"
     "opencode"
+    "pi"
   ];
   herdrIntegrationsFile = pkgs.writeText "herdr-managed-integrations" ''
     ${lib.concatStringsSep "\n" herdrIntegrations}
@@ -58,6 +60,7 @@ in
     '';
     shellAliases = {
       ".." = "cd ..";
+      ll = "ls -lh";
       add = "git add .";
       push = "git push";
       pull = "git pull";
@@ -98,11 +101,30 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".config/opencode/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
-  # Keep Pi's credential and runtime state local by linking only authored files and directories.
+
+  # The previous generation linked this whole directory into the repository.
+  # Replace only that known symlink before Home Manager creates child links, so
+  # Herdr can keep its generated Pi integration machine-local.
+  home.activation.preparePiExtensions =
+    lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
+      piExtensionsRepoDir="${dotfiles}/home/.pi/agent/extensions"
+      piExtensionsLocalDir="${config.home.homeDirectory}/.pi/agent/extensions"
+
+      if [[ -L "$piExtensionsLocalDir" ]] \
+        && [[ "$(realpath "$piExtensionsLocalDir")" == "$(realpath "$piExtensionsRepoDir")" ]]; then
+        run rm "$piExtensionsLocalDir"
+        run mkdir -p "$piExtensionsLocalDir"
+      fi
+    '';
+
+  # Keep Pi's credential, runtime state, and generated integrations local by
+  # linking only authored files and directories.
   home.file.".pi/agent/themes".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/themes";
-  home.file.".pi/agent/extensions".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/extensions";
+  home.file.".pi/agent/extensions/calm".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/extensions/calm";
+  home.file.".pi/agent/extensions/prompt-prefix.ts".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/extensions/prompt-prefix.ts";
   home.file.".pi/agent/models.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/models.json";
   home.file.".pi/agent/settings.json".source =
