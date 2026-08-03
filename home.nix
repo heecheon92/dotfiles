@@ -102,11 +102,15 @@ in
   home.file.".config/opencode/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   # Keep OMP credentials, databases, sessions, logs, and Herdr's generated
-  # extension local; only portable authored configuration is linked.
+  # integration local. Link only portable authored configuration and the
+  # sibling runtime-context extension.
   home.file.".omp/agent/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".omp/agent/config.yml".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/agent/config.yml";
+  home.file.".omp/agent/extensions/herdr-runtime-context.ts".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/agent/extensions/herdr-runtime-context.ts";
 
   # The previous generation linked this whole directory into the repository.
   # Replace only that known symlink before Home Manager creates child links, so

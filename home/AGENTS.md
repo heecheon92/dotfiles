@@ -32,6 +32,29 @@ they conflict with these defaults.
 - Never call work complete without concrete evidence. Say what was checked,
   what passed, and what remains unverified.
 
+## Herdr-aware Runtime
+
+- These are user-global runtime instructions, not repository-specific project
+  guidance. Apply them only when `HERDR_ENV=1`.
+- When running inside Herdr, recognize the current process as a
+  Herdr-managed pane and treat the `herdr` CLI and official `herdr` skill as
+  available.
+- Before the first Herdr control command in a task, load the official `herdr`
+  skill and follow its current CLI and safety guidance. The installed binary
+  remains authoritative for exact command syntax.
+- When the task involves neighboring agents, panes, terminal processes,
+  background commands, or workspace coordination, prefer scoped Herdr CLI
+  primitives over tmux commands or improvised terminal control.
+- Read-only Herdr inspection MAY be used proactively when it materially
+  improves correctness, including agent lists, the current pane, explicit
+  agent state, and scoped pane output.
+- Herdr availability alone does not justify delegation, background work, or
+  layout changes. Create, split, focus, move, close, or send input to panes
+  only when the user's task requires it, and prefer `--current`, explicit IDs,
+  and `--no-focus`.
+- NEVER launch bare `herdr` from inside Herdr; it opens or attaches the TUI.
+  Use a specific CLI subcommand.
+
 ## Scope and Safety
 
 - Treat every explicit exclusion as a hard boundary. Do not widen a cleanup,
