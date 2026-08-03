@@ -67,53 +67,70 @@ Keep the skill self-contained:
 
 ## Question Surface
 
-Choose the richest callable question surface by capability, not by model
-provider or brand. The host runtime determines which tools exist; an OpenAI,
-Anthropic, or Google model running inside Pi still uses Pi's surfaces. Inspect
-the tools available in the current session and never infer availability from
-environment variables or host names.
+Choose the richest validated question surface available in the current session.
+Select by callable capability, not by model provider, environment variable, or
+host name.
 
-Use this order:
+First-class support is intentionally limited:
 
-1. `request_user_input`, when callable
-2. Pi's `question` tool, when callable, for a bounded single-choice decision
-3. Pi's `questionnaire` tool, when callable, for one structured question with
-   stable ids/values, or when `question` is unavailable
-4. portable chat
+| Harness | Validated surface |
+| --- | --- |
+| Codex | `request_user_input` |
+| OMP | `ask` |
+| Pi | `question`, then `questionnaire` when its richer schema is needed |
 
-The Pi tools are optional extensions, not guaranteed built-ins. Do not install,
-enable, or configure them during a Lantern interview. If a preferred tool is
-absent or rejects the needed interaction, continue with the next surface.
+The current harness contracts live in
+[Question Surface Adapters](references/question-surfaces.md). Before the first
+structured question in an interview, read the matching adapter section. Do not
+load unrelated adapters merely to enumerate them.
 
-### Structured question contract
+If the matching adapter is absent, its tool is not callable, or the interaction
+cannot be represented safely, use the portable chat fallback. Do not install,
+enable, or configure question tools during a Lantern interview.
 
-For every structured tool call:
+### Core structured question contract
 
-1. Ask exactly one interview round. Lantern must not batch multiple primary
-   questions even when a tool supports questionnaires.
+Every validated adapter must preserve these invariants:
+
+1. Ask exactly one interview round per tool call, even when the surface supports
+   multiple questions.
 2. Show a short header naming the clarity dimension. If the surface has no
    header field, prepend `Round N | Target: Dimension | Ambiguity: NN%` to the
    displayed prompt.
 3. Provide 2-3 bounded, concrete options only when the decision space is known.
 4. Keep options mutually exclusive for a single-choice question.
-5. Put each consequence or tradeoff in the option description when supported;
-   otherwise append it briefly to the label.
-6. Preserve a custom-answer or `Other` path.
-7. Use multi-select only when the callable surface genuinely supports it and
-   multiple constraints may coexist. Pi's shipped `question.ts` and
-   `questionnaire.ts` examples do not provide multi-select; use chat instead.
+5. Put consequences or tradeoffs in option descriptions when supported;
+   otherwise append them briefly to labels.
+6. Preserve a custom-answer path.
+7. Use multi-select only when the validated adapter genuinely supports it and
+   multiple constraints may coexist.
 8. Do not repeat the question in assistant prose before or after the tool call.
-
-For Pi `question`, pass the round prompt as `question` and options as
-`{ label, description? }`; its UI supplies the custom-answer path. For Pi
-`questionnaire`, pass exactly one item in `questions`, use the clarity dimension
-as `label`, assign a stable `id`, give each option a stable `value`, and keep
-`allowOther: true` unless a custom answer would be invalid.
+9. Never record a timeout auto-selection as an explicit user decision. Retry
+   through chat or preserve the point as unresolved.
+10. Treat structured-tool cancellation like an interview stop request and
+    return a concise partial synthesis.
 
 Do not invent options merely to display a selector. Ask an open question in
-chat when predefined choices would bias discovery. Treat structured-tool
-cancellation like an interview stop request and return a concise partial
-synthesis.
+chat when predefined choices would bias discovery.
+
+### Unknown harness negotiation
+
+When a harness exposes a structured-input tool without a validated adapter, ask
+one plain-chat question before using it:
+
+```text
+This harness exposes an unvalidated structured-input tool.
+
+1. Try the native tool on a best-effort basis
+2. Use portable chat for predictable behavior
+
+Reply with 1 or 2.
+```
+
+If the user selects best-effort native use, inspect the callable schema, submit
+only one Lantern round, do not claim first-class support, and fall back to chat
+if invocation fails. If the user selects portable chat, do not invoke the
+unknown tool during that interview.
 
 ### Portable chat fallback
 
@@ -334,8 +351,10 @@ Before closing, verify:
 
 - Lantern was activated directly by the human
 - exactly one primary question was asked per round
-- the richest suitable callable question surface was used
-- Pi `questionnaire` never batched multiple primary questions
+- the richest validated callable surface was used
+- the matching adapter contract was read before the first structured question
+- unknown structured tools triggered explicit mode negotiation
+- timeout auto-selections were not treated as explicit user decisions
 - the chat fallback remained usable without external dependencies
 - no external CLI, terminal multiplexer, shell renderer, state store, or
   workflow runtime was required
