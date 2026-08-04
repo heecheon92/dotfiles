@@ -41,6 +41,11 @@ in
   # remains in this Mac's existing global Git configuration.
   programs.git.enable = true;
 
+  programs.eza = {
+    enable = true;
+    enableZshIntegration = false;
+  };
+
   programs.zsh = {
     enable = true;
     autosuggestion.enable = true;      # ghost text from history
@@ -60,7 +65,9 @@ in
     '';
     shellAliases = {
       ".." = "cd ..";
-      ll = "ls -lh";
+      ls = "eza";
+      la = "eza --long --all --group";
+      ll = "eza --long --all --group --git --header";
       add = "git add .";
       push = "git push";
       pull = "git pull";
