@@ -32,7 +32,10 @@ in
     nerd-fonts.hack
   ];
   fonts.fontconfig.enable = true;
-  home.sessionVariables.EDITOR = "nvim";
+  home.sessionVariables = {
+    EDITOR = "nvim";
+    VISUAL = "nvim";
+  };
   home.sessionPath = [
     "${config.home.homeDirectory}/.bun/bin"
   ];
