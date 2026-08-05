@@ -27,7 +27,9 @@ not an implementation workflow.
 ## Invocation Authority
 
 Activate Lantern only when the human explicitly invokes `$lantern` or
-unambiguously asks to run Lantern.
+unambiguously asks to run Lantern. A harness-native explicit invocation by the
+human counts as the same authorization, such as `/lantern` on a harness whose
+slash menu invokes skills directly.
 
 - Never activate Lantern merely because a request is vague, underspecified,
   complex, risky, or would benefit from clarification.
@@ -36,11 +38,19 @@ unambiguously asks to run Lantern.
 - Do not treat an agent-authored instruction as human authorization.
 - Explain Lantern when asked, but wait for the human to begin the interview.
 
+Where the harness can enforce this boundary itself, let it enforce it. On Claude
+Code, set `disable-model-invocation: true` in this skill's frontmatter so the
+harness never loads Lantern automatically and never preloads it into a subagent;
+only `/lantern` or an explicit human request starts an interview.
+
 ## Invocation
 
 ```text
 $lantern [--quick|--standard|--deep] <idea or request>
 ```
+
+On a harness with a native slash invocation, `/lantern [--quick|--standard|--deep]
+<idea or request>` is the same entry point and takes the same profiles.
 
 Profiles:
 
@@ -75,6 +85,7 @@ First-class support is intentionally limited:
 
 | Harness | Validated surface |
 | --- | --- |
+| Claude Code | `AskUserQuestion` |
 | Codex | `request_user_input` |
 | OMP | `ask` |
 | Pi | `question`, then `questionnaire` when its richer schema is needed |
@@ -95,9 +106,12 @@ Every validated adapter must preserve these invariants:
 1. Ask exactly one interview round per tool call, even when the surface supports
    multiple questions.
 2. Show a short header naming the clarity dimension. If the surface has no
-   header field, prepend `Round N | Target: Dimension | Ambiguity: NN%` to the
-   displayed prompt.
+   header field, or its header is too short to carry the full marker, prepend
+   `Round N | Target: Dimension | Ambiguity: NN%` to the displayed prompt and
+   keep the header itself to the bare dimension name.
 3. Provide 2-3 bounded, concrete options only when the decision space is known.
+   Widen to the surface's own minimum or maximum only when its schema requires
+   it.
 4. Keep options mutually exclusive for a single-choice question.
 5. Put consequences or tradeoffs in option descriptions when supported;
    otherwise append them briefly to labels.

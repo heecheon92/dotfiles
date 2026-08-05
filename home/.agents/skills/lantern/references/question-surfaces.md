@@ -11,6 +11,7 @@ variables, and host names are not.
 
 | Harness | Surface | Use when |
 | --- | --- | --- |
+| Claude Code | `AskUserQuestion` | The tool is callable in the current interactive session |
 | Codex | `request_user_input` | The tool is callable in the current interactive or planning context |
 | OMP | `ask` | The built-in tool is callable in an interactive OMP session |
 | Pi | `question` | A bounded single-choice question fits the callable extension |
@@ -38,16 +39,104 @@ Every adapter must preserve these rules:
 
 ## Capability matrix
 
-| Capability | Codex `request_user_input` | OMP `ask` | Pi `question` | Pi `questionnaire` |
-| --- | --- | --- | --- | --- |
-| Stable id | Yes | Yes | Schema-dependent | Yes |
-| Short header | Yes | Yes | No; prefix prompt | `label` |
-| Option description | Yes | Yes | When exposed | Schema-dependent |
-| Rich preview | No | Yes | No | No |
-| Multi-select | Treat as unsupported unless exposed | Yes, `multi: true` | Treat as unsupported | When exposed as `multiSelect` |
-| Custom answer | Host UI path | Automatic | Extension UI path | `allowOther: true` |
-| Multiple questions | Host may support; Lantern sends one | Supported; Lantern sends one | No | Supported; Lantern sends one |
-| Headless availability | Only when callable | Not registered without UI | Extension-dependent | Extension-dependent |
+| Capability | Claude Code `AskUserQuestion` | Codex `request_user_input` | OMP `ask` | Pi `question` | Pi `questionnaire` |
+| --- | --- | --- | --- | --- | --- |
+| Stable id | No | Yes | Yes | Schema-dependent | Yes |
+| Short header | `header`, 12-character cap; prefix prompt | Yes | Yes | No; prefix prompt | `label` |
+| Option description | Yes | Yes | Yes | When exposed | Schema-dependent |
+| Rich preview | Yes, single-select only | No | Yes | No | No |
+| Multi-select | Yes, `multiSelect: true` | Treat as unsupported unless exposed | Yes, `multi: true` | Treat as unsupported | When exposed as `multiSelect` |
+| Custom answer | Automatic `Other` row and notes field | Host UI path | Automatic | Extension UI path | `allowOther: true` |
+| Multiple questions | Up to 4; Lantern sends one | Host may support; Lantern sends one | Supported; Lantern sends one | No | Supported; Lantern sends one |
+| Headless availability | Denied under `dontAsk`; rely on callability | Only when callable | Not registered without UI | Extension-dependent | Extension-dependent |
+| Option count | 2-4 required | 2-3 preferred | 2-3 preferred | 2-3 preferred | 2-3 preferred |
+
+## Claude Code adapter: `AskUserQuestion`
+
+### Availability
+
+Use this adapter only when `AskUserQuestion` is callable. It requires an
+interactive session, and the `dontAsk` permission mode denies it even when an
+allow rule would otherwise match it. A skill or subagent can also remove it
+through `disallowed-tools` or a restricted tool list. Do not infer availability
+from the model name, a `CLAUDE_*` environment variable, or the presence of a
+`.claude` directory.
+
+### Mapping
+
+Pass exactly one item in `questions`:
+
+- `question`: the round's primary question, prefixed with
+  `Round N | Target: Dimension | Ambiguity: NN%` and a blank line
+- `header`: the bare clarity dimension, at most 12 characters, such as `Scope`
+- `options`: 2-4 `{ label, description }` choices, the label 1-5 words and the
+  consequence or tradeoff in `description`
+- `multiSelect`: `false` for a single decision, `true` only when several
+  constraints may genuinely coexist
+- `preview`: optional, single-select only, for a round where the human must
+  compare concrete artifacts such as layout sketches, snippets, or configuration
+  examples
+
+The header cap is the reason the round marker goes in the prompt rather than the
+header. The schema exposes no stable question id, so carry the dimension in
+`header` and keep the decision's identity in conversation context.
+
+Claude Code supplies the custom-answer path itself through the `Other` row and
+the notes field. Never add an `Other`, `None of these`, or `Let me explain`
+option. When a genuine safe default exists, put it first and append
+`(Recommended)` to its label.
+
+The schema accepts up to four questions per call. Lantern still submits one.
+Options must be mutually exclusive unless `multiSelect` is `true`. Do not attach
+a `preview` to a simple preference question that labels and descriptions already
+settle.
+
+### Example
+
+```json
+{
+  "questions": [
+    {
+      "question": "Round 2 | Target: Scope | Ambiguity: 34%\n\nWhich boundary should govern the first version?",
+      "header": "Scope",
+      "multiSelect": false,
+      "options": [
+        {
+          "label": "Narrow pilot",
+          "description": "One team and one workflow."
+        },
+        {
+          "label": "Department rollout",
+          "description": "All users in one business unit."
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Result handling
+
+- Record a selected option, `Other` text, or notes-field text as the round
+  decision. Claude Code relays free text with neutral wording, so an answer that
+  asks Lantern to wait or explain first is an instruction to follow, not a
+  choice to score.
+- Treat a dismissed or rejected question as an interview stop and return a
+  concise partial synthesis.
+- Questions stay open indefinitely unless the human configured
+  `askUserQuestionTimeout`. When that timeout expires, the dialog submits
+  whatever was already selected and reports that the human may be away. Never
+  record that as an explicit decision: preserve the point as unresolved and
+  re-ask through chat.
+- If the tool is unavailable, denied, or rejects the call, use portable chat.
+
+### Frontmatter
+
+Claude Code loads this skill from `SKILL.md` frontmatter. Keep
+`disable-model-invocation: true` set so the harness enforces Lantern's
+human-only invocation rule directly, rather than relying on the model to honor
+it. That field also stops the skill from being preloaded into subagents and from
+running when a scheduled task fires with the skill as its prompt.
 
 ## Codex adapter: `request_user_input`
 
