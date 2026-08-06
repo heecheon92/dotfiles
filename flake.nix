@@ -16,25 +16,33 @@
   outputs = inputs@{ self, nix-darwin, nix-homebrew, home-manager, nixpkgs }:
     let
       user = "heecheonpark";
+      mkDarwinConfiguration =
+        { manageHomebrewInstallation, migrateHomebrewInstallation ? false }:
+        nix-darwin.lib.darwinSystem {
+          specialArgs = {
+            inherit user manageHomebrewInstallation migrateHomebrewInstallation;
+          };
+          modules = [
+            ./configuration.nix
+            nix-homebrew.darwinModules.nix-homebrew
+            home-manager.darwinModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "before-home-manager";
+              home-manager.extraSpecialArgs = { inherit user; };
+              home-manager.users.${user} = import ./home.nix;
+            }
+          ];
+        };
     in
     {
-      darwinConfigurations."Mac-mini" = nix-darwin.lib.darwinSystem {
-        specialArgs = {
-          inherit user;
-          manageHomebrewInstallation = false;
-        };
-        modules = [
-          ./configuration.nix
-          nix-homebrew.darwinModules.nix-homebrew
-          home-manager.darwinModules.home-manager
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-            home-manager.backupFileExtension = "before-home-manager";
-            home-manager.extraSpecialArgs = { inherit user; };
-            home-manager.users.${user} = import ./home.nix;
-          }
-        ];
+      darwinConfigurations."Mac-mini" = mkDarwinConfiguration {
+        manageHomebrewInstallation = false;
+      };
+      darwinConfigurations."MacBook-Pro" = mkDarwinConfiguration {
+        manageHomebrewInstallation = true;
+        migrateHomebrewInstallation = true;
       };
     };
 }

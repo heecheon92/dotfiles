@@ -1,4 +1,4 @@
-{ manageHomebrewInstallation, user, ... }:
+{ manageHomebrewInstallation, migrateHomebrewInstallation, user, ... }:
 
 {
   # This machine uses standard upstream Nix, so let nix-darwin manage it.
@@ -29,9 +29,11 @@
     trackpad.Clicking = true;              # tap to click
   };
   nix-homebrew = {
-    # Keep this off on the company Mac, which already has a managed installation.
+    # The company Mac keeps its externally managed Homebrew installation. The
+    # personal Mac adopts its existing installation into nix-homebrew once.
     enable = manageHomebrewInstallation;
     inherit user;
+    autoMigrate = migrateHomebrewInstallation;
   };
   homebrew = {
     enable = true;
