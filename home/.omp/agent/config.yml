@@ -1,6 +1,25 @@
 setupVersion: 1
 modelRoles: 
-  default: openai-codex/gpt-5.6-sol
+  # Built-in OMP routing aliases. Each role resolves to one model selector.
+  default: openai-codex/gpt-5.6-sol:high
+  smol: openai-codex/gpt-5.6-luna:max
+  slow: openai-codex/gpt-5.6-sol:max
+  task: openai-codex/gpt-5.6-sol:high
+  vision: openai-codex/gpt-5.6-sol:high
+  plan: openai-codex/gpt-5.6-sol:xhigh
+  designer: openai-codex/gpt-5.6-sol:high
+  commit: openai-codex/gpt-5.3-codex-spark:high
+  tiny: openai-codex/gpt-5.3-codex-spark:high
+  advisor: openai-codex/gpt-5.6-sol:max
+  # Custom aliases are allowed; reference them as "@name" in task.agentModelOverrides.
+  # Alias names do not enforce read/write access; the selected agent type does.
+  # custom_role_name: provider/model-id:effort
+  spark_high: openai-codex/gpt-5.3-codex-spark:high
+  luna_max: openai-codex/gpt-5.6-luna:max
+  terra_high: openai-codex/gpt-5.6-terra:high
+  terra_xhigh: openai-codex/gpt-5.6-terra:xhigh
+  sol_high: openai-codex/gpt-5.6-sol:high
+  sol_medium: openai-codex/gpt-5.6-sol:medium
 symbolPreset: nerd
 defaultThinkingLevel: high
 theme: 
@@ -19,3 +38,12 @@ memory:
 autolearn: 
   enabled: true
   autoContinue: false
+task: 
+  agentModelOverrides: 
+    scout: "@spark_high"
+    librarian: "@spark_high"
+    sonic: "@sol_medium, @terra_high, @luna_max"
+    task: "@sol_high, @terra_xhigh, @luna_max"
+    designer: "@designer"
+    reviewer: "@slow"
+    security-reviewer: "@advisor"
