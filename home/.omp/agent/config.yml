@@ -1,6 +1,5 @@
 setupVersion: 1
 modelRoles: 
-  default: openai-codex/gpt-5.6-sol:high
   smol: openai-codex/gpt-5.6-luna:max
   slow: openai-codex/gpt-5.6-sol:max
   task: openai-codex/gpt-5.6-sol:high
@@ -16,6 +15,7 @@ modelRoles:
   terra_xhigh: openai-codex/gpt-5.6-terra:xhigh
   sol_high: openai-codex/gpt-5.6-sol:high
   sol_medium: openai-codex/gpt-5.6-sol:medium
+  default: openai-codex/gpt-5.6-sol
 symbolPreset: nerd
 defaultThinkingLevel: high
 theme: 

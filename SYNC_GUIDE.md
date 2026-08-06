@@ -10,16 +10,15 @@ those files to each Mac:
 git pull -> validate -> darwin-rebuild switch
 ```
 
-## Important current limitation
-
-The repository currently defines only one host:
+## Current hosts
 
 | Flake profile | Machine | User | Homebrew installation |
 | --- | --- | --- | --- |
 | `Mac-mini` | Company Mac | `heecheonpark` | Existing installation; nix-homebrew takeover disabled |
+| `MacBook-Pro` | Personal Mac | `heecheonpark` | Existing installation migrated to nix-homebrew |
 
-Do not run `./rebuild.sh` on the home Mac until `flake.nix` contains a separate
-profile matching the home Mac's `LocalHostName`.
+Do not run `./rebuild.sh` on another Mac until `flake.nix` contains a separate
+profile matching that Mac's `LocalHostName`.
 
 Find the required values on a Mac with:
 
@@ -245,6 +244,23 @@ git push
 
 Prefer explicit file names instead of `git add .` so unrelated or sensitive
 files are not accidentally published.
+
+## Machine-local shell configuration
+
+Home Manager owns the portable Zsh behavior in `home.nix`, including shared
+aliases, completion support, syntax highlighting, autosuggestions, Starship,
+and editor preferences. At startup, the managed `~/.zshrc` also sources this
+optional machine-local file when it exists:
+
+```text
+~/.config/zsh/local.zsh
+```
+
+Keep machine-specific SDK initialization, language-version managers, local
+executable paths, credentials, and other per-Mac exports in that file. It is
+not linked into this repository. If it contains sensitive values, keep its
+permissions at `0600`; prefer a local secret manager over plaintext exports
+when practical.
 
 On the other Mac:
 

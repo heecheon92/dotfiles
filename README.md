@@ -35,9 +35,9 @@
 ./rebuild.sh
 ```
 
-현재는 `Mac-mini` 프로필만 정의되어 있습니다. 다른 Mac에서 사용하기
-전에는 해당 Mac의 호스트 이름과 환경에 맞는 별도 프로필을
-`flake.nix`에 추가해야 합니다.
+현재 회사 Mac용 `Mac-mini` 프로필과 개인 Mac용 `MacBook-Pro` 프로필이
+정의되어 있습니다. 다른 Mac에서 사용하기 전에는 해당 Mac의 호스트
+이름과 환경에 맞는 별도 프로필을 `flake.nix`에 추가해야 합니다.
 
 자세한 설치, 동기화, 복구 절차는
 [SYNC_GUIDE.md](./SYNC_GUIDE.md)를 참고하세요.

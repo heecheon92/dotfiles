@@ -36,10 +36,6 @@ in
     EDITOR = "nvim";
     VISUAL = "nvim";
   };
-  home.sessionPath = [
-    "${config.home.homeDirectory}/.bun/bin"
-  ];
-
   # Keep user.name and user.email machine-specific. The company identity
   # remains in this Mac's existing global Git configuration.
   programs.git.enable = true;
@@ -53,19 +49,25 @@ in
     enable = true;
     autosuggestion.enable = true;      # ghost text from history
     syntaxHighlighting.enable = true;  # commands turn green when valid
-    initContent = lib.mkBefore ''
-      # Keep machine-specific SDK initialization and secrets outside this
-      # repository while sharing the portable shell configuration.
-      if [[ -r "$HOME/.config/zsh/local.zsh" ]]; then
-        source "$HOME/.config/zsh/local.zsh"
-      fi
+    initContent = lib.mkMerge [
+      (lib.mkBefore ''
+        # Keep machine-specific SDK initialization and secrets outside this
+        # repository while sharing the portable shell configuration.
+        if [[ -r "$HOME/.config/zsh/local.zsh" ]]; then
+          source "$HOME/.config/zsh/local.zsh"
+        fi
 
-      # macOS login-shell initialization may rebuild PATH after .zshenv has
-      # loaded Home Manager's session variables, so restore Bun for Zsh here.
-      path=("$HOME/.bun/bin" $path)
-
-      bindkey '^f' autosuggest-accept
-    '';
+        bindkey '^f' autosuggest-accept
+      '')
+      # Register omp's shell completions. This must run after compinit (which
+      # Home Manager invokes after the mkBefore block) because the generated
+      # script calls compdef.
+      (lib.mkAfter ''
+        if command -v omp &> /dev/null; then
+          eval "$(omp completions zsh)"
+        fi
+      '')
+    ];
     shellAliases = {
       ".." = "cd ..";
       ls = "eza";
