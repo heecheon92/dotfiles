@@ -16,11 +16,9 @@ height = "80%"
 
 [[keys.command]]
 key = "prefix+f"
-type = "popup"
-command = "exec \"$HOME/.dotfiles/home/.config/herdr/scripts/open-file-viewer-popup.sh\""
-description = "open file viewer popup"
-width = "90%"
-height = "90%"
+type = "plugin_action"
+command = "herdr-file-viewer.open-file-viewer"
+description = "open file viewer in split"
 
 [theme]
 name = "terminal"
