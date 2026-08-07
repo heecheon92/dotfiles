@@ -113,6 +113,13 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".config/opencode/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+  # Keep authored cross-agent skills in this repository while leaving
+  # third-party skills under ~/.agents/skills machine-local.
+  home.file.".agents/skills/gpt".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/gpt";
+  home.file.".agents/skills/lantern".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/lantern";
+
   # Keep OMP credentials, databases, sessions, logs, and Herdr's generated
   # integration local. Link only portable authored configuration and the
   # sibling runtime-context extension.
