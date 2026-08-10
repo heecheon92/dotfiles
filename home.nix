@@ -106,6 +106,11 @@ in
   # state such as session.json and logs stays local to each machine.
   home.file.".config/herdr/config.toml".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/herdr/config.toml";
+  # Keep only installable GitHub source names portable. Herdr still owns each
+  # machine's resolved checkout, enabled state, configuration, and runtime data.
+  home.file.".config/herdr/plugin-sources.txt".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.config/herdr/plugin-sources.txt";
   home.file.".codex/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".claude/CLAUDE.md".source =

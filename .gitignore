@@ -18,6 +18,9 @@ home/.git-credentials
 home/.netrc
 home/.config/gh/hosts.yml
 
+# OMP uses adjacent lock files while updating portable configuration.
+home/.omp/agent/*.lock
+
 # Pi portable sources are allowlisted below. Credentials, sessions, trust
 # decisions, caches, and downloaded packages must remain machine-local.
 home/.pi/agent/*
@@ -35,5 +38,6 @@ home/.pi/agent/extensions/**/dist/
 # intentional helper scripts from this otherwise live, generated directory.
 home/.config/herdr/*
 !home/.config/herdr/config.toml
+!home/.config/herdr/plugin-sources.txt
 !home/.config/herdr/scripts/
 !home/.config/herdr/scripts/**
