@@ -371,7 +371,7 @@ associated files.
 Reference:
 [nix-homebrew](https://github.com/zhaofengli/nix-homebrew)
 
-## Herdr integrations
+## Herdr integrations and plugins
 
 Herdr calls its Claude, Codex, and OpenCode hooks **integrations** rather than
 plugins. Their desired set is declared in `home.nix`. During Home Manager
@@ -383,9 +383,28 @@ are produced by the installed Herdr version and may coexist with other local
 agent configuration. Removing an integration from the Nix list causes a later
 rebuild to uninstall only integrations previously recorded as Nix-managed.
 
-Herdr's marketplace plugin registry (`plugins.json`), plugin configuration, and
-plugin runtime state also remain local to each Mac. Do not add them to the
-repository; plugin configuration may contain machine-specific paths or secrets.
+The portable list of third-party plugin sources lives in
+`home/.config/herdr/plugin-sources.txt`. Each non-comment line is an unpinned
+GitHub source accepted by `herdr plugin install`, such as `owner/repository`.
+Install the listed plugins separately on each machine:
+
+```bash
+while IFS= read -r source; do
+  [[ -n "$source" && "$source" != \#* ]] || continue
+  herdr plugin install "$source"
+done < ~/.config/herdr/plugin-sources.txt
+```
+
+The install command intentionally shows Herdr's trust preview and resolves the
+current plugin revision on that machine. No `--ref` is recorded. Herdr validates
+the plugin's declared `min_herdr_version` and refuses an incompatible install;
+it does not automatically choose an older compatible revision. Re-running an
+install replaces that source's Herdr-managed checkout.
+
+Herdr's resolved plugin registry, checkouts, enabled state, plugin
+configuration, and runtime state remain local to each Mac. Do not add them to
+the repository; plugin configuration may contain machine-specific paths or
+secrets.
 
 ## Rollback
 
