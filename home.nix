@@ -115,10 +115,16 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   # Keep authored cross-agent skills in this repository while leaving
   # third-party skills under ~/.agents/skills machine-local.
+  home.file.".agents/skills/README.md".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.agents/skills/README.md";
   home.file.".agents/skills/gpt".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/gpt";
   home.file.".agents/skills/lantern".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/lantern";
+  home.file.".agents/skills/documentation-lifecycle".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.agents/skills/documentation-lifecycle";
 
   # Keep OMP credentials, databases, sessions, logs, and Herdr's generated
   # integration local. Link only portable authored configuration and the

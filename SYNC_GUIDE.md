@@ -312,7 +312,12 @@ If two Codex plugins provide the same frontmatter `name`, Pi reports a
 collision and keeps the first one in the configured order. User and shared
 skills take precedence over plugin copies.
 
-The repository also tracks the Rose Pine Moon theme and the Lantern skill.
+The repository also tracks the Rose Pine Moon theme and the authored GPT,
+Lantern, and Documentation Lifecycle skills. Documentation Lifecycle is a
+shared, model-discoverable skill for installing or auditing project-local
+documentation maintenance and task-aware reading policies.
+The portable catalog and standalone installation commands live in
+[`home/.agents/skills/README.md`](./home/.agents/skills/README.md).
 Lantern remains hidden from model-driven skill selection and must be invoked by
 the human with:
 
