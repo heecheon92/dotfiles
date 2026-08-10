@@ -1,6 +1,6 @@
 ---
 name: documentation-lifecycle
-description: "Establish, audit, route, or apply an opinionated project documentation lifecycle with a consistent roadmap, completion archive, source-of-truth map, and task-aware agent reading protocol."
+description: "Establish, adopt, audit, route, or apply an opinionated project documentation lifecycle with a consistent roadmap, completion archive, source-of-truth map, thin AGENTS.md binding, and task-aware reading protocol."
 ---
 
 # Purpose
@@ -26,19 +26,21 @@ Completed detail leaves the active context surface but is never silently destroy
 
 Infer the mode from the Human's request:
 
-- **Setup** (default): inspect the repository and install the opinionated project-local documentation lifecycle and routing policy.
+- **Setup** (default): inspect the repository and install the opinionated project-local documentation lifecycle and routing policy without creating a new agent-instruction file.
+- **Adopt:** run Setup as needed, then create or update a thin project-root `AGENTS.md` binding so future project agents using harnesses that honor `AGENTS.md` automatically receive the documentation authority and reading rules.
 - **Audit:** remain read-only and report authority conflicts, duplication, stale status, context cost, routing gaps, and compaction candidates.
 - **Compact:** move completed detail into durable records and replace it with concise links.
-- **Check:** verify that an existing policy, source-of-truth map, roadmap summary, archives, routing table, and links remain consistent.
+- **Check:** verify that an existing policy, source-of-truth map, roadmap summary, archives, routing table, `AGENTS.md` binding, and links remain consistent.
 - **Route:** given a concrete task, return the minimum required document set, optional conditional references, and documents that should not be preloaded. Route mode is read-only.
 
-If the Human invokes the skill without specifying a mode, use **Setup**. Setup establishes the policy and structure; it does not perform a large historical migration unless the Human explicitly asks for compaction too.
+If the Human invokes the skill without specifying a mode, use **Setup**. Setup establishes the policy and structure; it does not perform a large historical migration or create a new `AGENTS.md` unless the Human explicitly asks for compaction or Adopt mode. Treat `$documentation-lifecycle adopt` and an explicit request to install the convention into project agent instructions as Adopt mode.
 
 # Opinionated default structure
 
 Use this semantic structure unless the repository already has a clearly equivalent, internally consistent convention:
 
 ```text
+AGENTS.md                        # thin automatically loaded binding in Adopt mode
 ROADMAP.md                       # sole mutable status, priority, and sequence authority
 docs/
   README.md                      # documentation map, task router, and minimal reading order
@@ -59,6 +61,7 @@ Rules for applying the structure:
 - Do not create empty directories or placeholder files.
 - Reuse coherent equivalents such as `docs/adr/`, `docs/history/`, or `docs/runbooks/`; record their semantic role instead of renaming for cosmetic uniformity.
 - Create `ROADMAP.md` when no canonical roadmap exists and the Human asked for Setup.
+- Create or update the project-root `AGENTS.md` only in Adopt mode. Setup may add a concise pointer to an existing authoritative agent-instruction file but does not create one.
 - Create `docs/README.md` when documentation has multiple classes or no concise map. For a very small repository, a concise documentation map in the root README is acceptable.
 - Create current-behavior documents only when the project actually needs that class. Never generate empty architecture, usage, or operations prose.
 - Prefer stable initiative slugs for completion records; record the completion date inside the file rather than renaming the path later.
@@ -169,7 +172,8 @@ Keep this map short. It routes agents to authoritative documents; it does not su
 8. **No sensitive history.** Never archive credentials, private sessions, raw transcripts, hidden reasoning, mutable runtime state, or sensitive logs.
 9. **Semantic consistency over cosmetic churn.** Apply the default structure when no good convention exists; preserve coherent existing equivalents instead of renaming them only to match this skill.
 10. **Progressive disclosure.** Read summaries, headings, and relevant ranges first. Follow links or load whole documents only when the task still lacks an authoritative answer.
-11. **Deletion remains deliberate.** A large move, document deletion, or ambiguous source-of-truth replacement requires an exact migration map and explicit Human authority when repository instructions require it.
+11. **Thin agent bootstrap.** `AGENTS.md` owns only mandatory agent behavior and exact pointers. Keep lifecycle bindings under roughly 10 lines or 120 words; keep tables, templates, rationale, and history in linked documents.
+12. **Deletion remains deliberate.** A large move, document deletion, or ambiguous source-of-truth replacement requires an exact migration map and explicit Human authority when repository instructions require it.
 
 # Workflow
 
@@ -351,15 +355,9 @@ Use this default router and adapt paths to the repository:
 | Documentation-only change | Documentation map and target document | Source document whose behavior is being described | Whole codebase documentation set |
 | Historical investigation | Relevant completion and decision records | Changelog, migration, or superseded plan | Unrelated current docs |
 
-Add a short pointer to an existing repository-agent instruction document when one is already authoritative and appropriate. Do not create a new agent instruction file solely for this pointer. Use language equivalent to:
+During Setup, add a short router pointer to an existing authoritative repository-agent instruction document only when appropriate. Setup must not create a new agent-instruction file solely for that pointer. Adopt mode owns explicit project-root `AGENTS.md` creation and reconciliation below.
 
-```md
-Use `docs/README.md` as the documentation router. Read only the current,
-task-relevant sources it identifies; do not preload archives, completion
-records, all decisions, or all design ideas.
-```
-
-Keep the full routing table in `docs/README.md`; do not duplicate it in agent instructions.
+Keep the full routing table in `docs/README.md`; never duplicate it in agent instructions.
 
 Install this progressive loading protocol:
 
@@ -373,7 +371,43 @@ Install this progressive loading protocol:
 8. Load completion records and historical plans only for regression, provenance, or historical investigation.
 9. Stop once authoritative task prerequisites are satisfied.
 
-## 10. Route a concrete task
+## 10. Bind the lifecycle to project AGENTS.md
+
+In **Adopt** mode:
+
+1. Run Setup first when the lifecycle, roadmap authority, documentation router, archive destination, or definition of done is missing or inconsistent.
+2. Resolve the project root from the current repository. Target only its root `AGENTS.md` by default. Never modify a user-global instruction file or a nested subtree instruction file unless the Human explicitly selects that scope.
+3. Inspect ownership before editing. If the target is a symlink, generated file, vendored file, or externally managed path, update the clear portable source only when current authority permits it; otherwise stop and ask rather than replacing or dereferencing it accidentally.
+4. Create the project-root `AGENTS.md` when absent. Explicit Adopt invocation authorizes this one documentation file; no other invocation mode does.
+5. Create or reconcile exactly one `## Documentation lifecycle` section. The operation is idempotent: update that section in place, preserve unrelated instructions, and remove obsolete duplicate lifecycle pointers.
+6. Keep the section under roughly 10 lines or 120 words. Use the actual canonical paths selected for the project rather than assuming the default filenames.
+7. Include only:
+   - the sole mutable roadmap/status authority;
+   - the documentation router and read-only-what-is-relevant rule;
+   - the preserve-before-compaction rule and completion-record destination; and
+   - links to the full maintenance policy and definition of done.
+8. Do not copy routing tables, completion templates, lifecycle rationale, initiative status, historical evidence, or archive contents into `AGENTS.md`.
+9. State in the final report that already-running agents may require a new session or context reload before the new project instruction is active.
+
+Default binding when the project uses the opinionated paths:
+
+```md
+## Documentation lifecycle
+
+- `ROADMAP.md` is the sole mutable authority for project status, priority,
+  sequence, and completion tracking.
+- Use `docs/README.md` as the documentation router. Read only the current,
+  task-relevant sources it identifies; do not preload all decisions, ideas,
+  completion records, or historical plans.
+- Before compacting completed work, update current behavior documentation and
+  preserve substantive implementation detail under `docs/completed/`.
+- Follow the full maintenance and definition-of-done policies in `ROADMAP.md`;
+  keep this section concise rather than duplicating them here.
+```
+
+Adapt the wording and links when the project preserves coherent equivalent paths.
+
+## 11. Route a concrete task
 
 In **Route** mode:
 
@@ -403,7 +437,7 @@ Default Route output:
 - `path or class` — why it is unnecessary now.
 ```
 
-## 11. Verify
+## 12. Verify
 
 For Setup, verify:
 
@@ -416,6 +450,8 @@ For Setup, verify:
 - the minimal read order is clear;
 - links and anchors remain valid; and
 - applicable documentation formatting, link, generated-doc, and repository checks pass.
+
+For Adopt, additionally verify that the project-root binding is the only lifecycle section, stays within the thin-section limit, names the actual canonical paths, preserves unrelated agent instructions, and points to complete durable policy. Confirm whether a new agent session is required to observe it.
 
 For Compact, additionally verify every move, inbound link, current-behavior destination, and completion record before removing original detail.
 
@@ -430,7 +466,8 @@ Ask the Human only when repository evidence cannot resolve a materially differen
 - the project must choose between release-based and initiative-based archives;
 - a completion percentage requires a product decision about its denominator;
 - substantive content has no safe durable destination;
-- common task classes require materially different routing strategies; or
+- common task classes require materially different routing strategies;
+- the project-root `AGENTS.md` is generated, symlinked, externally managed, or conflicts with a higher-authority instruction source; or
 - the Human explicitly rejects one of the opinionated defaults.
 
 Otherwise apply the default structure and proceed.
@@ -444,7 +481,7 @@ Report:
 - which opinionated defaults were applied and which existing equivalents were preserved;
 - the completion-compaction rule and triggers;
 - the documentation router and minimal agent read order;
-- any short repository-instruction pointer added;
+- whether Adopt created or updated the project-root `AGENTS.md`, the exact section installed, and whether new agent sessions must reload it;
 - documents changed or created;
 - content moved, preserved, or intentionally left for later compaction;
 - validation performed and remaining gaps.
