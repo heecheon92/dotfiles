@@ -20,6 +20,30 @@ type = "plugin_action"
 command = "herdr-file-viewer.open-file-viewer"
 description = "open file viewer in split"
 
+[[keys.command]]
+key = "prefix+shift+l"
+type = "plugin_action"
+command = "edi.layout-tools.open-editor"
+description = "layout editor"
+
+[[keys.command]]
+key = "prefix+shift+e"
+type = "plugin_action"
+command = "edi.layout-tools.equalize"
+description = "equalize pane layouts"
+
+[[keys.command]]
+key = "prefix+m"
+type = "plugin_action"
+command = "edi.layout-tools.reshape-main-left"
+description = "reshape main pane left"
+
+[[keys.command]]
+key = "prefix+shift+m"
+type = "plugin_action"
+command = "edi.layout-tools.reshape-main-grid"
+description = "reshape main pane grid"
+
 [theme]
 name = "terminal"
 auto_switch = false

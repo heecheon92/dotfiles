@@ -18,6 +18,9 @@ home/.git-credentials
 home/.netrc
 home/.config/gh/hosts.yml
 
+# OMP uses adjacent lock files while updating portable configuration.
+home/.omp/agent/*.lock
+
 # Pi portable sources are allowlisted below. Credentials, sessions, trust
 # decisions, caches, and downloaded packages must remain machine-local.
 home/.pi/agent/*
