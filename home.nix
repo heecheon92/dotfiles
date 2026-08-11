@@ -29,7 +29,7 @@ in
     lazygit
     neovim
     tree-sitter # parser compiler used by nvim-treesitter
-    tmux        # terminal multiplexer used by omp_parallel_bench.sh
+    tmux        # terminal multiplexer used by omp_parallel_bench
     # the font everything renders in
     nerd-fonts.hack
   ];
@@ -121,9 +121,9 @@ in
       "${dotfiles}/home/.config/herdr/plugin-sources.txt";
   # Keep personal executable scripts in the repository and expose them through
   # the shared user command path.
-  home.file.".local/bin/omp_parallel_bench.sh".source =
+  home.file.".local/bin/omp_parallel_bench".source =
     config.lib.file.mkOutOfStoreSymlink
-      "${dotfiles}/home/bin/omp_parallel_bench.sh";
+      "${dotfiles}/home/bin/omp_parallel_bench";
   home.file.".codex/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".claude/CLAUDE.md".source =

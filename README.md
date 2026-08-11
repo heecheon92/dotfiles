@@ -36,17 +36,19 @@
 
 ## OMP 병렬 벤치마크 스크립트
 
-`home/bin/omp_parallel_bench.sh`는 여러 OMP 모델을 tmux pane에서 동시에
+`home/bin/omp_parallel_bench`는 여러 OMP 모델을 tmux pane에서 동시에
 실행하는 개인용 벤치마크 명령입니다. `./rebuild.sh`를 실행하면
-`omp_parallel_bench.sh` 명령으로 사용할 수 있습니다.
+`omp_parallel_bench` 명령으로 사용할 수 있습니다.
 
 ```bash
-omp_parallel_bench.sh "/Users/heecheonpark/Git/agent-swarm"
-omp_parallel_bench.sh "/Users/heecheonpark/Git/agent-swarm" -o bench
-omp_parallel_bench.sh "/Users/heecheonpark/Git/agent-swarm" -o ./logs/omp-bench
+omp_parallel_bench "/Users/heecheonpark/Git/agent-swarm"
+omp_parallel_bench "/Users/heecheonpark/Git/agent-swarm" -v
+omp_parallel_bench "/Users/heecheonpark/Git/agent-swarm" -o bench
+omp_parallel_bench "/Users/heecheonpark/Git/agent-swarm" -o ./logs/omp-bench -v
 ```
 
-`-o`/`--output`을 지정한 경우에만 모델별 로그를 저장합니다. `tmux`는
+`-o`/`--output`을 지정한 경우에만 모델별 로그를 저장합니다. `-v`/`--view`를
+지정하면 벤치마크를 시작한 뒤 해당 tmux 세션을 즉시 표시합니다. `tmux`는
 Home Manager가 설치하며, `omp` 실행 파일은 별도 OMP 설치가 필요합니다.
 
 ## 적용 방법

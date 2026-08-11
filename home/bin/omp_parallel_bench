@@ -3,16 +3,18 @@ set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-Usage: omp_parallel_bench.sh <repo-directory> [-o output_filename_prefix] [session-name]
+Usage: omp_parallel_bench <repo-directory> [-o output_filename_prefix] [-v] [session-name]
 
 Examples:
-  omp_parallel_bench.sh "/path/to/repo"
-  omp_parallel_bench.sh "/path/to/repo" -o bench
-  omp_parallel_bench.sh "/path/to/repo" -o ./logs/omp-bench
-  omp_parallel_bench.sh "/path/to/repo" -o bench my-session
+  omp_parallel_bench "/path/to/repo"
+  omp_parallel_bench "/path/to/repo" -v
+  omp_parallel_bench "/path/to/repo" -o bench
+  omp_parallel_bench "/path/to/repo" -o ./logs/omp-bench
+  omp_parallel_bench "/path/to/repo" -o bench -v my-session
 
 Logs are written only when -o/--output is provided. Each log filename receives
-_<YYYYMMDD-HHMMSS>_<model-label>.log before its extension.
+_<YYYYMMDD-HHMMSS>_<model-label>.log before its extension. Use -v/--view to
+open the benchmark session immediately after launching it.
 USAGE
 }
 
@@ -38,6 +40,7 @@ command -v omp >/dev/null 2>&1 || die "omp is not installed or not in PATH"
 shift
 
 OUTPUT_PREFIX=""
+VIEW_ENABLED=false
 SESSION_NAME="omp-bench-$(date +%H%M%S)"
 SESSION_NAME_SET=false
 
@@ -48,6 +51,10 @@ while [[ $# -gt 0 ]]; do
       [[ -n "$2" ]] || die "$1 requires a non-empty filename prefix"
       OUTPUT_PREFIX="$2"
       shift 2
+      ;;
+    -v|--view)
+      VIEW_ENABLED=true
+      shift
       ;;
     --)
       shift
@@ -83,12 +90,12 @@ TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 
 # Update these selectors when the installed OMP model catalog changes.
 MODELS=(
-  "5.3 spark high|openai/gpt-5.3-codex-spark:high"
-  "5.6 sol minimal|openai/gpt-5.6-sol:minimal"
-  "5.6 sol low|openai/gpt-5.6-sol:low"
-  "5.6 luna minimal|openai/gpt-5.6-luna:minimal"
-  "5.6 luna low|openai/gpt-5.6-luna:low"
-  "5.6 luna max|openai/gpt-5.6-luna:max"
+  "5.3 spark high|openai-codex/gpt-5.3-codex-spark:high"
+  "5.6 sol minimal|openai-codex/gpt-5.6-sol:minimal"
+  "5.6 sol low|openai-codex/gpt-5.6-sol:low"
+  "5.6 luna minimal|openai-codex/gpt-5.6-luna:minimal"
+  "5.6 luna low|openai-codex/gpt-5.6-luna:low"
+  "5.6 luna max|openai-codex/gpt-5.6-luna:max"
 )
 
 LOG_ENABLED=false
@@ -115,7 +122,11 @@ else
   echo "Logs       : disabled"
 fi
 
-tmux new-session -d -s "$SESSION_NAME" -c "$TARGET_DIR" -n "omp-bench"
+# Give the detached window enough space for the full grid before a client
+# attaches. Without an explicit size, tmux may start at 80x24 and reject later
+# splits before the final tiled layout can redistribute the panes.
+tmux new-session -d -x 240 -y 80 \
+  -s "$SESSION_NAME" -c "$TARGET_DIR" -n "omp-bench"
 
 TARGET_Q="$(shell_quote "$TARGET_DIR")"
 PROMPT_Q="$(shell_quote "$PROMPT")"
@@ -137,6 +148,10 @@ for i in "${!MODELS[@]}"; do
   else
     pane_id="$(tmux split-window -P -F '#{pane_id}' -t "$SESSION_NAME:0" -c "$TARGET_DIR")"
   fi
+
+  # Rebalance after every split. Repeated default top/bottom splits otherwise
+  # keep shrinking the active pane and commonly fail around the fifth pane.
+  tmux select-layout -t "$SESSION_NAME:0" tiled >/dev/null
 
   tmux select-pane -t "$pane_id" -T "$label"
 
@@ -188,8 +203,16 @@ tmux select-layout -t "$SESSION_NAME:0" tiled
 tmux set-option -t "$SESSION_NAME" pane-border-status top
 tmux set-option -t "$SESSION_NAME" pane-border-format '#{pane_title}'
 
-printf '\nAttached to tmux session: %s\n' "$SESSION_NAME"
-printf 'Detach  : Ctrl-b then d\n'
-printf 'Reattach: tmux attach -t %s\n\n' "$SESSION_NAME"
+printf '\nStarted tmux session: %s\n' "$SESSION_NAME"
+printf 'View    : tmux attach -t %s\n' "$SESSION_NAME"
 
-tmux attach-session -t "$SESSION_NAME"
+if [[ "$VIEW_ENABLED" == true ]]; then
+  printf 'Opening benchmark session now. Detach with Ctrl-b then d.\n\n'
+  if [[ -n "${TMUX:-}" ]]; then
+    tmux switch-client -t "$SESSION_NAME"
+  else
+    exec tmux attach-session -t "$SESSION_NAME"
+  fi
+else
+  printf 'Run with -v/--view to open the session automatically.\n\n'
+fi
