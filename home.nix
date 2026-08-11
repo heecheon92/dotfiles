@@ -50,6 +50,21 @@ in
 
   programs.zsh = {
     enable = true;
+    # Perform a full completion discovery and security audit once per day or
+    # after this generated zshrc changes. Reuse the trusted dump otherwise.
+    completionInit = ''
+      autoload -U compinit
+
+      zcompdump="''${ZDOTDIR:-$HOME}/.zcompdump"
+      if [[ ! -s "$zcompdump" \
+        || "$HOME/.zshrc" -nt "$zcompdump" \
+        || -n "$(/usr/bin/find "$zcompdump" -mmin +1440 -print -quit 2>/dev/null)" ]]; then
+        compinit -d "$zcompdump"
+      else
+        compinit -C -d "$zcompdump"
+      fi
+      unset zcompdump
+    '';
     autosuggestion.enable = true;      # ghost text from history
     syntaxHighlighting.enable = true;  # commands turn green when valid
     initContent = lib.mkMerge [
@@ -68,12 +83,26 @@ in
 
         bindkey '^f' autosuggest-accept
       '')
-      # Register omp's shell completions. This must run after compinit (which
-      # Home Manager invokes after the mkBefore block) because the generated
-      # script calls compdef.
+      # OMP completion generation is comparatively expensive. Regenerate it
+      # atomically only when OMP or its command-surface inputs change.
       (lib.mkAfter ''
         if command -v omp &> /dev/null; then
-          eval "$(omp completions zsh)"
+          ompCompletionDir="''${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+          ompCompletionCache="$ompCompletionDir/omp-completions.zsh"
+          if [[ ! -s "$ompCompletionCache" \
+            || $commands[omp] -nt "$ompCompletionCache" \
+            || "$HOME/.omp/agent/config.yml" -nt "$ompCompletionCache" \
+            || "$HOME/.omp/agent/extensions" -nt "$ompCompletionCache" ]]; then
+            mkdir -p "$ompCompletionDir"
+            ompCompletionTmp="$ompCompletionCache.tmp.$$"
+            if command omp completions zsh >| "$ompCompletionTmp"; then
+              mv -f "$ompCompletionTmp" "$ompCompletionCache"
+            else
+              rm -f "$ompCompletionTmp"
+            fi
+          fi
+          [[ -r "$ompCompletionCache" ]] && source "$ompCompletionCache"
+          unset ompCompletionDir ompCompletionCache ompCompletionTmp
         fi
       '')
     ];

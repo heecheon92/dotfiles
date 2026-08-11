@@ -8,6 +8,16 @@
   };
 
   nixpkgs.config.allowUnfree = true;
+  # Home Manager owns this user's interactive completion and prompt setup.
+  # Keep nix-darwin from repeating compinit, bashcompinit, and a prompt that
+  # Starship immediately replaces.
+  programs.zsh = {
+    enable = true;
+    enableCompletion = false;
+    enableBashCompletion = false;
+    promptInit = "";
+  };
+
   nixpkgs.hostPlatform = "aarch64-darwin"; # use x86_64-darwin for Intel CPU
 
   system.primaryUser = user;
