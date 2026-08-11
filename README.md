@@ -34,6 +34,21 @@
 참고하세요. 전체 dotfiles 구성을 적용하지 않아도 원하는 스킬 디렉터리만
 에이전트 또는 Codex 기본 설치 도구로 설치할 수 있습니다.
 
+## OMP 병렬 벤치마크 스크립트
+
+`home/bin/omp_parallel_bench.sh`는 여러 OMP 모델을 tmux pane에서 동시에
+실행하는 개인용 벤치마크 명령입니다. `./rebuild.sh`를 실행하면
+`omp_parallel_bench.sh` 명령으로 사용할 수 있습니다.
+
+```bash
+omp_parallel_bench.sh "/Users/heecheonpark/Git/agent-swarm"
+omp_parallel_bench.sh "/Users/heecheonpark/Git/agent-swarm" -o bench
+omp_parallel_bench.sh "/Users/heecheonpark/Git/agent-swarm" -o ./logs/omp-bench
+```
+
+`-o`/`--output`을 지정한 경우에만 모델별 로그를 저장합니다. `tmux`는
+Home Manager가 설치하며, `omp` 실행 파일은 별도 OMP 설치가 필요합니다.
+
 ## 적용 방법
 
 현재 Mac의 호스트 이름에 맞는 nix-darwin 구성을 적용합니다.

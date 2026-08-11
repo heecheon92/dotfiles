@@ -29,6 +29,7 @@ in
     lazygit
     neovim
     tree-sitter # parser compiler used by nvim-treesitter
+    tmux        # terminal multiplexer used by omp_parallel_bench.sh
     # the font everything renders in
     nerd-fonts.hack
   ];
@@ -37,6 +38,7 @@ in
     EDITOR = "nvim";
     VISUAL = "nvim";
   };
+  home.sessionPath = [ "$HOME/.local/bin" ];
   # Keep user.name and user.email machine-specific. The company identity
   # remains in this Mac's existing global Git configuration.
   programs.git.enable = true;
@@ -52,6 +54,12 @@ in
     syntaxHighlighting.enable = true;  # commands turn green when valid
     initContent = lib.mkMerge [
       (lib.mkBefore ''
+        # Load Home Manager's generated session variables so home.sessionPath
+        # and home.sessionVariables are available in every new zsh shell.
+        if [[ -r "${config.home.profileDirectory}/etc/profile.d/hm-session-vars.sh" ]]; then
+          source "${config.home.profileDirectory}/etc/profile.d/hm-session-vars.sh"
+        fi
+
         # Keep machine-specific SDK initialization and secrets outside this
         # repository while sharing the portable shell configuration.
         if [[ -r "$HOME/.config/zsh/local.zsh" ]]; then
@@ -111,6 +119,11 @@ in
   home.file.".config/herdr/plugin-sources.txt".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.config/herdr/plugin-sources.txt";
+  # Keep personal executable scripts in the repository and expose them through
+  # the shared user command path.
+  home.file.".local/bin/omp_parallel_bench.sh".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/bin/omp_parallel_bench.sh";
   home.file.".codex/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".claude/CLAUDE.md".source =
