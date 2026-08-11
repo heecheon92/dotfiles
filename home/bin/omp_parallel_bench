@@ -90,7 +90,7 @@ TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 
 # Update these selectors when the installed OMP model catalog changes.
 MODELS=(
-  "5.3 spark high|openai-codex/gpt-5.3-codex-spark:high"
+  "deepseek v4 pro high|openrouter/deepseek/deepseek-v4-pro:high"
   "5.6 sol low|openai-codex/gpt-5.6-sol:low"
   "5.6 luna low|openai-codex/gpt-5.6-luna:low"
   "5.6 luna max|openai-codex/gpt-5.6-luna:max"
