@@ -124,12 +124,59 @@ in
     enable = true;
     settings = {
       add_newline = false;
-      format = "$directory$git_branch$git_status$cmd_duration$line_break$character";
-      character = {
-        success_symbol = "[❯](purple)";
-        error_symbol = "[❯](red)";
+      palette = "omp_titanium";
+      format = ''
+        [╭──](titanium)$os$hostname[  ](muted)$directory$git_branch$git_status$cmd_duration
+        [╰─](titanium)$character
+      '';
+      palettes.omp_titanium = {
+        titanium = "#8B949E";
+        text = "#C9D1D9";
+        muted = "#6E7681";
+        blue = "#58A6FF";
+        purple = "#BC8CFF";
+        green = "#56D364";
+        red = "#F85149";
+        yellow = "#E3B341";
       };
-      cmd_duration.format = "[$duration]($style) ";
+      os = {
+        disabled = false;
+        style = "blue";
+        format = "[$symbol]($style)";
+        symbols.Macos = " ";
+      };
+      hostname = {
+        ssh_only = false;
+        style = "text";
+        format = "[$hostname]($style)";
+      };
+      directory = {
+        style = "blue";
+        read_only = " 󰌾";
+        read_only_style = "yellow";
+        format = "[ $path]($style)[$read_only]($read_only_style)";
+        truncation_length = 3;
+        truncate_to_repo = true;
+      };
+      git_branch = {
+        symbol = " ";
+        style = "purple";
+        format = "[  ](muted)[$symbol$branch]($style)";
+      };
+      git_status = {
+        style = "yellow";
+        format = "([ $all_status$ahead_behind]($style))";
+      };
+      cmd_duration = {
+        min_time = 1000;
+        style = "muted";
+        format = "[  $duration]($style)";
+      };
+      character = {
+        success_symbol = "[❯](bold green)";
+        error_symbol = "[❯](bold red)";
+        vimcmd_symbol = "[❮](bold blue)";
+      };
     };
   };
 
@@ -139,6 +186,11 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
   home.file.".config/nvim".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/nvim";
+  # Give Herdr scratch terminals a separate, lightweight Zsh profile without
+  # changing the full interactive shell used by ordinary terminal windows.
+  home.file.".config/zsh/scratch".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.config/zsh/scratch";
   # Keep only the portable Herdr configuration in this repository. Runtime
   # state such as session.json and logs stays local to each machine.
   home.file.".config/herdr/config.toml".source =

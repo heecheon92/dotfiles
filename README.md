@@ -34,6 +34,16 @@
 참고하세요. 전체 dotfiles 구성을 적용하지 않아도 원하는 스킬 디렉터리만
 에이전트 또는 Codex 기본 설치 도구로 설치할 수 있습니다.
 
+## Herdr 스크래치 셸
+
+Herdr에서 `prefix+t`를 누르면 기본 `~/.zprofile`과 `~/.zshrc` 대신
+`~/.config/zsh/scratch`의 경량 Zsh 프로필을 사용하는 팝업 터미널을 엽니다.
+일반 터미널의 전체 개발 환경은 그대로 유지하며, 스크래치 셸에서는 NVM과
+Conda를 처음 호출할 때만 초기화합니다. 프로필 원본은
+`home/.config/zsh/scratch`에서 관리하고 Home Manager가 링크합니다.
+일반 셸과 스크래치 셸은 OMP 상태 표시줄의 구성을 본뜬 공통 Starship
+프롬프트를 사용해 호스트, 현재 디렉터리, Git 상태와 명령 실행 시간을 표시합니다.
+
 ## OMP 병렬 벤치마크 스크립트
 
 `home/bin/omp_parallel_bench`는 여러 OMP 모델을 tmux pane에서 동시에

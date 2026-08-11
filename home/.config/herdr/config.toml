@@ -9,7 +9,7 @@ delivery = "herdr"
 [[keys.command]]
 key = "prefix+t"
 type = "popup"
-command = "exec \"${SHELL:-sh}\" -l"
+command = "exec env ZDOTDIR=\"$HOME/.config/zsh/scratch\" zsh -l"
 description = "open scratch terminal"
 width = "85%"
 height = "80%"
