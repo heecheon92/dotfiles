@@ -1,30 +1,103 @@
 setupVersion: 1
-modelRoles: 
-  smol: openrouter/deepseek/deepseek-v4-flash-0731:high
-  slow: openai-codex/gpt-5.6-sol:max
-  task: openai-codex/gpt-5.6-sol:high
-  vision: openai-codex/gpt-5.6-sol:high
-  plan: openai-codex/gpt-5.6-sol:xhigh
-  designer: openai-codex/gpt-5.6-sol:high
-  commit: openai-codex/gpt-5.3-codex-spark:high
-  tiny: openai-codex/gpt-5.3-codex-spark:high
-  advisor: openai-codex/gpt-5.6-sol:max
-  spark_high: openai-codex/gpt-5.3-codex-spark:high
-  luna_max: openai-codex/gpt-5.6-luna:max
-  terra_high: openai-codex/gpt-5.6-terra:high
-  terra_xhigh: openai-codex/gpt-5.6-terra:xhigh
-  sol_high: openai-codex/gpt-5.6-sol:high
-  sol_medium: openai-codex/gpt-5.6-sol:medium
-  default: openai-codex/gpt-5.6-sol
-symbolPreset: nerd
-defaultThinkingLevel: high
+modelRoles:
+  # Primary interactive coding agent. This is the largest upgrade from the
+  # balanced profile and makes flagship reasoning the normal working baseline.
+  default: "openai-codex/gpt-5.6-sol:medium"
+
+  # Repository reconnaissance, scoped edits, and lighter delegated work.
+  # Terra medium provides better judgment than a Luna-based smol role without
+  # spending Sol allowance on every exploratory action.
+  smol: "openai-codex/gpt-5.6-terra:medium"
+
+  # Difficult debugging, architecture, migrations, and ambiguous multi-step work.
+  # Keep max manual-only; xhigh is the permanent deep-work ceiling.
+  slow: "openai-codex/gpt-5.6-sol:xhigh"
+
+  # Screenshot, UI, diagram, and image inspection.
+  vision: "openai-codex/gpt-5.6-sol:medium"
+
+  # Planning and design are high-leverage stages, so give them deeper reasoning.
+  plan: "openai-codex/gpt-5.6-sol:high"
+  designer: "anthropic/claude-opus-5:high"
+
+  # Commit messages and concise diff summaries benefit from some reasoning but
+  # remain repeatable, well-scoped work.
+  commit: "openai-codex/gpt-5.6-terra:medium"
+
+  # Task subagents may run concurrently. Terra high keeps delegated implementation
+  # strong without spawning several simultaneous Sol agents.
+  task: "openai-codex/gpt-5.6-terra:high"
+
+  # High-quality second-pass review. The runtime remains opt-in below.
+  advisor: "openai-codex/gpt-5.6-sol:high"
+
+  # `tiny` is intentionally omitted. providers.tinyModel handles titles and
+  # lightweight background classification locally on the Mac.
+
+cycleOrder:
+  - smol
+  - default
+  - slow
+
 theme: 
   dark: titanium
+  light: light
+symbolPreset: nerd
 statusLine: 
   preset: nerd
+autocompleteMaxVisible: 20
+
+# Applies when a manually selected model does not carry an explicit effort suffix.
+defaultThinkingLevel: high
+personality: pragmatic
+
+providers:
+  # Automatic effort can rise to xhigh. Reserve max for an explicit ultrathink
+  # or manual model/effort selection.
+  autoThinkingMaxEffort: xhigh
+  openaiWebsockets: auto
+
+  # Avoid spending online allowance on titles and low-value background work.
+  tinyModel: qwen3-0.6b
+  tinyModelDevice: default
+  tinyModelDtype: default
+
 tier: 
   openai: priority
-autocompleteMaxVisible: 20
+
+retry:
+  enabled: true
+  maxRetries: 4
+  baseDelayMs: 500
+  maxDelayMs: 30000
+  modelFallback: true
+  fallbackRevertPolicy: cooldown-expiry
+  fallbackChains:
+    default:
+      - "openai-codex/gpt-5.6-terra:high"
+      - "openai-codex/gpt-5.6-luna:high"
+    smol:
+      - "openai-codex/gpt-5.6-luna:high"
+      - "openai-codex/gpt-5.6-sol:low"
+    slow:
+      - "openai-codex/gpt-5.6-terra:xhigh"
+      - "openai-codex/gpt-5.6-sol:high"
+    vision:
+      - "openai-codex/gpt-5.6-terra:high"
+    plan:
+      - "openai-codex/gpt-5.6-terra:xhigh"
+      - "openai-codex/gpt-5.6-sol:medium"
+    designer:
+      - "openai-codex/gpt-5.6-terra:high"
+      - "openai-codex/gpt-5.6-sol:medium"
+    commit:
+      - "openai-codex/gpt-5.6-terra:low"
+    task:
+      - "openai-codex/gpt-5.6-sol:low"
+      - "openai-codex/gpt-5.6-luna:xhigh"
+    advisor:
+      - "openai-codex/gpt-5.6-terra:xhigh"
+
 dev: 
   autoqaConsent: granted
 display: 
@@ -34,12 +107,11 @@ memory:
 autolearn: 
   enabled: true
   autoContinue: false
-task: 
-  agentModelOverrides: 
-    scout: "@spark_high"
-    librarian: "@spark_high"
-    sonic: "@sol_medium, @terra_high, @luna_max"
-    task: "@sol_high, @terra_xhigh, @luna_max"
-    designer: "@designer"
-    reviewer: "@slow"
+task:
+  agentModelOverrides:
     security-reviewer: "@advisor"
+terminal:
+  showImages: true
+images:
+  autoResize: true
+  blockImages: false
