@@ -2,7 +2,10 @@ return {
   {
     'stevearc/oil.nvim',
     opts = { view_options = { show_hidden = true } },
-    keys = { { '<leader>e', '<cmd>Oil<cr>', desc = 'File Browser' } },
+    keys = {
+      { "<leader>e", "<cmd>Oil<cr>", desc = "File Browser" },
+      { "<leader>E", function() require("oil").toggle_float() end, desc = "Floating File Browser" },
+    },
   },
   {
     'folke/snacks.nvim',

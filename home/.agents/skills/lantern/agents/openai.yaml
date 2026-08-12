@@ -2,6 +2,3 @@ interface:
   display_name: "Lantern"
   short_description: "Human-led interview that illuminates clear specs"
   default_prompt: "Use $lantern to interview me one question at a time and illuminate this idea into an execution-ready specification."
-
-policy:
-  allow_implicit_invocation: false

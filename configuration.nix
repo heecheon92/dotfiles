@@ -33,6 +33,10 @@
       _HIHideMenuBar = true;  # auto-hide the menu bar
       AppleShowAllExtensions = true;
     };
+    CustomUserPreferences."com.googlecode.iterm2" = {
+      # iTerm's UI exposes cursor blinking but not its interval.
+      TimeBetweenBlinks = 0.2;
+    };
     dock.autohide = true;
     finder.FXPreferredViewStyle = "Nlsv";  # list view by default
     finder.CreateDesktop = false;          # clean desktop

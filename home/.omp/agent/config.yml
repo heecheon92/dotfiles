@@ -1,70 +1,35 @@
 setupVersion: 1
 modelRoles:
-  # Primary interactive coding agent. This is the largest upgrade from the
-  # balanced profile and makes flagship reasoning the normal working baseline.
-  default: "openai-codex/gpt-5.6-sol:medium"
-
-  # Repository reconnaissance, scoped edits, and lighter delegated work.
-  # Terra medium provides better judgment than a Luna-based smol role without
-  # spending Sol allowance on every exploratory action.
-  smol: "openai-codex/gpt-5.6-terra:medium"
-
-  # Difficult debugging, architecture, migrations, and ambiguous multi-step work.
-  # Keep max manual-only; xhigh is the permanent deep-work ceiling.
-  slow: "openai-codex/gpt-5.6-sol:xhigh"
-
-  # Screenshot, UI, diagram, and image inspection.
-  vision: "openai-codex/gpt-5.6-sol:medium"
-
-  # Planning and design are high-leverage stages, so give them deeper reasoning.
-  plan: "openai-codex/gpt-5.6-sol:high"
-  designer: "anthropic/claude-opus-5:high"
-
-  # Commit messages and concise diff summaries benefit from some reasoning but
-  # remain repeatable, well-scoped work.
-  commit: "openai-codex/gpt-5.6-terra:medium"
-
-  # Task subagents may run concurrently. Terra high keeps delegated implementation
-  # strong without spawning several simultaneous Sol agents.
-  task: "openai-codex/gpt-5.6-terra:high"
-
-  # High-quality second-pass review. The runtime remains opt-in below.
-  advisor: "openai-codex/gpt-5.6-sol:high"
-
-  # `tiny` is intentionally omitted. providers.tinyModel handles titles and
-  # lightweight background classification locally on the Mac.
-
+  default: openai-codex/gpt-5.6-sol:medium
+  smol: openai-codex/gpt-5.6-terra:medium
+  slow: openai-codex/gpt-5.6-sol:xhigh
+  vision: openai-codex/gpt-5.6-sol:medium
+  plan: openai-codex/gpt-5.6-sol:high
+  designer: anthropic/claude-opus-5:high
+  commit: openai-codex/gpt-5.6-terra:medium
+  task: openai-codex/gpt-5.6-terra:high
+  advisor: openai-codex/gpt-5.6-sol:high
 cycleOrder:
   - smol
   - default
   - slow
-
-theme: 
+theme:
   dark: titanium
   light: light
 symbolPreset: nerd
-statusLine: 
+statusLine:
   preset: nerd
 autocompleteMaxVisible: 20
-
-# Applies when a manually selected model does not carry an explicit effort suffix.
 defaultThinkingLevel: high
 personality: pragmatic
-
 providers:
-  # Automatic effort can rise to xhigh. Reserve max for an explicit ultrathink
-  # or manual model/effort selection.
   autoThinkingMaxEffort: xhigh
   openaiWebsockets: auto
-
-  # Avoid spending online allowance on titles and low-value background work.
   tinyModel: qwen3-0.6b
   tinyModelDevice: default
   tinyModelDtype: default
-
-tier: 
+tier:
   openai: priority
-
 retry:
   enabled: true
   maxRetries: 4
@@ -74,44 +39,46 @@ retry:
   fallbackRevertPolicy: cooldown-expiry
   fallbackChains:
     default:
-      - "openai-codex/gpt-5.6-terra:high"
-      - "openai-codex/gpt-5.6-luna:high"
+      - openai-codex/gpt-5.6-terra:high
+      - openai-codex/gpt-5.6-luna:high
     smol:
-      - "openai-codex/gpt-5.6-luna:high"
-      - "openai-codex/gpt-5.6-sol:low"
+      - openai-codex/gpt-5.6-luna:high
+      - openai-codex/gpt-5.6-sol:low
     slow:
-      - "openai-codex/gpt-5.6-terra:xhigh"
-      - "openai-codex/gpt-5.6-sol:high"
+      - openai-codex/gpt-5.6-terra:xhigh
+      - openai-codex/gpt-5.6-sol:high
     vision:
-      - "openai-codex/gpt-5.6-terra:high"
+      - openai-codex/gpt-5.6-terra:high
     plan:
-      - "openai-codex/gpt-5.6-terra:xhigh"
-      - "openai-codex/gpt-5.6-sol:medium"
+      - openai-codex/gpt-5.6-terra:xhigh
+      - openai-codex/gpt-5.6-sol:medium
     designer:
-      - "openai-codex/gpt-5.6-terra:high"
-      - "openai-codex/gpt-5.6-sol:medium"
+      - openai-codex/gpt-5.6-terra:high
+      - openai-codex/gpt-5.6-sol:medium
     commit:
-      - "openai-codex/gpt-5.6-terra:low"
+      - openai-codex/gpt-5.6-terra:low
     task:
-      - "openai-codex/gpt-5.6-sol:low"
-      - "openai-codex/gpt-5.6-luna:xhigh"
+      - openai-codex/gpt-5.6-sol:low
+      - openai-codex/gpt-5.6-luna:xhigh
     advisor:
-      - "openai-codex/gpt-5.6-terra:xhigh"
-
-dev: 
+      - openai-codex/gpt-5.6-terra:xhigh
+dev:
   autoqaConsent: granted
-display: 
+display:
   hideToolActivity: false
-memory: 
+memory:
   backend: local
-autolearn: 
+autolearn:
   enabled: true
   autoContinue: false
 task:
   agentModelOverrides:
     security-reviewer: "@advisor"
+  eager: preferred
+  enableEffort: false
 terminal:
   showImages: true
 images:
   autoResize: true
   blockImages: false
+hideThinkingBlock: true
