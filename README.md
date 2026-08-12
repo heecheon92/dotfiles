@@ -34,6 +34,14 @@
 참고하세요. 전체 dotfiles 구성을 적용하지 않아도 원하는 스킬 디렉터리만
 에이전트 또는 Codex 기본 설치 도구로 설치할 수 있습니다.
 
+## iTerm Hotkey Window
+
+iTerm의 전용 Hotkey Window 프로필은
+`home/.config/iterm2/hotkey-window.json`에서 Dynamic Profile로 관리합니다.
+Home Manager가 iTerm의 `DynamicProfiles` 디렉터리에 링크하며, 프로필 변경은
+이 JSON을 수정한 뒤 `./rebuild.sh`로 적용합니다. iTerm 설정 화면에서 직접
+변경한 값은 원본 JSON에 반영되지 않습니다.
+
 ## Herdr 스크래치 셸
 
 Herdr에서 `prefix+t`를 누르면 기본 `~/.zprofile`과 `~/.zshrc` 대신

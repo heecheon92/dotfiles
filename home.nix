@@ -186,6 +186,11 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
   home.file.".config/nvim".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/nvim";
+  # Keep iTerm's dedicated Hotkey Window profile version-controlled without
+  # committing the application's mutable preferences database.
+  home.file."Library/Application Support/iTerm2/DynamicProfiles/hotkey-window.json".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.config/iterm2/hotkey-window.json";
   # Give Herdr scratch terminals a separate, lightweight Zsh profile without
   # changing the full interactive shell used by ordinary terminal windows.
   home.file.".config/zsh/scratch".source =
