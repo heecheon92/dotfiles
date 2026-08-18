@@ -52,6 +52,21 @@ Conda를 처음 호출할 때만 초기화합니다. 프로필 원본은
 일반 셸과 스크래치 셸은 OMP 상태 표시줄의 구성을 본뜬 공통 Starship
 프롬프트를 사용해 호스트, 현재 디렉터리, Git 상태와 명령 실행 시간을 표시합니다.
 
+## OMP 저비용 모델 오버레이
+
+Codex 사용량을 아껴야 할 때는 `omp-budget`으로 OMP를 실행합니다. 이 명령은
+기본 설정과 인증·세션 상태는 그대로 공유하면서
+`home/.omp/agent/config-budget.yml`의 저비용 모델 역할과 fallback만 현재
+프로세스에 덮어씁니다. 일반 `omp` 실행은 기존 고성능 모델 구성을 유지합니다.
+
+```bash
+omp-budget
+```
+
+기본 대화 모델은 Sol medium을 유지하고, smol·slow·vision·commit·task 역할은
+Luna, plan 역할은 Terra, advisor 역할은 Sol high를 사용합니다. fallback에는
+Sol을 넣지 않아 지원 역할이 예기치 않게 고비용 모델로 복귀하지 않습니다.
+
 ## OMP 병렬 벤치마크 스크립트
 
 `home/bin/omp_parallel_bench`는 여러 OMP 모델을 tmux pane에서 동시에

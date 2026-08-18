@@ -3,8 +3,7 @@ return {
     'stevearc/oil.nvim',
     opts = { view_options = { show_hidden = true } },
     keys = {
-      { "<leader>e", "<cmd>Oil<cr>", desc = "File Browser" },
-      { "<leader>E", function() require("oil").toggle_float() end, desc = "Floating File Browser" },
+      { "<leader>E", "<cmd>Oil<cr>", desc = "File Browser (Oil)" },
     },
   },
   {
@@ -12,9 +11,18 @@ return {
     priority = 1000,
     lazy = false,
     opts = {
-      picker = { enabled = true },
+      picker = {
+        enabled = true,
+        sources = {
+          explorer = {
+            hidden = true,
+            ignored = true,
+          },
+        },
+      },
       notifier = { enabled = true },
       input = { enabled = true },
+      explorer = { enabled = true },
     },
     keys = {
       -- Top Pickers & Explorer
@@ -23,7 +31,7 @@ return {
       { "<leader>/", function() Snacks.picker.grep() end, desc = "Grep" },
       { "<leader>:", function() Snacks.picker.command_history() end, desc = "Command History" },
       { "<leader>n", function() Snacks.picker.notifications() end, desc = "Notification History" },
-      { "<leader>e", function() Snacks.explorer() end, desc = "File Explorer" },
+      { "<leader>e", function() Snacks.explorer() end, desc = "File Explorer (Snacks)" },
       -- find
       { "<leader>fb", function() Snacks.picker.buffers() end, desc = "Buffers" },
       { "<leader>fc", function() Snacks.picker.files({ cwd = vim.fn.stdpath("config") }) end, desc = "Find Config File" },

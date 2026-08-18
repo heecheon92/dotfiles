@@ -117,6 +117,7 @@ in
       m = "git switch main";
       cc = "claude --dangerously-skip-permissions";
       cx = "codex --yolo";
+      omp-budget = "omp --config ~/.omp/agent/config-budget.yml";
     };
   };
 
@@ -238,6 +239,9 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".omp/agent/config.yml".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/agent/config.yml";
+  home.file.".omp/agent/config-budget.yml".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/agent/config-budget.yml";
   home.file.".omp/agent/extensions/herdr-runtime-context.ts".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/extensions/herdr-runtime-context.ts";
