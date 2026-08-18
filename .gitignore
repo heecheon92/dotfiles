@@ -20,6 +20,7 @@ home/.config/gh/hosts.yml
 
 # OMP uses adjacent lock files while updating portable configuration.
 home/.omp/agent/*.lock
+home/.omp/plugins/node_modules/
 
 # Pi portable sources are allowlisted below. Credentials, sessions, trust
 # decisions, caches, and downloaded packages must remain machine-local.

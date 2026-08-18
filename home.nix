@@ -26,6 +26,7 @@ in
     fd        # fast find
     fzf       # fuzzy finder
     jq        # json on the command line
+    bun       # runtime and package manager for OMP plugins
     lazygit
     neovim
     tree-sitter # parser compiler used by nvim-treesitter
@@ -245,6 +246,25 @@ in
   home.file.".omp/agent/extensions/herdr-runtime-context.ts".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/extensions/herdr-runtime-context.ts";
+  # Keep OMP's plugin registry reproducible while leaving downloaded packages
+  # machine-local. The activation below restores them from the pinned lockfile.
+  home.file.".omp/plugins/package.json".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/plugins/package.json";
+  home.file.".omp/plugins/bun.lock".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/plugins/bun.lock";
+  home.file.".omp/plugins/omp-plugins.lock.json".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/plugins/omp-plugins.lock.json";
+
+  home.activation.syncOmpPlugins =
+    lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+      ompPluginsDir="${config.home.homeDirectory}/.omp/plugins"
+      run mkdir -p "$ompPluginsDir"
+      (
+        cd "$ompPluginsDir"
+        run ${pkgs.bun}/bin/bun install --frozen-lockfile
+      )
+    '';
 
   # The previous generation linked this whole directory into the repository.
   # Replace only that known symlink before Home Manager creates child links, so
