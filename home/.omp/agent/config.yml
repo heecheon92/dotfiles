@@ -2,6 +2,7 @@ setupVersion: 1
 modelRoles:
   default: openai-codex/gpt-5.6-sol:medium
   smol: openai-codex/gpt-5.6-terra:medium
+  spark: openai-codex/gpt-5.3-codex-spark:high
   slow: openai-codex/gpt-5.6-sol:xhigh
   vision: openai-codex/gpt-5.6-sol:medium
   plan: openai-codex/gpt-5.6-sol:high
@@ -10,6 +11,7 @@ modelRoles:
   task: openai-codex/gpt-5.6-terra:high
   advisor: openai-codex/gpt-5.6-sol:high
 cycleOrder:
+  - spark
   - smol
   - default
   - slow
