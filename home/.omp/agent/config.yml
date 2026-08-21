@@ -16,8 +16,8 @@ cycleOrder:
   - default
   - slow
 theme:
-  dark: titanium
-  light: light
+  dark: dark-monokai-readable
+  light: dark-monokai-readable
 symbolPreset: nerd
 statusLine:
   preset: nerd

@@ -251,6 +251,8 @@ in
   home.file.".omp/agent/config-budget.yml".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/config-budget.yml";
+  home.file.".omp/agent/themes".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/agent/themes";
   home.file.".omp/agent/extensions/herdr-runtime-context.ts".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/extensions/herdr-runtime-context.ts";
