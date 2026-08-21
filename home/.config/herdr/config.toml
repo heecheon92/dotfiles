@@ -45,7 +45,7 @@ command = "edi.layout-tools.reshape-main-grid"
 description = "reshape main pane grid"
 
 [theme]
-name = "tokyo-night"
+name = "terminal"
 auto_switch = false
 
 [experimental]
