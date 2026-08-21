@@ -41,6 +41,8 @@ iTerm의 전용 Hotkey Window 프로필은
 Home Manager가 iTerm의 `DynamicProfiles` 디렉터리에 링크하며, 프로필 변경은
 이 JSON을 수정한 뒤 `./rebuild.sh`로 적용합니다. iTerm 설정 화면에서 직접
 변경한 값은 원본 JSON에 반영되지 않습니다.
+왼쪽 Option은 `Esc+`로 보내 OMP 등의 `Alt` 단축키에 사용하고, 오른쪽
+Option은 `Normal`로 유지해 macOS 특수 문자 입력에 사용합니다.
 
 ## Herdr 스크래치 셸
 
