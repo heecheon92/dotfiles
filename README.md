@@ -34,15 +34,21 @@
 참고하세요. 전체 dotfiles 구성을 적용하지 않아도 원하는 스킬 디렉터리만
 에이전트 또는 Codex 기본 설치 도구로 설치할 수 있습니다.
 
-## iTerm Hotkey Window
+## 터미널 전역 단축키
 
-iTerm의 전용 Hotkey Window 프로필은
-`home/.config/iterm2/hotkey-window.json`에서 Dynamic Profile로 관리합니다.
-Home Manager가 iTerm의 `DynamicProfiles` 디렉터리에 링크하며, 프로필 변경은
-이 JSON을 수정한 뒤 `./rebuild.sh`로 적용합니다. iTerm 설정 화면에서 직접
-변경한 값은 원본 JSON에 반영되지 않습니다.
-왼쪽 Option은 `Esc+`로 보내 OMP 등의 `Alt` 단축키에 사용하고, 오른쪽
-Option은 `Normal`로 유지해 macOS 특수 문자 입력에 사용합니다.
+Hammerspoon은 `home/.hammerspoon/init.lua`에서 물리 키 코드 기반
+`Ctrl+\`` 전역 단축키를 관리합니다. 실행 중인 WezTerm이 앞에 있으면 숨기고,
+뒤에 있으면 주 창을 마우스 포인터가 있는 화면 중앙으로 옮긴 뒤 모든 창을
+앞으로 가져옵니다. WezTerm이 종료된 상태에서는 새로 실행하지 않습니다. 새
+Mac에서는 Hammerspoon에 macOS 손쉬운 사용 권한을 한 번 허용해야 합니다.
+WezTerm 창은 크기가 바뀔 때 현재 화면의 중앙으로 다시 배치됩니다.
+
+iTerm의 기존 Hotkey Window 프로필은
+`home/.config/iterm2/hotkey-window.json`에서 Dynamic Profile로 계속 관리하며,
+보조 터미널 단축키로 `Ctrl+Option+\``를 사용합니다. Home Manager가 iTerm의
+`DynamicProfiles` 디렉터리와 Hammerspoon 설정을 링크하며, 변경은
+`./rebuild.sh`로 적용합니다. 왼쪽 Option은 `Esc+`, 오른쪽 Option은 `Normal`로
+유지합니다.
 
 ## Herdr 스크래치 셸
 

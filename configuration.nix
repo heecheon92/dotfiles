@@ -59,6 +59,7 @@
     ];
     casks = [
       "wezterm"
+      "hammerspoon"
       "claude-code"
       "codex"
     ];

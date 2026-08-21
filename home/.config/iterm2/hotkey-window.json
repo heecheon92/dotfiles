@@ -224,7 +224,7 @@
       "Option Key Sends": 2,
       "Only The Default BG Color Uses Transparency": true,
       "Minimum Contrast": 0.0,
-      "HotKey Modifier Flags": 262144,
+      "HotKey Modifier Flags": 786432,
       "Ansi 15 Color": {
         "Red Component": 1.0,
         "Color Space": "sRGB",

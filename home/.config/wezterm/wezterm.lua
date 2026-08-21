@@ -44,4 +44,17 @@ wezterm.on("window-focus-changed", function(window)
 	window:set_config_overrides(overrides)
 end)
 
+-- Keep the window centered as its pixel dimensions change.
+wezterm.on("window-resized", function(window)
+	local dimensions = window:get_dimensions()
+	if dimensions.is_full_screen then
+		return
+	end
+
+	local screen = wezterm.gui.screens().active
+	local x = screen.x + math.floor((screen.width - dimensions.pixel_width) / 2)
+	local y = screen.y + math.floor((screen.height - dimensions.pixel_height) / 2)
+	window:set_position(x, y)
+end)
+
 return config
