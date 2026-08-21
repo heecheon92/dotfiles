@@ -33,6 +33,12 @@ alias -- ls='eza'
 alias -- la='eza --long --all --group'
 alias -- ll='eza --long --all --group --git --header'
 
+# Home Manager initializes zoxide in the full shell; mirror it here without
+# making scratch startup depend on the command being installed yet.
+if (( $+commands[zoxide] )); then
+  eval "$(zoxide init zsh)"
+fi
+
 # Reuse the managed Starship theme for directory and Git context. Keep a
 # built-in fallback for machines where Starship is not installed.
 if (( $+commands[starship] )); then

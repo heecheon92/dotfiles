@@ -49,6 +49,11 @@ in
     enableZshIntegration = false;
   };
 
+  programs.zoxide = {
+    enable = true;
+    enableZshIntegration = true;
+  };
+
   programs.zsh = {
     enable = true;
     # Perform a full completion discovery and security audit once per day or
@@ -108,7 +113,8 @@ in
       '')
     ];
     shellAliases = {
-      ".." = "cd ..";
+      cd = "z";
+      ".." = "z ..";
       ls = "eza";
       la = "eza --long --all --group";
       ll = "eza --long --all --group --git --header";
