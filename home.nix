@@ -115,16 +115,16 @@ in
     shellAliases = {
       cd = "z";
       ".." = "z ..";
-      ls = "eza";
-      la = "eza --long --all --group";
-      ll = "eza --long --all --group --git --header";
+      ls = "eza --icons=always";
+      la = "eza --long --all --group --icons=always";
+      ll = "eza --long --all --group --git --header --icons=always";
       add = "git add .";
       push = "git push";
       pull = "git pull";
       m = "git switch main";
       cc = "claude --dangerously-skip-permissions";
       cx = "codex --yolo";
-      omp-budget = "omp --config ~/.omp/agent/config-budget.yml";
+      ob = "omp --config ~/.omp/agent/config-budget.yml";
     };
   };
 
