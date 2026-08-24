@@ -7,7 +7,7 @@ modelRoles:
   vision: openai-codex/gpt-5.6-sol:medium
   plan: openai-codex/gpt-5.6-sol:high
   # designer: anthropic/claude-opus-5:high
-  designer: stealth/ox-alpha:high
+  designer: openai-codex/gpt-5.6-sol:medium
   commit: openai-codex/gpt-5.6-terra:medium
   task: openai-codex/gpt-5.6-terra:high
   advisor: openai-codex/gpt-5.6-sol:high
@@ -65,7 +65,6 @@ retry:
       - openai-codex/gpt-5.6-terra:xhigh
       - openai-codex/gpt-5.6-sol:medium
     designer:
-      - openai-codex/gpt-5.6-sol:medium
       - openai-codex/gpt-5.6-terra:high
     commit:
       - openai-codex/gpt-5.6-terra:low
