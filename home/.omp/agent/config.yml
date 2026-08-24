@@ -6,7 +6,8 @@ modelRoles:
   slow: openai-codex/gpt-5.6-sol:xhigh
   vision: openai-codex/gpt-5.6-sol:medium
   plan: openai-codex/gpt-5.6-sol:high
-  designer: anthropic/claude-opus-5:high
+  # designer: anthropic/claude-opus-5:high
+  designer: stealth/ox-alpha:high
   commit: openai-codex/gpt-5.6-terra:medium
   task: openai-codex/gpt-5.6-terra:high
   advisor: openai-codex/gpt-5.6-sol:high
@@ -20,7 +21,16 @@ theme:
   light: dark-monokai-readable
 symbolPreset: nerd
 statusLine:
-  preset: nerd
+  preset: custom
+  separator: powerline-thin
+  contextLine: off
+  leftSegments: [pi, hostname, model, mode, path, git, pr, subagents]
+  rightSegments: [session_name, token_rate, cost, time_spent, time]
+  segmentOptions:
+    model: { showThinkingLevel: true }
+    path: { abbreviate: true, maxLength: 30 }
+    git: { showBranch: true, showStaged: true, showUnstaged: true, showUntracked: true }
+    time: { format: 24h, showSeconds: true }
 autocompleteMaxVisible: 20
 defaultThinkingLevel: high
 personality: pragmatic
@@ -55,8 +65,8 @@ retry:
       - openai-codex/gpt-5.6-terra:xhigh
       - openai-codex/gpt-5.6-sol:medium
     designer:
-      - openai-codex/gpt-5.6-terra:high
       - openai-codex/gpt-5.6-sol:medium
+      - openai-codex/gpt-5.6-terra:high
     commit:
       - openai-codex/gpt-5.6-terra:low
     task:
