@@ -11,7 +11,8 @@ security, and cross-machine portability.
 | --- | --- |
 | Normal portable Zsh configuration | `home.nix`, under `programs.zsh` and `programs.starship` |
 | Normal machine-local environment | `~/.config/zsh/local.zsh` on each Mac; never commit credentials |
-| NVM lazy loader | `home/.config/zsh/nvm-lazy.zsh` |
+| Normal FNM lazy loader | `home/.config/zsh/fnm-lazy.zsh` |
+| Scratch NVM lazy loader | `home/.config/zsh/nvm-lazy.zsh` |
 | Conda lazy loader | `home/.config/zsh/conda-lazy.zsh` |
 | Scratch reference profile | `home/.config/zsh/scratch/.zprofile` and `.zshrc` |
 | Generated active files | `~/.zprofile` and `~/.zshrc`; inspect but do not hand-edit |
@@ -31,17 +32,19 @@ all applicable behavior remains correct:
   current-shell mutations.
 - The first invocation works; the user must not need to rerun a command.
 - Completion caches are never replaced with partially generated files.
-- A parent terminal's activated NVM or Conda state does not leak into a fresh
-  deferred shell.
+- A parent terminal's activated FNM, NVM, or Conda state does not leak into a
+  fresh deferred shell.
 - Missing optional tools fail clearly instead of leaving recursive wrappers.
 - The normal profile remains reproducible through Home Manager.
 - The scratch profile remains usable as an unchanged control.
 
-On the current Apple Silicon Mac, the established warm-cache reference was
-approximately 35 ms for normal `zsh -lic exit` and 30 ms for scratch. Treat
-these as dated comparison values, not universal thresholds. Hardware, Nix store
-state, filesystem caches, and package versions affect absolute timing. Compare
-normal and scratch on the same machine and report medians, not one sample.
+On the current Apple Silicon Mac after the FNM migration, the established
+warm-cache reference is approximately 35.4 ms for normal `zsh -lic exit`,
+30.8 ms for scratch, and 52.4 ms for a fresh normal shell's first
+`node --version`. Treat these as dated comparison values, not universal
+thresholds. Hardware, Nix store state, filesystem caches, and package versions
+affect absolute timing. Compare normal and scratch on the same machine and
+report medians, not one sample.
 
 ## Current eager and deferred boundaries
 
@@ -61,7 +64,9 @@ normal and scratch on the same machine and report medians, not one sample.
 ### Deferred until needed
 
 - Zoxide integration: first `z`, `zi`, or aliased `cd`.
-- NVM: first `nvm`, `node`, `npm`, `npx`, `corepack`, `pnpm`, `pnpx`, or `yarn`.
+- FNM in the normal shell: first `fnm`, Node/package-manager command, or a
+  managed global Node CLI such as `pi` or `repo-codex-mcp`.
+- NVM in the scratch reference: its existing Node-related command triggers.
 - Conda integration: first `conda` command.
 - OMP completion regeneration: first `omp` execution after its cache becomes
   stale.
@@ -116,14 +121,51 @@ Runtime managers must modify the current shell, so they cannot be initialized
 correctly in a background child process. Use command wrappers instead:
 
 1. Locate the integration script or executable.
-2. Remove every related wrapper before sourcing the real integration.
-3. Initialize in the current shell.
+2. Initialize in the current shell and prevent wrapper recursion with
+   `command`, or remove wrappers before redispatch when the integration installs
+   its own command definitions.
+3. Validate that the manager selected a real managed runtime rather than
+   falling through to a system executable.
 4. Redispatch the same command and arguments exactly once.
 5. Return the real command's status.
 
+The normal FNM loader retains lightweight guard wrappers after initialization.
+They make a missing FNM-managed Node version fail clearly instead of silently
+using Homebrew Node. FNM's generated `chpwd` hook calls the real binary through
+`command fnm` after the one-time environment initialization.
+
 Persistent terminal applications may pass activated runtime variables and PATH
-entries into new shells. The NVM and Conda loaders first remove inherited
+entries into new shells. The FNM, NVM, and Conda loaders first remove inherited
 activation state so the new shell remains genuinely deferred.
+
+### FNM bootstrap on each Mac
+
+Home Manager installs the FNM binary, but Node versions and npm global packages
+remain mutable per-machine state. After the first rebuild on a Mac, establish
+the current baseline explicitly:
+
+```bash
+fnm install 24.18.1
+fnm default 24.18.1
+fnm use 24.18.1
+
+npm install --global \
+  npm@11.16.0 \
+  corepack@0.35.0 \
+  @earendil-works/pi-coding-agent@0.83.0
+
+[[ ! -d "$HOME/Git/repo-codex-mcp" ]] || \
+  npm link "$HOME/Git/repo-codex-mcp"
+```
+
+Do not enable FNM's experimental `--corepack-enabled` globally. Corepack is no
+longer bundled with Node 25 and newer, so manage it as an explicit pinned global
+until project-level package-manager policy replaces it.
+
+The scratch reference still uses the existing NVM installation and
+`~/.nvm` versions. Do not delete that state during a normal-shell FNM migration.
+Inventory global packages before changing the pinned Node baseline; FNM does not
+copy npm globals between installed Node versions.
 
 ### Interactive visual plugins
 
@@ -244,6 +286,7 @@ nix flake check
 
 /bin/zsh -n ~/.zprofile
 /bin/zsh -n ~/.zshrc
+/bin/zsh -n ~/.config/zsh/fnm-lazy.zsh
 /bin/zsh -n ~/.config/zsh/nvm-lazy.zsh
 /bin/zsh -n ~/.config/zsh/conda-lazy.zsh
 /bin/zsh -n ~/.config/zsh/scratch/.zprofile
@@ -255,8 +298,9 @@ Then use a fresh login shell to exercise the affected behavior, not just syntax:
 - Confirm the first prompt renders correctly.
 - Press Tab for any changed completion integration before running its command.
 - Trigger each changed lazy command once and verify its arguments and result.
-- For NVM and Conda, verify inherited activation is absent before first use and
-  present afterward.
+- For FNM, NVM, and Conda, verify inherited activation is absent before first
+  use and present afterward. Confirm the normal shell never falls through to a
+  system Node when no FNM-managed version is active.
 - If OMP inputs changed, verify the first `omp` refreshes the stale cache and a
   subsequent shell sees the refreshed completion file.
 - Run the normal-versus-scratch median benchmark.

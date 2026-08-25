@@ -27,6 +27,7 @@ in
     fzf       # fuzzy finder
     jq        # json on the command line
     bun       # runtime and package manager for OMP plugins
+    fnm       # fast Node version manager, initialized lazily by Zsh
     lazygit
     neovim
     tree-sitter # parser compiler used by nvim-treesitter
@@ -97,11 +98,11 @@ in
           source "$HOME/.config/zsh/local.zsh"
         fi
 
-        # NVM and Conda mutate the current shell and are only needed for their
+        # FNM and Conda mutate the current shell and are only needed for their
         # respective runtime workflows. Install lightweight command stubs and
         # initialize each runtime on first use.
-        if [[ -r "$HOME/.config/zsh/nvm-lazy.zsh" ]]; then
-          source "$HOME/.config/zsh/nvm-lazy.zsh"
+        if [[ -r "$HOME/.config/zsh/fnm-lazy.zsh" ]]; then
+          source "$HOME/.config/zsh/fnm-lazy.zsh"
         fi
         if [[ -r "$HOME/.config/zsh/conda-lazy.zsh" ]]; then
           source "$HOME/.config/zsh/conda-lazy.zsh"
@@ -128,9 +129,16 @@ in
           zi "$@"
         }
       '')
-      # Keep cached OMP completions available immediately. If their inputs
-      # changed, regenerate them only when OMP is first executed.
       (lib.mkAfter ''
+        # Register FNM's packaged native completion immediately even when an
+        # older completion dump predates the newly installed package.
+        if (( $+commands[fnm] )); then
+          autoload -Uz _fnm
+          compdef _fnm fnm
+        fi
+
+        # Keep cached OMP completions available immediately. If their inputs
+        # changed, regenerate them only when OMP is first executed.
         if (( $+commands[omp] )); then
           typeset -g _OMP_COMPLETION_DIR="''${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
           typeset -g _OMP_COMPLETION_CACHE="$_OMP_COMPLETION_DIR/omp-completions.zsh"
@@ -279,7 +287,10 @@ in
   home.file."Library/Application Support/iTerm2/DynamicProfiles/hotkey-window.json".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.config/iterm2/hotkey-window.json";
-  # Share the on-demand NVM loader between full and scratch Zsh profiles.
+  # Use FNM for the normal shell while retaining NVM for the scratch reference.
+  home.file.".config/zsh/fnm-lazy.zsh".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.config/zsh/fnm-lazy.zsh";
   home.file.".config/zsh/nvm-lazy.zsh".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.config/zsh/nvm-lazy.zsh";
