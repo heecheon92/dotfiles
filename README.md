@@ -54,11 +54,21 @@ iTerm의 기존 Hotkey Window 프로필은
 
 Herdr에서 `prefix+t`를 누르면 기본 `~/.zprofile`과 `~/.zshrc` 대신
 `~/.config/zsh/scratch`의 경량 Zsh 프로필을 사용하는 팝업 터미널을 엽니다.
-일반 터미널의 전체 개발 환경은 그대로 유지하며, 스크래치 셸에서는 NVM과
-Conda를 처음 호출할 때만 초기화합니다. 프로필 원본은
-`home/.config/zsh/scratch`에서 관리하고 Home Manager가 링크합니다.
+일반 셸과 스크래치 셸은 NVM을 시작 시 초기화하지 않습니다. 공통 로더가
+`nvm`, `node`, `npm`, `npx`, `corepack`, `pnpm`, `pnpx`, `yarn` 중 하나를
+처음 실행할 때 NVM과 기본 Node 버전을 한 번만 활성화합니다. Conda도 두 셸에서
+시작 시 초기화하지 않고 첫 `conda` 명령이 현재 셸에 훅을 로드합니다. 로더는
+셸 동작만 관리하며 Conda 환경과 패키지는 각 머신에 로컬로 유지합니다. 프로필과
+로더 원본은 `home/.config/zsh`에서 관리하고 Home Manager가 링크합니다.
 일반 셸과 스크래치 셸은 OMP 상태 표시줄의 구성을 본뜬 공통 Starship
 프롬프트를 사용해 호스트, 현재 디렉터리, Git 상태와 명령 실행 시간을 표시합니다.
+
+## Zsh 시작 성능 유지
+
+일반 셸의 eager/lazy 경계, 스크래치 셸과의 벤치마크 방법, 새 SDK나
+completion을 추가할 때의 판단 기준, 검증 및 롤백 절차는
+[`ZSH_PERFORMANCE.md`](./ZSH_PERFORMANCE.md)를 참고하세요. 각 Mac에서
+dotfiles 작업을 위임받은 에이전트는 Zsh 변경 전에 이 문서를 읽어야 합니다.
 
 ## OMP 저비용 모델 오버레이
 

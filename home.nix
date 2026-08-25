@@ -51,11 +51,23 @@ in
 
   programs.zoxide = {
     enable = true;
-    enableZshIntegration = true;
+    enableZshIntegration = false;
   };
 
   programs.zsh = {
     enable = true;
+    # Homebrew's Apple Silicon prefix is stable. Export it directly instead of
+    # spawning `brew shellenv` and `path_helper` for every login shell.
+    profileExtra = ''
+      export HOMEBREW_PREFIX="/opt/homebrew"
+      export HOMEBREW_CELLAR="$HOMEBREW_PREFIX/Cellar"
+      export HOMEBREW_REPOSITORY="$HOMEBREW_PREFIX"
+
+      typeset -U path infopath
+      path=("$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin" $path)
+      infopath=("$HOMEBREW_PREFIX/share/info" $infopath)
+      export PATH INFOPATH
+    '';
     # Perform a full completion discovery and security audit once per day or
     # after this generated zshrc changes. Reuse the trusted dump otherwise.
     completionInit = ''
@@ -71,8 +83,6 @@ in
       fi
       unset zcompdump
     '';
-    autosuggestion.enable = true;      # ghost text from history
-    syntaxHighlighting.enable = true;  # commands turn green when valid
     initContent = lib.mkMerge [
       (lib.mkBefore ''
         # Load Home Manager's generated session variables so home.sessionPath
@@ -87,29 +97,97 @@ in
           source "$HOME/.config/zsh/local.zsh"
         fi
 
-        bindkey '^f' autosuggest-accept
-      '')
-      # OMP completion generation is comparatively expensive. Regenerate it
-      # atomically only when OMP or its command-surface inputs change.
-      (lib.mkAfter ''
-        if command -v omp &> /dev/null; then
-          ompCompletionDir="''${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
-          ompCompletionCache="$ompCompletionDir/omp-completions.zsh"
-          if [[ ! -s "$ompCompletionCache" \
-            || $commands[omp] -nt "$ompCompletionCache" \
-            || "$HOME/.omp/agent/config.yml" -nt "$ompCompletionCache" \
-            || "$HOME/.omp/agent/extensions" -nt "$ompCompletionCache" ]]; then
-            mkdir -p "$ompCompletionDir"
-            ompCompletionTmp="$ompCompletionCache.tmp.$$"
-            if command omp completions zsh >| "$ompCompletionTmp"; then
-              mv -f "$ompCompletionTmp" "$ompCompletionCache"
-            else
-              rm -f "$ompCompletionTmp"
-            fi
-          fi
-          [[ -r "$ompCompletionCache" ]] && source "$ompCompletionCache"
-          unset ompCompletionDir ompCompletionCache ompCompletionTmp
+        # NVM and Conda mutate the current shell and are only needed for their
+        # respective runtime workflows. Install lightweight command stubs and
+        # initialize each runtime on first use.
+        if [[ -r "$HOME/.config/zsh/nvm-lazy.zsh" ]]; then
+          source "$HOME/.config/zsh/nvm-lazy.zsh"
         fi
+        if [[ -r "$HOME/.config/zsh/conda-lazy.zsh" ]]; then
+          source "$HOME/.config/zsh/conda-lazy.zsh"
+        fi
+
+        # Keep `cd = z` responsive without paying for zoxide's generated shell
+        # integration until the first directory jump.
+        _zoxide_lazy_load() {
+          local zoxideBinary="$commands[zoxide]"
+          if [[ -z "$zoxideBinary" ]]; then
+            print -u2 "zoxide is not installed on this machine"
+            return 127
+          fi
+
+          unfunction z zi 2>/dev/null
+          eval "$("$zoxideBinary" init zsh)" || return
+        }
+        z() {
+          _zoxide_lazy_load || return
+          z "$@"
+        }
+        zi() {
+          _zoxide_lazy_load || return
+          zi "$@"
+        }
+      '')
+      # Keep cached OMP completions available immediately. If their inputs
+      # changed, regenerate them only when OMP is first executed.
+      (lib.mkAfter ''
+        if (( $+commands[omp] )); then
+          typeset -g _OMP_COMPLETION_DIR="''${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
+          typeset -g _OMP_COMPLETION_CACHE="$_OMP_COMPLETION_DIR/omp-completions.zsh"
+          typeset -g _OMP_COMPLETION_BINARY="$commands[omp]"
+          typeset -gi _OMP_COMPLETION_STALE=0
+
+          if [[ ! -s "$_OMP_COMPLETION_CACHE" \
+            || "$_OMP_COMPLETION_BINARY" -nt "$_OMP_COMPLETION_CACHE" \
+            || "$HOME/.omp/agent/config.yml" -nt "$_OMP_COMPLETION_CACHE" \
+            || "$HOME/.omp/agent/extensions" -nt "$_OMP_COMPLETION_CACHE" ]]; then
+            _OMP_COMPLETION_STALE=1
+          fi
+          [[ -r "$_OMP_COMPLETION_CACHE" ]] && source "$_OMP_COMPLETION_CACHE"
+
+          if (( _OMP_COMPLETION_STALE )); then
+            _omp_completion_refresh() {
+              local completionTmp
+              mkdir -p "$_OMP_COMPLETION_DIR"
+              completionTmp="$_OMP_COMPLETION_CACHE.tmp.$$"
+              if "$_OMP_COMPLETION_BINARY" completions zsh >| "$completionTmp"; then
+                mv -f "$completionTmp" "$_OMP_COMPLETION_CACHE"
+                source "$_OMP_COMPLETION_CACHE"
+              else
+                rm -f "$completionTmp"
+              fi
+              unset _OMP_COMPLETION_DIR _OMP_COMPLETION_CACHE
+              unset _OMP_COMPLETION_BINARY _OMP_COMPLETION_STALE
+              unfunction _omp_completion_refresh
+            }
+            omp() {
+              local ompBinary="$_OMP_COMPLETION_BINARY"
+              unfunction omp
+              _omp_completion_refresh
+              "$ompBinary" "$@"
+            }
+          else
+            unset _OMP_COMPLETION_DIR _OMP_COMPLETION_CACHE
+            unset _OMP_COMPLETION_BINARY _OMP_COMPLETION_STALE
+          fi
+        fi
+
+        # These visual helpers do not affect command correctness. Load them
+        # once ZLE is ready, after the first prompt is visible.
+        _zsh_lazy_load_ui() {
+          add-zle-hook-widget -d zle-line-init _zsh_lazy_load_ui
+
+          source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+          ZSH_AUTOSUGGEST_STRATEGY=(history)
+          bindkey '^f' autosuggest-accept
+
+          source ${pkgs.zsh-syntax-highlighting}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+          ZSH_HIGHLIGHT_HIGHLIGHTERS=(main)
+
+          unfunction _zsh_lazy_load_ui
+        }
+        autoload -Uz add-zle-hook-widget
+        add-zle-hook-widget -Uz zle-line-init _zsh_lazy_load_ui
       '')
     ];
     shellAliases = {
@@ -201,6 +279,14 @@ in
   home.file."Library/Application Support/iTerm2/DynamicProfiles/hotkey-window.json".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.config/iterm2/hotkey-window.json";
+  # Share the on-demand NVM loader between full and scratch Zsh profiles.
+  home.file.".config/zsh/nvm-lazy.zsh".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.config/zsh/nvm-lazy.zsh";
+  # Share the on-demand Conda loader between full and scratch Zsh profiles.
+  home.file.".config/zsh/conda-lazy.zsh".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.config/zsh/conda-lazy.zsh";
   # Give Herdr scratch terminals a separate, lightweight Zsh profile without
   # changing the full interactive shell used by ordinary terminal windows.
   home.file.".config/zsh/scratch".source =

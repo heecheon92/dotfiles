@@ -262,6 +262,12 @@ not linked into this repository. If it contains sensitive values, keep its
 permissions at `0600`; prefer a local secret manager over plaintext exports
 when practical.
 
+Before changing Zsh startup, runtime-manager initialization, SDK paths,
+completion, or prompt plugins, follow
+[`ZSH_PERFORMANCE.md`](./ZSH_PERFORMANCE.md). It defines the shared
+eager-versus-lazy boundaries, benchmark method, behavioral checks, and rollback
+rules.
+
 On the other Mac:
 
 ```bash

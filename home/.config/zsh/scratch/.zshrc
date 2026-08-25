@@ -47,48 +47,10 @@ else
   PROMPT='%F{cyan}%1~%f %# '
 fi
 
-export NVM_DIR="$HOME/.nvm"
-typeset -g SCRATCH_NVM_SCRIPT="/opt/homebrew/opt/nvm/nvm.sh"
-typeset -g SCRATCH_NVM_COMPLETION="/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"
+if [[ -r "$HOME/.config/zsh/nvm-lazy.zsh" ]]; then
+  source "$HOME/.config/zsh/nvm-lazy.zsh"
+fi
 
-nvm() {
-  if [[ ! -r "$SCRATCH_NVM_SCRIPT" ]]; then
-    print -u2 "nvm is not installed on this machine"
-    return 127
-  fi
-
-  unfunction nvm
-  source "$SCRATCH_NVM_SCRIPT"
-  [[ -r "$SCRATCH_NVM_COMPLETION" ]] && source "$SCRATCH_NVM_COMPLETION"
-  nvm "$@"
-}
-
-typeset -g SCRATCH_CONDA_EXE=""
-for candidate in \
-  /opt/anaconda3/bin/conda \
-  "$HOME/miniconda3/bin/conda" \
-  "$HOME/anaconda3/bin/conda"; do
-  if [[ -x "$candidate" ]]; then
-    SCRATCH_CONDA_EXE="$candidate"
-    break
-  fi
-done
-unset candidate
-
-conda() {
-  if [[ -z "$SCRATCH_CONDA_EXE" ]]; then
-    print -u2 "conda is not installed on this machine"
-    return 127
-  fi
-
-  local hook
-  if ! hook="$("$SCRATCH_CONDA_EXE" shell.zsh hook 2>/dev/null)"; then
-    print -u2 "failed to initialize conda"
-    return 1
-  fi
-
-  unfunction conda
-  eval "$hook"
-  unset hook
-  conda "$@"
-}
+if [[ -r "$HOME/.config/zsh/conda-lazy.zsh" ]]; then
+  source "$HOME/.config/zsh/conda-lazy.zsh"
+fi
