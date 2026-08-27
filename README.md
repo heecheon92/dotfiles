@@ -64,6 +64,15 @@ Node 버전을 활성화합니다. 스크래치 셸은 기존 NVM
 일반 셸과 스크래치 셸은 OMP 상태 표시줄의 구성을 본뜬 공통 Starship
 프롬프트를 사용해 호스트, 현재 디렉터리, Git 상태와 명령 실행 시간을 표시합니다.
 
+## Zsh 명령 기록 검색
+
+일반 Zsh와 Herdr scratch shell에서 `Ctrl+R`을 누르면 FZF가 shell history를
+fuzzy-search하는 selector를 엽니다. 검색 결과를 선택하면 command line에
+삽입되며 바로 실행되지 않으므로 검토하거나 수정한 뒤 Enter를 누릅니다. 일반
+Zsh는 첫 prompt가 표시된 뒤 다른 UI helper와 함께 widget을 lazy-load합니다.
+Scratch shell은 시작 성능을 유지하기 위해 첫 `Ctrl+R` 입력 시에만 widget을
+load합니다. 두 shell 모두 `Ctrl+T`와 `Alt+C`는 FZF에 할당하지 않습니다.
+
 ## Zsh 시작 성능 유지
 
 일반 셸의 eager/lazy 경계, 스크래치 셸과의 벤치마크 방법, 새 SDK나

@@ -189,6 +189,11 @@ in
           ZSH_AUTOSUGGEST_STRATEGY=(history)
           bindkey '^f' autosuggest-accept
 
+          # Load only FZF's official history widget after the first prompt.
+          # Keep Ctrl-T and Alt-C unchanged; this integration owns Ctrl-R only.
+          local FZF_CTRL_T_COMMAND="" FZF_ALT_C_COMMAND=""
+          source ${pkgs.fzf}/share/fzf/key-bindings.zsh
+
           source ${pkgs.zsh-syntax-highlighting}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
           ZSH_HIGHLIGHT_HIGHLIGHTERS=(main)
 
