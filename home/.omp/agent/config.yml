@@ -21,6 +21,7 @@ theme:
   light: dark-monokai-readable
 symbolPreset: nerd
 statusLine:
+  compactThinkingLevel: false
   preset: custom
   separator: powerline-thin
   contextLine: off
