@@ -6,7 +6,6 @@ modelRoles:
   slow: openai-codex/gpt-5.6-sol:xhigh
   vision: openai-codex/gpt-5.6-sol:medium
   plan: openai-codex/gpt-5.6-sol:high
-  # designer: anthropic/claude-opus-5:high
   designer: openai-codex/gpt-5.6-sol:medium
   commit: openai-codex/gpt-5.6-terra:medium
   task: openai-codex/gpt-5.6-luna:xhigh
@@ -17,21 +16,43 @@ cycleOrder:
   - default
   - slow
 theme:
-  dark: dark-monokai-readable
-  light: dark-monokai-readable
+  dark: monokai-custom
+  light: monokai-custom
 symbolPreset: nerd
 statusLine:
   compactThinkingLevel: false
   preset: custom
   separator: powerline-thin
-  contextLine: off
-  leftSegments: [pi, hostname, model, mode, path, git, pr, subagents]
-  rightSegments: [session_name, token_rate, cost, time_spent, time]
+  contextLine: "off"
+  leftSegments:
+    - pi
+    - hostname
+    - model
+    - mode
+    - path
+    - git
+    - pr
+    - subagents
+  rightSegments:
+    - session_name
+    - token_rate
+    - cost
+    - time_spent
+    - time
   segmentOptions:
-    model: { showThinkingLevel: true }
-    path: { abbreviate: true, maxLength: 30 }
-    git: { showBranch: true, showStaged: true, showUnstaged: true, showUntracked: true }
-    time: { format: 24h, showSeconds: true }
+    model:
+      showThinkingLevel: true
+    path:
+      abbreviate: true
+      maxLength: 30
+    git:
+      showBranch: true
+      showStaged: true
+      showUnstaged: true
+      showUntracked: true
+    time:
+      format: 24h
+      showSeconds: true
 autocompleteMaxVisible: 20
 defaultThinkingLevel: high
 personality: pragmatic
@@ -99,3 +120,5 @@ images:
 hideThinkingBlock: true
 composer:
   shape: box
+browser:
+  headless: true

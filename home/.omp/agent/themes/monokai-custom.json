@@ -1,10 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/theme-schema.json",
-  "name": "dark-monokai-readable",
+  "name": "monokai-custom",
   "vars": {
     "monokaiBg": "#272822",
     "monokaiText": "#f8f8f2",
     "monokaiComment": "#75715e",
+    "monokaiMuted": "#b8b6ac",
     "monokaiPink": "#f92672",
     "monokaiGreen": "#a6e22e",
     "monokaiYellow": "#e6db74",
@@ -28,8 +29,8 @@
     "success": "monokaiGreen",
     "error": "monokaiPink",
     "warning": "monokaiYellow",
-    "muted": "monokaiGray",
-    "dim": "monokaiComment",
+    "muted": "monokaiMuted",
+    "dim": "monokaiGray",
     "text": "",
     "thinkingText": "monokaiComment",
     "selectedBg": "monokaiDarkGray",
