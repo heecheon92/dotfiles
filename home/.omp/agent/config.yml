@@ -10,11 +10,13 @@ modelRoles:
   commit: openai-codex/gpt-5.6-terra:medium
   task: openai-codex/gpt-5.6-luna:xhigh
   advisor: openai-codex/gpt-5.6-sol:high
+  daybreak-blue: openai-codex/gpt-daybreak-blue-latest:high
 cycleOrder:
   - spark
   - smol
   - default
   - slow
+  - daybreak-blue
 theme:
   dark: monokai-custom
   light: monokai-custom
