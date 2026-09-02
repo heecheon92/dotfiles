@@ -35,8 +35,8 @@ if (( $+commands[fzf] )); then
     local fzf_binary="${commands[fzf]:A}"
     local FZF_CTRL_T_COMMAND="" FZF_ALT_C_COMMAND=""
     source "${fzf_binary:h:h}/share/fzf/key-bindings.zsh"
-    zle -D _scratch_fzf_history_lazy
-    unfunction _scratch_fzf_history_lazy
+    # The sourced script has already rebound Ctrl-R. Keep this currently
+    # executing wrapper registered until ZLE releases it.
     zle fzf-history-widget
   }
   zle -N _scratch_fzf_history_lazy
