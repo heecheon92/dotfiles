@@ -2,3 +2,4 @@
 # Keep plugin checkouts, configuration, and runtime state machine-local.
 edouard-andrei/herdr-layout-tools
 smarzban/herdr-file-viewer
+plannotator/herdr-annotate
