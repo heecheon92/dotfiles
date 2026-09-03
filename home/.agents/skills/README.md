@@ -41,6 +41,12 @@ python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/inst
   --path home/.agents/skills/gpt
 ```
 
+```bash
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
+  --repo heecheon92/dotfiles \
+  --path home/.agents/skills/omp-update
+```
+
 ## Available skills
 
 ### documentation-lifecycle
@@ -79,6 +85,17 @@ tests.
 
 ```text
 $gpt review this implementation before I commit
+```
+
+### omp-update
+
+Audits and applies OMP core updates as brownfield migrations. It compares the
+release range against active configuration, asks only about material behavior
+changes, updates the declarative source of truth, and verifies the resulting
+runtime.
+
+```text
+$omp-update
 ```
 
 ## Other agent harnesses

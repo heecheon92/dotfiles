@@ -342,6 +342,9 @@ in
   home.file.".agents/skills/documentation-lifecycle".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.agents/skills/documentation-lifecycle";
+  home.file.".agents/skills/omp-update".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.agents/skills/omp-update";
 
   # Keep OMP credentials, databases, sessions, logs, and Herdr's generated
   # integration local. Link only portable authored configuration and the
