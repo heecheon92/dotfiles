@@ -95,6 +95,25 @@ omp-budget
 Luna, plan 역할은 Terra, advisor 역할은 Sol high를 사용합니다. fallback에는
 Sol을 넣지 않아 지원 역할이 예기치 않게 고비용 모델로 복귀하지 않습니다.
 
+## OMP Lavish ambient context
+
+Lavish CLI와 bundled skill은 `packages/lavish-axi.nix`에서 같은 version으로
+pin합니다. `./rebuild.sh`는 CLI를 설치하고 package 안의 `skills/lavish`를
+`~/.agents/skills/lavish`에 연결한 뒤, Claude Code, Codex, OpenCode 및 GitHub
+Copilot CLI의 machine-local `SessionStart` hook을 idempotent하게 등록하거나
+복구합니다. 별도의 `npm install -g lavish-axi` 또는 `lavish-axi setup hooks`
+실행은 필요하지 않습니다.
+
+Home Manager는 `home/.omp/agent/extensions/lavish-runtime-context.ts`도 OMP의
+native extension으로 연결합니다. 이 extension은 session 시작 시 Nix가 관리하는
+`lavish-axi`를 한 번 실행하고 반환된 live review session 및 artifact 지침을 OMP
+system prompt에 추가합니다. 설치 또는 변경 후에는 새 agent session을 시작해야
+합니다.
+
+Lavish를 올릴 때는 Nix expression의 version과 npm tarball hash, 그리고
+`packages/lavish-axi/package.json` 및 `package-lock.json`의 dependency lock을
+함께 갱신합니다.
+
 ## OMP 병렬 벤치마크 스크립트
 
 `home/bin/omp_parallel_bench`는 여러 OMP 모델을 tmux pane에서 동시에
