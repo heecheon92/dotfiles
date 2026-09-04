@@ -6,7 +6,6 @@ modelRoles:
   slow: openai-codex/gpt-5.6-sol:xhigh
   vision: openai-codex/gpt-5.6-sol:medium
   plan: openai-codex/gpt-5.6-sol:high
-  designer: openai-codex/gpt-5.6-sol:medium
   commit: openai-codex/gpt-5.6-terra:medium
   task: openai-codex/gpt-5.6-luna:xhigh
   advisor: openai-codex/gpt-5.6-sol:high
@@ -37,8 +36,8 @@ statusLine:
     - subagents
   rightSegments:
     - session_name
+    - context_pct
     - token_rate
-    - cost
     - time_spent
     - time
   segmentOptions:
@@ -61,7 +60,7 @@ personality: pragmatic
 providers:
   autoThinkingMaxEffort: xhigh
   openaiWebsockets: auto
-  tinyModel: qwen3-0.6b
+  tinyModel: lfm2.5-230m
   tinyModelDevice: default
   tinyModelDtype: default
 tier:
@@ -88,8 +87,6 @@ retry:
     plan:
       - openai-codex/gpt-5.6-terra:xhigh
       - openai-codex/gpt-5.6-sol:medium
-    designer:
-      - openai-codex/gpt-5.6-terra:high
     commit:
       - openai-codex/gpt-5.6-terra:low
     task:

@@ -1,14 +1,14 @@
 # Process-scoped low-cost model overlay. Launch with `omp-budget`.
 # The normal config remains authoritative for every setting not listed here.
 modelRoles:
-  default: openai-codex/gpt-5.6-sol:medium
+  default: openrouter/z-ai/glm-5.3-flash:max
   smol: openai-codex/gpt-5.6-luna:medium
   spark: openai-codex/gpt-5.3-codex-spark:high
-  slow: openai-codex/gpt-5.6-luna:max
+  slow: openrouter/z-ai/glm-5.3-flash:max
   vision: openai-codex/gpt-5.6-luna:high
   plan: openai-codex/gpt-5.6-terra:high
   commit: openai-codex/gpt-5.6-luna:low
-  task: openai-codex/gpt-5.6-luna:xhigh
+  task: openrouter/z-ai/glm-5.3-flash:max
   advisor: openai-codex/gpt-5.6-sol:high
 cycleOrder:
   - spark
@@ -32,9 +32,6 @@ retry:
     plan:
       - openai-codex/gpt-5.4-mini:high
       - openai-codex/gpt-5.6-luna:xhigh
-    designer:
-      - openai-codex/gpt-5.6-terra:high
-      - openai-codex/gpt-5.4-mini:high
     commit:
       - openai-codex/gpt-5.4-mini:low
       - openai-codex/gpt-5.6-terra:low

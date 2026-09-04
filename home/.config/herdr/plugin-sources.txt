@@ -3,3 +3,4 @@
 edouard-andrei/herdr-layout-tools
 smarzban/herdr-file-viewer
 plannotator/herdr-annotate
+zenbu-labs/terminal-browser/herdr-plugin
