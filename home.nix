@@ -332,9 +332,9 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".config/opencode/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
-  # Keep authored cross-agent skills in this repository. Lavish is linked
+  # Keep reviewed cross-agent skills in this repository. Lavish is linked
   # from its pinned Nix package so its skill and CLI always share a version;
-  # other third-party skills under ~/.agents/skills remain machine-local.
+  # unlisted third-party skills under ~/.agents/skills remain machine-local.
   home.file.".agents/skills/README.md".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.agents/skills/README.md";
@@ -348,6 +348,9 @@ in
   home.file.".agents/skills/omp-update".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.agents/skills/omp-update";
+  home.file.".agents/skills/create-readme".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.agents/skills/create-readme";
   home.file.".agents/skills/lavish" = {
     source = "${lavishAxi}/lib/node_modules/lavish-axi/skills/lavish";
     force = true;

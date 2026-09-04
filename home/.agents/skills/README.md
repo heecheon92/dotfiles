@@ -1,8 +1,9 @@
 # Agent skills
 
-Portable, authored agent skills maintained in this dotfiles repository. Each
+Portable, reviewed agent skills maintained in this dotfiles repository. Each
 skill is self-contained under `home/.agents/skills/<name>/` and can be installed
-without adopting the rest of the dotfiles configuration.
+without adopting the rest of the dotfiles configuration. Curated upstream
+skills retain their source metadata in `home/skills-lock.json`.
 
 ## Install with an agent
 
@@ -45,6 +46,12 @@ python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/inst
 python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
   --repo heecheon92/dotfiles \
   --path home/.agents/skills/omp-update
+```
+
+```bash
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
+  --repo heecheon92/dotfiles \
+  --path home/.agents/skills/create-readme
 ```
 
 ## Available skills
@@ -98,6 +105,19 @@ runtime.
 $omp-update
 ```
 
+### create-readme
+
+Creates a concise, well-structured project README after reviewing the complete
+workspace. This curated copy comes from GitHub's
+[`awesome-copilot`](https://github.com/github/awesome-copilot) repository.
+
+Update the vendored copy and its source lock from the repository root with:
+
+```bash
+cd home
+npx skills update create-readme --yes
+```
+
 ## Other agent harnesses
 
 If a harness does not support the Codex installer, copy the selected skill
@@ -105,6 +125,6 @@ directory into that harness's documented user or project skill directory. Keep
 the complete directory so `SKILL.md`, `agents/`, `references/`, and other skill
 resources remain together.
 
-This repository stores portable authored skill sources only. Credentials,
+This repository stores only portable, reviewed skill sources. Credentials,
 authentication state, sessions, generated caches, and machine-local runtime
 state must remain outside the repository.
