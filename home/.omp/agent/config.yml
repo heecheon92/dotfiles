@@ -3,8 +3,8 @@ modelRoles:
   default: openai-codex/gpt-6-astra:medium
   smol: openai-codex/gpt-5.6-luna:high
   spark: openai-codex/gpt-5.6-luna:medium
-  slow: openai-codex/gpt-5.6-sol:xhigh
-  vision: openai-codex/gpt-5.6-sol:medium
+  slow: openai-codex/gpt-6-astra:xhigh
+  vision: openai-codex/gpt-6-astra:medium
   plan: openai-codex/gpt-6-astra:high
   commit: openai-codex/gpt-5.6-terra:medium
   task: openai-codex/gpt-5.6-luna:xhigh
