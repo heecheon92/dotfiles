@@ -32,6 +32,7 @@ in
     fnm       # fast Node version manager, initialized lazily by Zsh
     lazygit
     neovim
+    lua-language-server # Lua and Neovim API intelligence; launched by Neovim on demand
     tree-sitter # parser compiler used by nvim-treesitter
     tmux        # terminal multiplexer used by omp_parallel_bench
     # the font everything renders in
