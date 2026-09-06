@@ -5,6 +5,7 @@ o.shiftwidth = 2               -- 2 spaces per indent level
 o.tabstop = 2                  -- display literal tabs at the same width
 o.shiftround = true            -- round indentation changes to a shiftwidth boundary
 o.number = true                -- absolute number on the cursor line, relative elsewhere
+o.cursorline = true             -- highlight the cursor line for modicator
 o.relativenumber = true        -- relative line numbers for fast jumps
 o.ignorecase = true            -- search is case-insensitive by default
 o.smartcase = true             -- case-sensitive only if i type a capital

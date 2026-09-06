@@ -25,6 +25,19 @@
     `./rebuild.sh` 적용 후 Lua 파일을 열면 서버가 시작되며, `vim.o.` 등의
     Neovim API를 완성할 수 있습니다. `Ctrl-Y`로 선택 항목을 확정하고,
     `:checkhealth vim.lsp`로 연결 상태를 확인합니다. Mason은 사용하지 않습니다.
+  - Python LSP는 Nix의 `pyrefly`를 사용합니다. `./rebuild.sh` 적용 후 Neovim을
+    다시 열면 Python 파일에서 자동으로 시작합니다. 내장 자동 완성과 `Ctrl-X` → `Ctrl-O`
+    수동 완성을 사용하며 `Ctrl-Y`로 확정합니다. 프로젝트 설정이 없는 파일에도 표준
+    타입 검사를 적용하고, `pyrefly.toml` 또는 `[tool.pyrefly]` 프로젝트 설정을 우선합니다.
+  - Neovim UI 플러그인은 기존 `lazy.nvim`으로 관리합니다. Neovim 0.12 이상에서
+    `tiny-cmdline.nvim`은 `:` 명령줄을 중앙 팝업으로 표시하고 (`/`, `?` 검색은 하단 유지),
+    `modicator.nvim`은 모드에 따라 현재 줄 번호 색상을 바꿉니다.
+    `nvim-hlslens`는 검색 결과에 카운터를 표시하며 `n`, `N`, `*`, `#`, `g*`, `g#`를
+    그대로 사용할 수 있습니다. `<leader>l`로 검색 강조를 지웁니다.
+  - `nvim-autopairs`는 괄호와 따옴표를 자동으로 짝지으며, Enter 줄바꿈과 `Ctrl-Y`
+    완성 확정 키는 유지합니다. `nvim-ts-autotag`는 HTML/JSX/TSX 태그를 자동으로 닫고
+    이름 변경 시 짝 태그도 갱신합니다. 필요한 HTML/JavaScript/TypeScript/TSX 파서는
+    기존 `nvim-treesitter` 설치 설정에서 관리합니다.
 - Pi의 모델, 테마, 스킬 및 확장 패키지 기본 설정
 
 비밀번호, API 키, 인증 토큰, 회사 전용 정보처럼 외부에 공유하면 안

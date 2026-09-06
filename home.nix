@@ -33,6 +33,7 @@ in
     lazygit
     neovim
     lua-language-server # Lua and Neovim API intelligence; launched by Neovim on demand
+    pyrefly     # Python type checking and language server for Neovim
     tree-sitter # parser compiler used by nvim-treesitter
     tmux        # terminal multiplexer used by omp_parallel_bench
     # the font everything renders in
@@ -216,6 +217,7 @@ in
       push = "git push";
       pull = "git pull";
       m = "git switch main";
+      n = "nvim";
       cc = "claude --dangerously-skip-permissions";
       cx = "codex --yolo";
       ob = "omp --config ~/.omp/agent/config-budget.yml";

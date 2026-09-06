@@ -4,12 +4,39 @@ return {
     lazy = false,
     build = ':TSUpdate',
     config = function()
-      require('nvim-treesitter').install({ 'markdown', 'markdown_inline' }):wait(300000)
+      require('nvim-treesitter').install({
+        'html',
+        'javascript',
+        'markdown',
+        'markdown_inline',
+        'tsx',
+        'typescript',
+      }):wait(300000)
       vim.api.nvim_create_autocmd('FileType', {
         pattern = 'markdown',
         callback = function() vim.treesitter.start() end,
       })
     end,
+  },
+  {
+    'windwp/nvim-autopairs',
+    event = 'InsertEnter',
+    opts = {
+      -- Keep native completion's <C-Y> acceptance and Enter newline behavior.
+      map_cr = false,
+    },
+  },
+  {
+    'windwp/nvim-ts-autotag',
+    event = { 'BufReadPre', 'BufNewFile' },
+    dependencies = { 'nvim-treesitter/nvim-treesitter' },
+    opts = {
+      opts = {
+        enable_close = true,
+        enable_rename = true,
+        enable_close_on_slash = false,
+      },
+    },
   },
   {
     'nvim-mini/mini.icons',

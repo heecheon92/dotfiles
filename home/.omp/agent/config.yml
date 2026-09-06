@@ -1,13 +1,13 @@
 setupVersion: 2
 modelRoles:
-  default: openai-codex/gpt-6-astra:medium
+  default: openai-codex/gpt-6-astra
   smol: openai-codex/gpt-5.6-luna:high
   spark: openai-codex/gpt-5.6-luna:medium
   slow: openai-codex/gpt-6-astra:xhigh
   vision: openai-codex/gpt-6-astra:medium
-  plan: openai-codex/gpt-6-astra:high
-  commit: openai-codex/gpt-5.6-terra:medium
-  task: openai-codex/gpt-5.6-luna:xhigh
+  plan: openai-codex/gpt-6-astra:xhigh
+  commit: openai-codex/gpt-5.6-luna:medium
+  task: openai-codex/gpt-5.6-sol:medium
   advisor: openai-codex/gpt-6-astra:high
   daybreak-blue: openai-codex/gpt-daybreak-blue-latest:high
 cycleOrder:
@@ -81,20 +81,20 @@ retry:
       - openai-codex/gpt-5.6-terra:medium
       - openai-codex/gpt-5.6-sol:low
     slow:
-      - openai-codex/gpt-5.6-terra:xhigh
       - openai-codex/gpt-5.6-sol:high
+      - openai-codex/gpt-5.6-terra:xhigh
     vision:
       - openai-codex/gpt-5.6-terra:high
     plan:
+      - openai-codex/gpt-5.6-sol:xhigh
       - openai-codex/gpt-5.6-terra:xhigh
-      - openai-codex/gpt-5.6-sol:high
     commit:
       - openai-codex/gpt-5.6-terra:low
     task:
       - openai-codex/gpt-5.6-terra:medium
       - openai-codex/gpt-5.6-sol:low
     advisor:
-      - openai-codex/gpt-5.6-terra:xhigh
+      - openai-codex/gpt-5.6-sol:high
     spark:
       - openai-codex/gpt-5.3-codex-spark:high
 dev:
@@ -108,7 +108,7 @@ autolearn:
   autoContinue: false
 task:
   agentModelOverrides:
-    security-reviewer: "@advisor"
+    security-reviewer: "@daybreak-blue @advisor"
     sonic: "@spark"
   eager: preferred
   enableEffort: false

@@ -14,6 +14,23 @@ vim.lsp.config('lua_ls', {
   },
 })
 
+vim.lsp.config('pyrefly', {
+  cmd = { 'pyrefly', 'lsp' },
+  init_options = {
+    pyrefly = { typeCheckingMode = 'default' },
+  },
+  filetypes = { 'python' },
+  root_markers = {
+    'pyrefly.toml',
+    'pyproject.toml',
+    'setup.py',
+    'setup.cfg',
+    'requirements.txt',
+    'Pipfile',
+    '.git',
+  },
+})
+
 vim.opt.completeopt = { 'menu', 'menuone', 'noselect' }
 vim.api.nvim_create_autocmd('LspAttach', {
   group = vim.api.nvim_create_augroup('native_lsp_completion', { clear = true }),
@@ -24,5 +41,5 @@ vim.api.nvim_create_autocmd('LspAttach', {
     end
   end,
 })
-vim.lsp.enable('lua_ls')
+vim.lsp.enable({ 'lua_ls', 'pyrefly' })
 vim.diagnostic.config({ virtual_text = true })
