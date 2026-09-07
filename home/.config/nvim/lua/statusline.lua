@@ -1,8 +1,15 @@
-local pms = vim.api.nvim_get_hl(0, { name = "PmenuSel", link = false })
-local dir = vim.api.nvim_get_hl(0, { name = "Directory", link = false })
-local vis = vim.api.nvim_get_hl(0, { name = "Visual", link = false })
-vim.api.nvim_set_hl(0, "StlMode", { fg = pms.fg, bg = vis.bg })
-vim.api.nvim_set_hl(0, "StlGit", { fg = dir.fg, bg = pms.bg })
+local function set_statusline_highlights()
+	local pms = vim.api.nvim_get_hl(0, { name = "PmenuSel", link = false })
+	local vis = vim.api.nvim_get_hl(0, { name = "Visual", link = false })
+	vim.api.nvim_set_hl(0, "StlMode", { fg = pms.fg, bg = vis.bg })
+	vim.api.nvim_set_hl(0, "StlGit", { fg = pms.fg, bg = pms.bg, bold = true })
+end
+
+vim.api.nvim_create_autocmd("ColorScheme", {
+	group = vim.api.nvim_create_augroup("statusline_highlights", { clear = true }),
+	callback = set_statusline_highlights,
+})
+set_statusline_highlights()
 
 local modes = {
 	n = "NORMAL",
