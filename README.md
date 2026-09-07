@@ -29,6 +29,10 @@
     다시 열면 Python 파일에서 자동으로 시작합니다. 내장 자동 완성과 `Ctrl-X` → `Ctrl-O`
     수동 완성을 사용하며 `Ctrl-Y`로 확정합니다. 프로젝트 설정이 없는 파일에도 표준
     타입 검사를 적용하고, `pyrefly.toml` 또는 `[tool.pyrefly]` 프로젝트 설정을 우선합니다.
+  - YAML (`.yaml`, `.yml`)은 Nix의 `yaml-language-server`, JSON/JSONC는
+    `vscode-langservers-extracted`의 JSON 서버를 사용합니다. `./rebuild.sh` 적용 후
+    Neovim을 다시 열면 자동 연결되며, 구문 진단과 내장 자동 완성을 제공합니다.
+    애플리케이션별 설정 키 검증에는 해당 JSON Schema가 필요합니다.
   - Neovim UI 플러그인은 기존 `lazy.nvim`으로 관리합니다. Neovim 0.12 이상에서
     `tiny-cmdline.nvim`은 `:` 명령줄을 중앙 팝업으로 표시하고 (`/`, `?` 검색은 하단 유지),
     `modicator.nvim`은 모드에 따라 현재 줄 번호 색상을 바꿉니다.

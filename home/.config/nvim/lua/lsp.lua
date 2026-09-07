@@ -31,6 +31,22 @@ vim.lsp.config('pyrefly', {
   },
 })
 
+vim.lsp.config('yamlls', {
+  cmd = { 'yaml-language-server', '--stdio' },
+  filetypes = { 'yaml' },
+  root_markers = { '.git' },
+})
+
+vim.lsp.config('jsonls', {
+  cmd = { 'vscode-json-language-server', '--stdio' },
+  filetypes = { 'json', 'jsonc' },
+  root_markers = { '.git' },
+  init_options = { provideFormatter = true },
+  settings = {
+    json = { validate = { enable = true } },
+  },
+})
+
 vim.opt.completeopt = { 'menu', 'menuone', 'noselect' }
 vim.api.nvim_create_autocmd('LspAttach', {
   group = vim.api.nvim_create_augroup('native_lsp_completion', { clear = true }),
@@ -41,5 +57,5 @@ vim.api.nvim_create_autocmd('LspAttach', {
     end
   end,
 })
-vim.lsp.enable({ 'lua_ls', 'pyrefly' })
+vim.lsp.enable({ 'lua_ls', 'pyrefly', 'yamlls', 'jsonls' })
 vim.diagnostic.config({ virtual_text = true })
