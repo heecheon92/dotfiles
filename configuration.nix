@@ -30,13 +30,14 @@
       AppleInterfaceStyle = "Dark";
       KeyRepeat = 2;          # fast key repeat
       InitialKeyRepeat = 15;  # short delay before repeat
-      _HIHideMenuBar = true;  # auto-hide the menu bar
+      _HIHideMenuBar = false; # keep the menu bar visible; Dock autohide is separate
       AppleShowAllExtensions = true;
     };
     CustomUserPreferences."com.googlecode.iterm2" = {
       # iTerm's UI exposes cursor blinking but not its interval.
       TimeBetweenBlinks = 0.2;
     };
+    CustomUserPreferences.NSGlobalDomain.AppleMenuBarVisibleInFullscreen = true;
     dock.autohide = true;
     finder.FXPreferredViewStyle = "Nlsv";  # list view by default
     finder.CreateDesktop = false;          # clean desktop
@@ -57,9 +58,10 @@
     brews = [
       "herdr"
     ];
+    taps = [ "nikitabobko/tap" ];
     casks = [
       "wezterm"
-      "hammerspoon"
+      "nikitabobko/tap/aerospace"
       "claude-code"
       "codex"
     ];

@@ -10,6 +10,12 @@ config.macos_window_background_blur = 50
 config.hide_tab_bar_if_only_one_tab = true
 config.window_decorations = "RESIZE"
 
+-- AeroSpace owns fullscreen via Option+F. Avoid WezTerm's separate
+-- fullscreen mode, which auto-hides the macOS menu bar.
+config.keys = {
+	{ key = "Enter", mods = "ALT", action = wezterm.action.DisableDefaultAssignment },
+}
+
 config.default_cursor_style = "BlinkingBlock"
 config.cursor_blink_rate = 200
 config.cursor_blink_ease_in = "Constant"

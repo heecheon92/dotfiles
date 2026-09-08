@@ -291,8 +291,9 @@ in
   # config reload sees edits without needing another rebuild.
   home.file.".config/wezterm".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
-  home.file.".hammerspoon/init.lua".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.hammerspoon/init.lua";
+  home.file.".config/aerospace/aerospace.toml".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.config/aerospace/aerospace.toml";
   home.file.".config/nvim".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/nvim";
   # Keep iTerm's dedicated Hotkey Window profile version-controlled without

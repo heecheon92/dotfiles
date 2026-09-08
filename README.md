@@ -118,21 +118,72 @@ uv를 쓰지 않는 프로젝트는 `python3 -m venv .venv`로 환경을 만들�
 1.3+와 `image_renderer = 'placeholder'` 설정이 필요하며, multiplexer 조합은
 별도 확인이 필요합니다.
 
-## 터미널 전역 단축키
+## macOS 창 관리와 메뉴 막대
 
-Hammerspoon은 `home/.hammerspoon/init.lua`에서 물리 키 코드 기반
-`Ctrl+\`` 전역 단축키를 관리합니다. 실행 중인 WezTerm이 앞에 있으면 숨기고,
-뒤에 있으면 주 창을 마우스 포인터가 있는 화면 중앙으로 옮긴 뒤 모든 창을
-앞으로 가져옵니다. WezTerm이 종료된 상태에서는 새로 실행하지 않습니다. 새
-Mac에서는 Hammerspoon에 macOS 손쉬운 사용 권한을 한 번 허용해야 합니다.
-WezTerm 창은 크기가 바뀔 때 현재 화면의 중앙으로 다시 배치됩니다.
+macOS 공통 창 관리는 AeroSpace를 사용합니다. `configuration.nix`에서
+Homebrew의 `nikitabobko/tap/aerospace` cask를 설치하고, Home Manager가
+`home/.config/aerospace/aerospace.toml`을
+`~/.config/aerospace/aerospace.toml`로 링크합니다. 별도 `~/.aerospace.toml`을
+함께 만들면 설정 경로가 충돌하므로 하나만 사용합니다.
+
+새 Mac에서는 `./rebuild.sh` 적용 후 AeroSpace를 실행하고
+**시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용**에서 AeroSpace를
+허용해야 합니다. 권한은 머신마다 승인하며 Git으로 복제하지 않습니다.
+로그인 시 자동 실행하며 시스템 설정 창만 floating으로 둡니다. 일반 창은 AeroSpace가
+tiling으로 관리하고, 창 안쪽과 화면 가장자리에 16px 간격을 둡니다. 포커스가 다른
+모니터로 이동하면 포인터를 옮기며, 마우스가 가리키는 창에도 포커스를 맞춥니다.
+숫자·문자 persistent workspace를 유지하되 모니터별 이름이나 앱별 고정
+워크스페이스는 지정하지 않습니다.
+
+- `Option+Enter`: `wezterm start --cwd ~`로 홈 디렉터리에 새 WezTerm 창 열기
+- `Option+B` / `Option+E`: 새 Safari 창 / Finder 열기
+- `Option+C`: 현재 창 닫기 (마지막 창이면 앱 종료)
+- `Option+H/J/K/L`: 왼쪽/아래/위/오른쪽 창 포커스
+- 위 조합에 `Shift` 추가: 창 이동
+- `Option+/` / `Option+,`: tiles 방향 전환 / accordion 방향 전환
+- `Option+F`: AeroSpace 전체 화면 (macOS 기본 `Ctrl+Cmd+F`와 별개)
+- `Option+Shift+F`: floating/tiling 전환
+- `Option+1…9`: 워크스페이스 전환
+- 위 조합에 `Shift` 추가: 현재 창만 해당 워크스페이스로 이동
+- `Option+Tab`: 직전 워크스페이스로 전환
+- `Option+Shift+Tab`: 현재 워크스페이스를 다음 모니터로 이동
+- `Option+R`: 크기 조정 모드; `H/J/K/L`로 조정, Enter/Escape로 종료
+- `Option+Shift+;`: service mode 진입
+
+service mode에서는 `Escape`로 설정을 다시 읽고 main mode로 돌아갑니다.
+`R`은 workspace 트리를 평탄화하고, `F`는 floating/tiling을 전환하며,
+`Backspace`는 현재 창을 제외한 모든 창을 닫습니다. `Option+Shift+H/J/K/L`은
+해당 방향의 컨테이너와 결합하며, 각 명령 뒤 main mode로 돌아갑니다.
+
+WezTerm에서도 tiling과 전체 화면은 AeroSpace가 담당합니다.
+`home/.config/wezterm/wezterm.lua`는 AeroSpace가 새 창 열기에 사용하는
+`Option+Enter`의 WezTerm 기본 할당만 해제하고 나머지 기본 단축키는 유지합니다.
+WezTerm의 simple fullscreen은 메뉴 막대를 자동 숨기므로 함께 사용하지 않습니다.
+
+전역 키는 동일한 앱 단축키보다 우선합니다. OMP와 충돌하는 `Option+R`
+(재시도), `Option+L` (화면 초기화), `Option+Shift+L` (현재 줄 복사)는 의도적으로
+AeroSpace에 우선권을 줍니다. 반면 OMP의 `Option+P`, `Option+M`, `Ctrl+S`는
+AeroSpace에 할당하지 않아 그대로 사용할 수 있습니다. OMP 키맵 자체는 변경하지
+않습니다. 크기 조정 모드에서는 일반 `H/J/K/L` 입력도 AeroSpace가 처리하므로
+작업 후 Enter/Escape로 빠져나옵니다.
+
+설정 파일 저장 시 자동으로 다시 읽습니다. `auto-reload-config`를 처음 켠 뒤에는
+`aerospace reload-config`를 한 번 실행해야 하며, 변경 전 검사는
+`aerospace reload-config --dry-run --no-gui --warnings-as-errors`를 사용합니다.
+
+상단 메뉴 막대는 항상 표시하고 하단 Dock만 자동 숨김으로 유지합니다.
+`configuration.nix`의 `_HIHideMenuBar = false`,
+`AppleMenuBarVisibleInFullscreen = true`, `dock.autohide = true`가 원본입니다.
+실행 중인 앱이 이전 전체 화면 설정을 유지하면 전체 화면을 나갔다가 다시
+들어가거나 앱을 다시 실행합니다.
+
+## 터미널 전역 단축키
 
 iTerm의 기존 Hotkey Window 프로필은
 `home/.config/iterm2/hotkey-window.json`에서 Dynamic Profile로 계속 관리하며,
 보조 터미널 단축키로 `Ctrl+Option+\``를 사용합니다. Home Manager가 iTerm의
-`DynamicProfiles` 디렉터리와 Hammerspoon 설정을 링크하며, 변경은
-`./rebuild.sh`로 적용합니다. 왼쪽 Option은 `Esc+`, 오른쪽 Option은 `Normal`로
-유지합니다.
+`DynamicProfiles` 디렉터리를 링크하며, 변경은 `./rebuild.sh`로 적용합니다.
+왼쪽 Option은 `Esc+`, 오른쪽 Option은 `Normal`로 유지합니다.
 
 ## Herdr 스크래치 셸
 
