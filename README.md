@@ -177,6 +177,30 @@ AeroSpace에 할당하지 않아 그대로 사용할 수 있습니다. OMP 키�
 실행 중인 앱이 이전 전체 화면 설정을 유지하면 전체 화면을 나갔다가 다시
 들어가거나 앱을 다시 실행합니다.
 
+### 창 테두리 (JankyBorders)
+
+`configuration.nix`에서 Homebrew의 `felixkratz/formulae/borders`를 설치합니다.
+macOS 14 이상에서 동작하며, AeroSpace의 `after-startup-command`가 로그인 후
+실행합니다. 시작 주체를 하나로 유지하기 위해 `brew services start borders`는
+사용하지 않습니다. 별도 `bordersrc` 없이 모양도 같은 startup 명령에서 관리합니다.
+
+기본 모양은 둥근 10pt 테두리, HiDPI 켜짐, 활성 창은 밝은 cyan `0xff00e5ff`,
+비활성 창은 `0xff494d64`입니다. 색은 `0xAARRGGBB` 형식입니다.
+기존 WezTerm의 비활성 창 흐림 효과는 그대로 유지합니다.
+
+`after-startup-command`는 AeroSpace 시작 때 실행되므로 설정 파일을 저장하거나
+`reload-config`만 실행해도 테두리 옵션이 다시 적용되는 것은 아닙니다.
+모양을 바꿀 때는 startup 명령의 옵션을 수정한 뒤 같은 명령을 터미널에서
+실행하면 현재 프로세스에 즉시 반영됩니다:
+
+```sh
+borders style=round width=10.0 hidpi=on \
+  active_color=0xff00e5ff inactive_color=0xff494d64
+```
+
+이미 실행 중이면 위 명령은 새 상주 프로세스를 만들지 않고 기존 인스턴스를
+갱신합니다. 새 Mac에서는 `./rebuild.sh` 적용 후 AeroSpace를 실행하면 됩니다.
+
 ## 터미널 전역 단축키
 
 iTerm의 기존 Hotkey Window 프로필은

@@ -2,11 +2,13 @@
 # preferences are managed in configuration.nix, not by the window manager.
 config-version = 2
 
-# You can use it to add commands that run after AeroSpace startup.
-# Available commands : https://nikitabobko.github.io/AeroSpace/commands
-after-startup-command = []
+# AeroSpace is the sole startup owner; do not also enable a brew borders service.
+# Re-running this command updates an existing JankyBorders instance.
+after-startup-command = [
+    'exec-and-forget borders style=round width=10.0 hidpi=on active_color=0xff00e5ff inactive_color=0xff494d64',
+]
 
-# Launch the window manager after login without starting any applications.
+# Launch the window manager and its border companion after login.
 start-at-login = true
 
 # Automatically reload the config when the config file is saved

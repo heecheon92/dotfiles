@@ -57,8 +57,9 @@
     onActivation.autoUpdate = true;
     brews = [
       "herdr"
+      "felixkratz/formulae/borders"
     ];
-    taps = [ "nikitabobko/tap" ];
+    taps = [ "nikitabobko/tap" "felixkratz/formulae" ];
     casks = [
       "wezterm"
       "nikitabobko/tap/aerospace"
