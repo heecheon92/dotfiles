@@ -37,6 +37,7 @@ in
     yaml-language-server # YAML validation and completion for Neovim
     vscode-langservers-extracted # JSON and JSONC language server for Neovim
     tree-sitter # parser compiler used by nvim-treesitter
+    chafa       # notebook image fallback for terminals without Kitty placeholders
     tmux        # terminal multiplexer used by omp_parallel_bench
     # the font everything renders in
     nerd-fonts.hack

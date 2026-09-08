@@ -35,6 +35,9 @@
     `vscode-langservers-extracted`의 JSON 서버를 사용합니다. `./rebuild.sh` 적용 후
     Neovim을 다시 열면 자동 연결되며, 구문 진단과 내장 자동 완성을 제공합니다.
     애플리케이션별 설정 키 검증에는 해당 JSON Schema가 필요합니다.
+  - Jupyter 노트북은 `jupynvim`으로 편집하고 실행합니다. Python 커널은 프로젝트의
+    `.venv`에 두며 기존 Pyrefly와 내장 자동 완성을 유지합니다.
+    설치와 이미지 렌더링 제한은 아래 **Neovim Jupyter 노트북**을 참고하세요.
   - Neovim UI 플러그인은 기존 `lazy.nvim`으로 관리합니다. Neovim 0.12 이상에서
     `tiny-cmdline.nvim`은 `:` 명령줄을 중앙 팝업으로 표시하고 (`/`, `?` 검색은 하단 유지),
     `modicator.nvim`은 모드에 따라 현재 줄 번호 색상을 바꿉니다.
@@ -61,6 +64,59 @@
 [`home/.agents/skills/README.md`](./home/.agents/skills/README.md)를
 참고하세요. 전체 dotfiles 구성을 적용하지 않아도 원하는 스킬 디렉터리만
 에이전트 또는 Codex 기본 설치 도구로 설치할 수 있습니다.
+
+## Neovim Jupyter 노트북
+
+`home/.config/nvim/lua/plugins/notebook.lua`에서 `jupynvim`의 안정 릴리스를
+사용하며, 실제 버전은 `lazy-lock.json`으로 고정합니다. `.ipynb` 읽기 전에
+플러그인을 로드해야 하므로 eager loading을 사용합니다. 최초 Neovim 실행 시
+Lazy가 설치하며, 필요하면 `:Lazy install jupynvim`으로 실행할 수 있습니다.
+Apple Silicon Mac에서는 upstream 설치기가 Rust 백엔드의 prebuilt와
+`SHA256SUMS`를 내려받아 검증합니다. Prebuilt가 없는 플랫폼에서는 `cargo`가
+필요합니다.
+
+Python 커널은 전역이 아니라 프로젝트 환경에 설치합니다. 기존 uv 프로젝트라면
+uv가 설치된 셸에서 프로젝트 디렉터리로 이동한 후 실행합니다:
+
+```bash
+uv add --dev ipykernel
+uv sync
+nvim analysis.ipynb
+```
+
+uv를 쓰지 않는 프로젝트는 `python3 -m venv .venv`로 환경을 만들고
+`.venv/bin/python -m pip install ipykernel`로 설치할 수 있습니다.
+이미 커널이 있는 `.venv`는 다시 만들 필요가 없습니다. 플러그인은 노트북의
+상위 디렉터리에서 `.venv`를 자동 탐색하므로 사용자 kernelspec을 별도로
+등록하지 않아도 됩니다. Python/uv와 프로젝트 의존성은 각 머신·프로젝트에서
+관리하며 이 설정은 전역 Python 환경을 변경하지 않습니다.
+
+새 노트북은 `:JupynvimOpen analysis.ipynb`으로 생성합니다. 노트북 안에서만
+기본 키맵이 적용됩니다 (`<leader>`는 Space):
+
+- `<leader>nr` 또는 Shift+Enter: 셀 실행 후 다음 셀로 이동
+- Ctrl+Enter: 현재 셀 실행 후 그대로 유지
+- `<leader>nR`: 전체 실행
+- `<leader>na` / `<leader>nb`: 위 / 아래에 셀 추가
+- `<leader>nm` / `<leader>ny`: Markdown / 코드 셀로 변환
+- `<leader>nK`: 커널 선택, `<leader>ni`: 중단, `<leader>nx`: 재시작
+- `:w`: 코드와 실행 결과 저장
+
+터미널에서 수정키+Enter를 구분하지 못하면 `<leader>nr`을 사용합니다.
+실행 중인 커널의 완성·hover는 `jupynvim_kernel` LSP가 제공하며, 기존 내장
+완성과 `Ctrl-Y`를 그대로 사용합니다. Pyrefly는 notebook protocol로 연결됩니다.
+프로젝트 루트와 `.venv`를 올바르게 탐지하려면 프로젝트에 `pyproject.toml`
+또는 `pyrefly.toml`을 두는 것이 좋습니다. 원격 SSH 프로필은 설정하지 않습니다.
+
+이미지는 WezTerm/iTerm2를 고려해 `image_renderer = 'chafa'`로 설정합니다.
+`chafa`는 Nix로 관리하므로 `./rebuild.sh` 적용 후 사용할 수 있습니다.
+다만 **검증한 jupynvim v0.4.5에는 코드 셀 이미지의 capability 검사 버그**가
+있어 Kitty/Ghostty가 아닌 터미널에서는 chafa fallback에 도달하지 않습니다.
+이 환경에서는 텍스트 출력과 실행·저장은 동작하지만 코드 셀 이미지는 표시되지
+않습니다. 이미지 데이터는 `.ipynb`에 그대로 저장됩니다. Upstream 코드는
+수정하거나 monkey-patch하지 않습니다. 실제 그래픽에는 Kitty 또는 Ghostty
+1.3+와 `image_renderer = 'placeholder'` 설정이 필요하며, multiplexer 조합은
+별도 확인이 필요합니다.
 
 ## 터미널 전역 단축키
 
