@@ -47,13 +47,21 @@ vim.lsp.config('jsonls', {
   },
 })
 
-vim.opt.completeopt = { 'menu', 'menuone', 'noselect' }
+vim.opt.completeopt = { 'menu', 'menuone', 'noselect', 'popup' }
 vim.api.nvim_create_autocmd('LspAttach', {
   group = vim.api.nvim_create_augroup('native_lsp_completion', { clear = true }),
   callback = function(event)
     local client = vim.lsp.get_client_by_id(event.data.client_id)
     if client and client:supports_method('textDocument/completion') then
-      vim.lsp.completion.enable(true, client.id, event.buf, { autotrigger = true })
+      local icons = require('mini.icons')
+      vim.lsp.completion.enable(true, client.id, event.buf, {
+        autotrigger = true,
+        convert = function(item)
+          local kind = vim.lsp.protocol.CompletionItemKind[item.kind] or 'Text'
+          local icon, hl = icons.get('lsp', kind)
+          return { kind = icon .. ' ' .. kind, kind_hlgroup = hl }
+        end,
+      })
     end
   end,
 })

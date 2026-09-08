@@ -1,3 +1,5 @@
+local Snacks
+
 return {
   {
     'stevearc/oil.nvim',
@@ -39,6 +41,10 @@ return {
       input = { enabled = true },
       explorer = { enabled = true },
     },
+    config = function(_, opts)
+      Snacks = require('snacks')
+      Snacks.setup(opts)
+    end,
     keys = {
       -- Top Pickers & Explorer
       { "<leader><space>", function() Snacks.picker.smart() end, desc = "Smart Find Files" },

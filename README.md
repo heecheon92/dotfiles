@@ -25,6 +25,8 @@
     `./rebuild.sh` 적용 후 Lua 파일을 열면 서버가 시작되며, `vim.o.` 등의
     Neovim API를 완성할 수 있습니다. `Ctrl-Y`로 선택 항목을 확정하고,
     `:checkhealth vim.lsp`로 연결 상태를 확인합니다. Mason은 사용하지 않습니다.
+    내장 자동 완성 메뉴는 기존 `mini.icons`의 종류별 아이콘과 색상을 표시하고,
+    선택한 항목의 문서는 옆 팝업에 표시합니다. 별도 완성 플러그인은 사용하지 않습니다.
   - Python LSP는 Nix의 `pyrefly`를 사용합니다. `./rebuild.sh` 적용 후 Neovim을
     다시 열면 Python 파일에서 자동으로 시작합니다. 내장 자동 완성과 `Ctrl-X` → `Ctrl-O`
     수동 완성을 사용하며 `Ctrl-Y`로 확정합니다. 프로젝트 설정이 없는 파일에도 표준
