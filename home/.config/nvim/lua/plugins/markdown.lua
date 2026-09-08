@@ -7,10 +7,14 @@ return {
       require('nvim-treesitter').install({
         'html',
         'javascript',
+        'json',
+        'lua',
+        'python',
         'markdown',
         'markdown_inline',
         'tsx',
         'typescript',
+        'yaml',
       }):wait(300000)
       vim.api.nvim_create_autocmd('FileType', {
         pattern = 'markdown',

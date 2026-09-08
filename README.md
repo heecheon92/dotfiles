@@ -38,6 +38,11 @@
     `modicator.nvim`은 모드에 따라 현재 줄 번호 색상을 바꿉니다.
     `nvim-hlslens`는 검색 결과에 카운터를 표시하며 `n`, `N`, `*`, `#`, `g*`, `g#`를
     그대로 사용할 수 있습니다. `<leader>l`로 검색 강조를 지웁니다.
+  - 파일 검색은 `<leader>ff`로 현재 작업 디렉터리, `<leader>fF`로 홈 디렉터리를
+    검색합니다. 홈 검색은 숨김 파일을 포함하되 ignore 규칙은 유지합니다.
+  - `Snacks.indent`는 중첩 깊이별 색상으로 들여쓰기 가이드를 표시하고 현재 범위를
+    강조합니다. 애니메이션은 끕니다. `rainbow-delimiters.nvim`은 Sonokai 색상으로
+    괄호 쌍을 구분하며, Lua/Python/JSON/YAML 파서도 `nvim-treesitter`로 설치합니다.
   - `nvim-autopairs`는 괄호와 따옴표를 자동으로 짝지으며, Enter 줄바꿈과 `Ctrl-Y`
     완성 확정 키는 유지합니다. `nvim-ts-autotag`는 HTML/JSX/TSX 태그를 자동으로 닫고
     이름 변경 시 짝 태그도 갱신합니다. 필요한 HTML/JavaScript/TypeScript/TSX 파서는

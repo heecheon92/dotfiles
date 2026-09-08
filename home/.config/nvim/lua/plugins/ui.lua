@@ -7,6 +7,11 @@ end
 
 return {
   {
+    'HiPhish/rainbow-delimiters.nvim',
+    lazy = false,
+    dependencies = { 'nvim-treesitter/nvim-treesitter' },
+  },
+  {
     'folke/which-key.nvim',
     lazy = false,
     config = true,  -- popup that shows what my leader keys do
