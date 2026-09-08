@@ -1,0 +1,96 @@
+#!/usr/bin/env bash
+
+sketchybar --hotload on
+
+PLUGIN_DIR="$CONFIG_DIR/plugins"
+FONT="Hack Nerd Font Mono"
+CYAN=0xff00e5ff
+TEXT=0xffe6edf3
+MUTED=0xff7d8590
+
+sketchybar --bar \
+  position=top \
+  height=32 \
+  display=all \
+  y_offset=0 \
+  margin=0 \
+  corner_radius=0 \
+  color=0xe60b1118 \
+  blur_radius=20 \
+  border_width=0 \
+  padding_left=8 \
+  padding_right=8 \
+  sticky=on \
+  topmost=window \
+  shadow=off \
+  --default \
+  icon.font="$FONT:Bold:13.0" \
+  label.font="$FONT:Medium:13.0" \
+  icon.color="$CYAN" \
+  label.color="$TEXT" \
+  icon.padding_left=5 \
+  icon.padding_right=3 \
+  label.padding_left=5 \
+  label.padding_right=5 \
+  padding_left=2 \
+  padding_right=2 \
+  --add event aerospace_workspace_change
+
+workspace_list="$(aerospace list-workspaces --all 2>/dev/null)"
+if [ -z "$workspace_list" ]; then
+  workspace_list="$(seq 1 9)"
+fi
+
+while IFS= read -r sid; do
+  [ -n "$sid" ] || continue
+  item="space.$sid"
+
+  sketchybar --add item "$item" left \
+    --set "$item" \
+      ignore_association=on \
+      label="$sid" \
+      label.font="$FONT:Bold:12.0" \
+      label.color="$MUTED" \
+      label.padding_left=7 \
+      label.padding_right=7 \
+      background.color="$CYAN" \
+      background.corner_radius=9 \
+      background.height=20 \
+      background.drawing=off \
+      click_script="$PLUGIN_DIR/workspace_click.sh"
+done <<EOF
+$workspace_list
+EOF
+
+sketchybar --add item workspace_controller left \
+  --set workspace_controller \
+    drawing=off \
+    script="$PLUGIN_DIR/workspaces.sh" \
+  --subscribe workspace_controller \
+    aerospace_workspace_change \
+    display_change \
+    space_windows_change \
+    system_woke
+
+sketchybar --add item front_app left \
+  --set front_app \
+    icon.drawing=off \
+    label.max_chars=40 \
+    label.padding_left=10 \
+    script="$PLUGIN_DIR/front_app.sh" \
+  --subscribe front_app front_app_switched system_woke \
+  --add item clock right \
+  --set clock \
+    icon="CAL" \
+    icon.font="$FONT:Bold:10.0" \
+    update_freq=30 \
+    script="$PLUGIN_DIR/clock.sh" \
+  --subscribe clock system_woke \
+  --add item volume right \
+  --set volume \
+    icon="VOL" \
+    icon.font="$FONT:Bold:10.0" \
+    script="$PLUGIN_DIR/volume.sh" \
+  --subscribe volume volume_change system_woke
+
+sketchybar --update

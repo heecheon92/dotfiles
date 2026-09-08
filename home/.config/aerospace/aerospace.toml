@@ -2,18 +2,24 @@
 # preferences are managed in configuration.nix, not by the window manager.
 config-version = 2
 
-# AeroSpace is the sole startup owner; do not also enable a brew borders service.
-# Re-running this command updates an existing JankyBorders instance.
+# AeroSpace owns both companions; do not also enable their Homebrew services.
+# Both detect an existing instance when AeroSpace restarts.
 after-startup-command = [
     'exec-and-forget borders style=round width=10.0 hidpi=on active_color=0xff00e5ff inactive_color=0xff494d64',
+    'exec-and-forget sketchybar',
 ]
 
-# Launch the window manager and its border companion after login.
+# Launch the window manager and its status/border companions after login.
 start-at-login = true
 
 # Automatically reload the config when the config file is saved
 # After setting this to true, reload once manually to start the auto-reloading
 auto-reload-config = true
+
+# Publish AeroSpace workspace changes, not macOS native Space changes.
+exec-on-workspace-change = ['/bin/bash', '-c',
+    'sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE="$AEROSPACE_FOCUSED_WORKSPACE"'
+]
 
 # Normalizations. See: https://nikitabobko.github.io/AeroSpace/guide#normalization
 enable-normalization-flatten-containers = true
@@ -64,7 +70,8 @@ gaps.inner.horizontal =   16
 gaps.inner.vertical =     16
 gaps.outer.left =         16
 gaps.outer.bottom =       16
-gaps.outer.top =          16
+# Reserve the 32pt SketchyBar plus the existing 16pt breathing room.
+gaps.outer.top =          48
 gaps.outer.right =        16
 
 # System Settings uses many compact utility-style windows that are easier to
@@ -98,9 +105,10 @@ on-window-detected = [
 # Open a new WezTerm window in the home directory, starting the app if needed.
 alt-enter = 'exec-and-forget wezterm start --cwd ~'
 alt-b = 'exec-and-forget open -n /Applications/Safari.app'
-alt-e = 'exec-and-forget open .'
-
 alt-c = 'close --quit-if-last-window'
+alt-e = 'exec-and-forget open .'
+alt-s = 'exec-and-forget open -b com.apple.systempreferences'
+
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#layout
 alt-slash = 'layout tiles horizontal vertical'

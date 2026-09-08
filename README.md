@@ -130,13 +130,15 @@ Homebrew의 `nikitabobko/tap/aerospace` cask를 설치하고, Home Manager가
 **시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용**에서 AeroSpace를
 허용해야 합니다. 권한은 머신마다 승인하며 Git으로 복제하지 않습니다.
 로그인 시 자동 실행하며 시스템 설정 창만 floating으로 둡니다. 일반 창은 AeroSpace가
-tiling으로 관리하고, 창 안쪽과 화면 가장자리에 16px 간격을 둡니다. 포커스가 다른
-모니터로 이동하면 포인터를 옮기며, 마우스가 가리키는 창에도 포커스를 맞춥니다.
+tiling으로 관리하고, 창 안쪽과 화면 가장자리에 16pt 간격을 둡니다. 상단은
+SketchyBar 32pt를 포함해 48pt를 예약합니다. 포커스가 다른 모니터로 이동하면
+포인터를 옮기며, 마우스가 가리키는 창에도 포커스를 맞춥니다.
 숫자·문자 persistent workspace를 유지하되 모니터별 이름이나 앱별 고정
 워크스페이스는 지정하지 않습니다.
 
 - `Option+Enter`: `wezterm start --cwd ~`로 홈 디렉터리에 새 WezTerm 창 열기
 - `Option+B` / `Option+E`: 새 Safari 창 / Finder 열기
+- `Option+S`: 시스템 설정 열기 (이미 실행 중이면 활성화)
 - `Option+C`: 현재 창 닫기 (마지막 창이면 앱 종료)
 - `Option+H/J/K/L`: 왼쪽/아래/위/오른쪽 창 포커스
 - 위 조합에 `Shift` 추가: 창 이동
@@ -171,9 +173,10 @@ AeroSpace에 할당하지 않아 그대로 사용할 수 있습니다. OMP 키�
 `aerospace reload-config`를 한 번 실행해야 하며, 변경 전 검사는
 `aerospace reload-config --dry-run --no-gui --warnings-as-errors`를 사용합니다.
 
-상단 메뉴 막대는 항상 표시하고 하단 Dock만 자동 숨김으로 유지합니다.
-`configuration.nix`의 `_HIHideMenuBar = false`,
-`AppleMenuBarVisibleInFullscreen = true`, `dock.autohide = true`가 원본입니다.
+상단은 SketchyBar로 표시하고, macOS 기본 메뉴 막대와 하단 Dock은 자동으로
+숨깁니다. Apple 메뉴와 앱 메뉴는 화면 맨 위로 포인터를 올리면 나타납니다.
+`configuration.nix`의 `_HIHideMenuBar = true`,
+`AppleMenuBarVisibleInFullscreen = false`, `dock.autohide = true`가 원본입니다.
 실행 중인 앱이 이전 전체 화면 설정을 유지하면 전체 화면을 나갔다가 다시
 들어가거나 앱을 다시 실행합니다.
 
@@ -200,6 +203,38 @@ borders style=round width=10.0 hidpi=on \
 
 이미 실행 중이면 위 명령은 새 상주 프로세스를 만들지 않고 기존 인스턴스를
 갱신합니다. 새 Mac에서는 `./rebuild.sh` 적용 후 AeroSpace를 실행하면 됩니다.
+
+### 상태 막대 (SketchyBar)
+
+`configuration.nix`에서 `felixkratz/formulae/sketchybar`를 설치하고 Home Manager가
+`home/.config/sketchybar`를 `~/.config/sketchybar`로 링크합니다.
+AeroSpace의 `after-startup-command`가 실행하므로 별도
+`brew services start sketchybar`는 사용하지 않습니다.
+
+모든 디스플레이 상단에 32pt 어두운 막대를 표시합니다. 왼쪽에는 AeroSpace
+워크스페이스와 현재 앱, 오른쪽에는 음량과 날짜·시간을 표시합니다.
+숫자 1–9는 항상 표시하며, 문자 워크스페이스는 창이 있거나 포커스되었을 때
+표시합니다. 선택한 워크스페이스는 JankyBorders와 같은 cyan으로 강조하며
+클릭하면 해당 워크스페이스로 이동합니다. macOS 기본 Spaces 번호와는 다릅니다.
+
+설정 원본은 `home/.config/sketchybar/sketchybarrc`, 항목 동작은 같은 디렉터리의
+`plugins/*.sh`입니다. 별도 Lua 런타임이나 플러그인 프레임워크는 사용하지 않습니다.
+`sketchybar --hotload on`으로 설정 디렉터리의 변경을 감시하므로 설정이나
+플러그인 스크립트를 저장하면 자동으로 다시 읽습니다. 수동으로 다시 구성하려면:
+
+```sh
+sketchybar --reload
+```
+
+워크스페이스 전환은 AeroSpace의 `exec-on-workspace-change` 이벤트로 반영합니다.
+새 워크스페이스 이름을 추가한 경우에도 `sketchybar --reload`로 버튼을 다시 만듭니다.
+막대 높이를 바꾸면 AeroSpace의 `gaps.outer.top`도 `높이 + 16`에 맞춥니다.
+
+새 Mac에서는 `./rebuild.sh` 적용 후 AeroSpace를 실행합니다.
+SketchyBar는 **디스플레이마다 개별 Spaces**가 켜져 있어야 하므로
+`com.apple.spaces`의 `spans-displays = false`를 관리합니다. 이 설정을 이전에
+꺼 두었다면 적용 후 로그아웃·로그인이 필요할 수 있습니다.
+기본 메뉴 막대는 삭제되지 않으며 화면 위쪽에 포인터를 올려 계속 사용할 수 있습니다.
 
 ## 터미널 전역 단축키
 

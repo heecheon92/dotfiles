@@ -30,14 +30,16 @@
       AppleInterfaceStyle = "Dark";
       KeyRepeat = 2;          # fast key repeat
       InitialKeyRepeat = 15;  # short delay before repeat
-      _HIHideMenuBar = false; # keep the menu bar visible; Dock autohide is separate
+      _HIHideMenuBar = true; # reveal native menus on hover above SketchyBar
       AppleShowAllExtensions = true;
     };
     CustomUserPreferences."com.googlecode.iterm2" = {
       # iTerm's UI exposes cursor blinking but not its interval.
       TimeBetweenBlinks = 0.2;
     };
-    CustomUserPreferences.NSGlobalDomain.AppleMenuBarVisibleInFullscreen = true;
+    CustomUserPreferences.NSGlobalDomain.AppleMenuBarVisibleInFullscreen = false;
+    # SketchyBar requires separate Spaces per display (macOS default).
+    CustomUserPreferences."com.apple.spaces"."spans-displays" = false;
     dock.autohide = true;
     finder.FXPreferredViewStyle = "Nlsv";  # list view by default
     finder.CreateDesktop = false;          # clean desktop
@@ -58,6 +60,7 @@
     brews = [
       "herdr"
       "felixkratz/formulae/borders"
+      "felixkratz/formulae/sketchybar"
     ];
     taps = [ "nikitabobko/tap" "felixkratz/formulae" ];
     casks = [

@@ -294,6 +294,8 @@ in
   home.file.".config/aerospace/aerospace.toml".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.config/aerospace/aerospace.toml";
+  home.file.".config/sketchybar".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/sketchybar";
   home.file.".config/nvim".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/nvim";
   # Keep iTerm's dedicated Hotkey Window profile version-controlled without
