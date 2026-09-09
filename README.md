@@ -122,7 +122,7 @@ uv를 쓰지 않는 프로젝트는 `python3 -m venv .venv`로 환경을 만들�
 
 macOS 공통 창 관리는 `heecheon92/AeroSpace`의 `centered-zoom` 브랜치를 사용합니다.
 이 브랜치는 upstream `v0.21.3-Beta`를 바탕으로 하며, Nix가
-`v0.21.3-centered-zoom.1` 릴리스의 미리 빌드된 zip을 고정합니다. 로컬에서
+`v0.21.3-centered-zoom.2` 릴리스의 미리 빌드된 zip을 고정합니다. 로컬에서
 Swift 소스를 빌드하는 순수 Nix 패키지는 아닙니다. 앱은
 `/Applications/Nix Apps/AeroSpace.app`, CLI는
 `/run/current-system/sw/bin/aerospace`에 설치됩니다. Home Manager는
@@ -158,6 +158,7 @@ SketchyBar 32pt를 포함해 48pt를 예약합니다. 포커스가 다른 모니
 - `Option+F`: AeroSpace 전체 화면 (macOS 기본 `Ctrl+Cmd+F`와 별개)
 - `Option+Shift+Z`: 현재 창을 화면 중앙의 60% × 70% 크기로 확대/복원
   (기본 애니메이션 없음, 필요하면 설정 명령에 `--animation on` 추가)
+  다른 창이나 워크스페이스로 포커스를 옮겨도 중앙 확대 상태를 유지합니다.
 - `Option+Shift+F`: floating/tiling 전환
 - `Option+Shift+T`: 현재 워크스페이스 전체를
   floating → tiled → grid → floating 순서로 전환합니다.
