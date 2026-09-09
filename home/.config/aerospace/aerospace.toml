@@ -132,7 +132,7 @@ alt-shift-l = 'move right'
 alt-shift-f = 'layout floating tiling'
 alt-f = 'fullscreen'
 # Fork-only centered zoom; animation stays off unless --animation on is added.
-alt-shift-z = 'fullscreen --centered --width 60% --height 70%'
+alt-shift-z = 'fullscreen --centered --width 60% --height 70% --animation on'
 
 # Cycle the whole workspace: floating → tiled → grid → floating.
 alt-shift-t = 'exec-and-forget "$HOME/.local/bin/aerospace-cycle-layout"'
