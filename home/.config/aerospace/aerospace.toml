@@ -132,16 +132,33 @@ alt-shift-l = 'move right'
 alt-shift-f = 'layout floating tiling'
 alt-f = 'fullscreen'
 
-# Switch workspaces, or send the focused window to one without following it.
-alt-1 = 'workspace 1'
-alt-2 = 'workspace 2'
-alt-3 = 'workspace 3'
-alt-4 = 'workspace 4'
-alt-5 = 'workspace 5'
-alt-6 = 'workspace 6'
-alt-7 = 'workspace 7'
-alt-8 = 'workspace 8'
-alt-9 = 'workspace 9'
+# Toggle the whole workspace together; mixed layouts converge to tiling.
+alt-shift-t = '''exec-and-forget
+windows="$(aerospace list-windows --workspace focused --format '%{window-id} %{window-layout}')" || exit
+target=floating
+ids=()
+while read -r id layout; do
+    [ -n "$id" ] || continue
+    ids+=("$id")
+    if [ "$layout" = floating ]; then
+        target=tiling
+    fi
+done <<< "$windows"
+for id in "${ids[@]}"; do
+    aerospace layout "$target" --window-id "$id"
+done
+'''
+
+# Bring workspaces to the focused monitor; Shift sends only the focused window.
+alt-1 = 'summon-workspace 1'
+alt-2 = 'summon-workspace 2'
+alt-3 = 'summon-workspace 3'
+alt-4 = 'summon-workspace 4'
+alt-5 = 'summon-workspace 5'
+alt-6 = 'summon-workspace 6'
+alt-7 = 'summon-workspace 7'
+alt-8 = 'summon-workspace 8'
+alt-9 = 'summon-workspace 9'
 
 alt-shift-1 = 'move-node-to-workspace 1'
 alt-shift-2 = 'move-node-to-workspace 2'

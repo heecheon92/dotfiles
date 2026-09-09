@@ -145,7 +145,10 @@ SketchyBar 32pt를 포함해 48pt를 예약합니다. 포커스가 다른 모니
 - `Option+/` / `Option+,`: tiles 방향 전환 / accordion 방향 전환
 - `Option+F`: AeroSpace 전체 화면 (macOS 기본 `Ctrl+Cmd+F`와 별개)
 - `Option+Shift+F`: floating/tiling 전환
-- `Option+1…9`: 워크스페이스 전환
+- `Option+Shift+T`: 현재 워크스페이스 전체 전환. floating 창이 하나라도 있으면
+  모두 tiling으로, 전부 tiling이면 모두 floating으로 전환합니다. 빈 워크스페이스는
+  변경하지 않습니다.
+- `Option+1…9`: 선택한 워크스페이스 전체를 현재 포커스된 모니터로 가져와 전환
 - 위 조합에 `Shift` 추가: 현재 창만 해당 워크스페이스로 이동
 - `Option+Tab`: 직전 워크스페이스로 전환
 - `Option+Shift+Tab`: 현재 워크스페이스를 다음 모니터로 이동
@@ -216,6 +219,14 @@ AeroSpace의 `after-startup-command`가 실행하므로 별도
 숫자 1–9는 항상 표시하며, 문자 워크스페이스는 창이 있거나 포커스되었을 때
 표시합니다. 선택한 워크스페이스는 JankyBorders와 같은 cyan으로 강조하며
 클릭하면 해당 워크스페이스로 이동합니다. macOS 기본 Spaces 번호와는 다릅니다.
+막대 클릭은 기존 모니터의 워크스페이스로 포커스를 옮깁니다. 현재 모니터로
+워크스페이스를 가져오려면 `Option+1…9`를 사용합니다.
+
+표시 이름은 현재 창 목록에서 자동으로 만듭니다. 예를 들어 서로 다른 앱 3개가
+있는 워크스페이스는 `5 ChatGPT · Claude +1`처럼 표시합니다. 같은 앱의 여러
+창은 한 번만 세고, 앱 이름을 정렬한 뒤 최대 2개와 나머지 앱 수를 표시합니다.
+긴 앱 이름은 각각 14자 이내로 줄이며, 빈 워크스페이스는 번호만 표시합니다.
+실제 워크스페이스 이름과 단축키는 바뀌지 않습니다.
 
 설정 원본은 `home/.config/sketchybar/sketchybarrc`, 항목 동작은 같은 디렉터리의
 `plugins/*.sh`입니다. 별도 Lua 런타임이나 플러그인 프레임워크는 사용하지 않습니다.
@@ -227,6 +238,10 @@ sketchybar --reload
 ```
 
 워크스페이스 전환은 AeroSpace의 `exec-on-workspace-change` 이벤트로 반영합니다.
+앱·창·디스플레이 이벤트에도 표시를 갱신하고, 이벤트가 없는 창 이동 등은
+5초 간격으로 현재 상태를 다시 읽어 반영합니다. 길이 제한은
+`plugins/workspaces.sh`의 `truncate_app`, 주기는 `sketchybarrc`의
+`workspace_controller`에 지정한 `update_freq`에서 조정합니다.
 새 워크스페이스 이름을 추가한 경우에도 `sketchybar --reload`로 버튼을 다시 만듭니다.
 막대 높이를 바꾸면 AeroSpace의 `gaps.outer.top`도 `높이 + 16`에 맞춥니다.
 
