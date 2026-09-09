@@ -333,6 +333,9 @@ in
   home.file.".local/bin/omp_parallel_bench".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/bin/omp_parallel_bench";
+  home.file.".local/bin/aerospace-cycle-layout".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/bin/aerospace-cycle-layout";
   home.file.".codex/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".claude/CLAUDE.md".source =

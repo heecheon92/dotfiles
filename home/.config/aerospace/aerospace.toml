@@ -131,23 +131,11 @@ alt-shift-l = 'move right'
 # non-native fullscreen. macOS native fullscreen remains Ctrl-Cmd-F.
 alt-shift-f = 'layout floating tiling'
 alt-f = 'fullscreen'
+# Fork-only centered zoom; animation stays off unless --animation on is added.
+alt-shift-z = 'fullscreen --centered --width 60% --height 70%'
 
-# Toggle the whole workspace together; mixed layouts converge to tiling.
-alt-shift-t = '''exec-and-forget
-windows="$(aerospace list-windows --workspace focused --format '%{window-id} %{window-layout}')" || exit
-target=floating
-ids=()
-while read -r id layout; do
-    [ -n "$id" ] || continue
-    ids+=("$id")
-    if [ "$layout" = floating ]; then
-        target=tiling
-    fi
-done <<< "$windows"
-for id in "${ids[@]}"; do
-    aerospace layout "$target" --window-id "$id"
-done
-'''
+# Cycle the whole workspace: floating → tiled → grid → floating.
+alt-shift-t = 'exec-and-forget "$HOME/.local/bin/aerospace-cycle-layout"'
 
 # Bring workspaces to the focused monitor; Shift sends only the focused window.
 alt-1 = 'summon-workspace 1'

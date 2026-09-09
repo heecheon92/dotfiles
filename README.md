@@ -120,15 +120,27 @@ uv를 쓰지 않는 프로젝트는 `python3 -m venv .venv`로 환경을 만들�
 
 ## macOS 창 관리와 메뉴 막대
 
-macOS 공통 창 관리는 AeroSpace를 사용합니다. `configuration.nix`에서
-Homebrew의 `nikitabobko/tap/aerospace` cask를 설치하고, Home Manager가
-`home/.config/aerospace/aerospace.toml`을
-`~/.config/aerospace/aerospace.toml`로 링크합니다. 별도 `~/.aerospace.toml`을
-함께 만들면 설정 경로가 충돌하므로 하나만 사용합니다.
+macOS 공통 창 관리는 `heecheon92/AeroSpace`의 `centered-zoom` 브랜치를 사용합니다.
+이 브랜치는 upstream `v0.21.3-Beta`를 바탕으로 하며, Nix가
+`v0.21.3-centered-zoom.1` 릴리스의 미리 빌드된 zip을 고정합니다. 로컬에서
+Swift 소스를 빌드하는 순수 Nix 패키지는 아닙니다. 앱은
+`/Applications/Nix Apps/AeroSpace.app`, CLI는
+`/run/current-system/sw/bin/aerospace`에 설치됩니다. Home Manager는
+`home/.config/aerospace/aerospace.toml`을 `~/.config/aerospace/aerospace.toml`로
+링크합니다. 별도 `~/.aerospace.toml`을 함께 만들면 설정 경로가 충돌합니다.
 
-새 Mac에서는 `./rebuild.sh` 적용 후 AeroSpace를 실행하고
-**시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용**에서 AeroSpace를
-허용해야 합니다. 권한은 머신마다 승인하며 Git으로 복제하지 않습니다.
+새 Mac에서는 호스트 이름에 따라 `Mac-mini` 또는 `MacBook-Pro` 구성을 선택하는
+일반 `./rebuild.sh` 흐름으로 적용한 뒤 AeroSpace를 실행하고,
+**시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용**에서 허용합니다.
+권한은 머신마다 승인하며 Git으로 복제하지 않습니다. ad-hoc 서명된 앱 바이너리가
+교체되면 macOS가 손쉬운 사용 권한을 다시 요청할 수 있습니다.
+
+기존 Homebrew 설치에서 전환할 때는 먼저 Nix 패키지 빌드를 확인한 뒤 기존
+AeroSpace를 종료하고 `brew uninstall --cask aerospace`를 실행합니다.
+`homebrew.onActivation.cleanup = "none"`이므로 선언에서 제거된 cask는
+자동 삭제되지 않습니다. 새 앱을 실행하기 전에는 Homebrew와 Nix 버전을
+동시에 실행하지 않습니다.
+
 로그인 시 자동 실행하며 시스템 설정 창만 floating으로 둡니다. 일반 창은 AeroSpace가
 tiling으로 관리하고, 창 안쪽과 화면 가장자리에 16pt 간격을 둡니다. 상단은
 SketchyBar 32pt를 포함해 48pt를 예약합니다. 포커스가 다른 모니터로 이동하면
@@ -144,10 +156,12 @@ SketchyBar 32pt를 포함해 48pt를 예약합니다. 포커스가 다른 모니
 - 위 조합에 `Shift` 추가: 창 이동
 - `Option+/` / `Option+,`: tiles 방향 전환 / accordion 방향 전환
 - `Option+F`: AeroSpace 전체 화면 (macOS 기본 `Ctrl+Cmd+F`와 별개)
+- `Option+Shift+Z`: 현재 창을 화면 중앙의 60% × 70% 크기로 확대/복원
+  (기본 애니메이션 없음, 필요하면 설정 명령에 `--animation on` 추가)
 - `Option+Shift+F`: floating/tiling 전환
-- `Option+Shift+T`: 현재 워크스페이스 전체 전환. floating 창이 하나라도 있으면
-  모두 tiling으로, 전부 tiling이면 모두 floating으로 전환합니다. 빈 워크스페이스는
-  변경하지 않습니다.
+- `Option+Shift+T`: 현재 워크스페이스 전체를
+  floating → tiled → grid → floating 순서로 전환합니다.
+  floating 창이 섞여 있으면 먼저 모두 tiled로 정리하며, 빈 워크스페이스는 변경하지 않습니다.
 - `Option+1…9`: 선택한 워크스페이스 전체를 현재 포커스된 모니터로 가져와 전환
 - 위 조합에 `Shift` 추가: 현재 창만 해당 워크스페이스로 이동
 - `Option+Tab`: 직전 워크스페이스로 전환
@@ -159,6 +173,26 @@ service mode에서는 `Escape`로 설정을 다시 읽고 main mode로 돌아갑
 `R`은 workspace 트리를 평탄화하고, `F`는 floating/tiling을 전환하며,
 `Backspace`는 현재 창을 제외한 모든 창을 닫습니다. `Option+Shift+H/J/K/L`은
 해당 방향의 컨테이너와 결합하며, 각 명령 뒤 main mode로 돌아갑니다.
+
+전체 레이아웃 전환은 `home/bin/aerospace-cycle-layout`이 담당하며 Home Manager가
+`~/.local/bin/aerospace-cycle-layout`로 링크합니다. 이미 관리하는 Bun 런타임을
+사용하므로 별도 패키지는 필요 없습니다. 새 머신에서는 `./rebuild.sh`로 링크를 적용합니다.
+
+tiled는 균등한 가로 타일로 정리합니다. 한 창에 집중하려면 `Option+F`를 사용합니다.
+grid는 floating 창의 좌표를 조작하는 대신 실제 중첩 타일 컨테이너를 만듭니다.
+창 3개는 위 1개·아래 2개, 4개는 2×2, 5개는 위 2개·아래 3개로 배치하고
+행 높이와 각 행의 열 너비를 균등하게 맞춥니다. 창 순서는 전환 시작 시
+AeroSpace가 반환하는 목록을 따릅니다. 각 전환은 기존 수동 그룹·크기 설정을 다시 구성합니다.
+
+창이 1–2개이면 grid와 tiled가 비슷하게 보일 수 있습니다. 이를 구별하기 위한
+마지막 단계와 창 ID/레이아웃 정보는 사용자 임시 디렉터리의
+`aerospace-cycle-layout-<uid>` 아래에만 저장하며 Git으로 관리하지 않습니다.
+창 구성이나 레이아웃이 바뀌어 기록과 다르면 현재 상태를 기준으로 다시 판단합니다.
+빠르게 연속 입력해도 같은 워크스페이스의 변경은 순차 실행합니다.
+
+앱이 최소 창 크기를 강제하면 실제 창이 할당된 타일보다 커져 겹칠 수 있습니다.
+grid가 앱의 최소 크기를 무시하지는 못합니다. 이 경우 디스플레이의 “공간 더 보기”
+배율을 사용하거나, 더 작은 창을 지원하는 앱/브라우저 버전을 사용해야 합니다.
 
 WezTerm에서도 tiling과 전체 화면은 AeroSpace가 담당합니다.
 `home/.config/wezterm/wezterm.lua`는 AeroSpace가 새 창 열기에 사용하는
@@ -182,6 +216,18 @@ AeroSpace에 할당하지 않아 그대로 사용할 수 있습니다. OMP 키�
 `AppleMenuBarVisibleInFullscreen = false`, `dock.autohide = true`가 원본입니다.
 실행 중인 앱이 이전 전체 화면 설정을 유지하면 전체 화면을 나갔다가 다시
 들어가거나 앱을 다시 실행합니다.
+
+### AeroSpace fork 업그레이드
+
+upstream `main`은 수정하지 않습니다. 새 버전은 `centered-zoom` 브랜치를 선택한
+upstream 릴리스 태그 위로 rebase하고 테스트한 뒤, upstream 빌드 스크립트로
+릴리스 zip을 만듭니다. 새 태그와 asset을 fork에 게시하고
+`packages/aerospace.nix`의 version과 hash를 갱신한 다음 `./rebuild.sh`를
+실행합니다. Nix가 고정한 릴리스만 설치되므로 자동 업데이트를 보장하지 않습니다.
+릴리스 빌드는 upstream의 `build-release.sh --build-version VERSION --codesign-identity -`를
+사용하며 Xcode와 upstream 개발 문서의 빌드 의존성이 필요합니다.
+`hash`는 zip 파일 자체의 SHA-256이 아니라 `nix-prefetch-url --unpack` 결과를
+`nix hash convert --hash-algo sha256 --to sri`로 변환한 unpacked 해시입니다.
 
 ### 창 테두리 (JankyBorders)
 
@@ -352,6 +398,11 @@ Home Manager가 설치하며, `omp` 실행 파일은 별도 OMP 설치가 필요
 현재 회사 Mac용 `Mac-mini` 프로필과 개인 Mac용 `MacBook-Pro` 프로필이
 정의되어 있습니다. 다른 Mac에서 사용하기 전에는 해당 Mac의 호스트
 이름과 환경에 맞는 별도 프로필을 `flake.nix`에 추가해야 합니다.
+
+`rebuild.sh`는 현재 사용자로 Git이 추적하는 flake 스냅샷을 Nix store에
+고정한 뒤 관리자 권한으로 활성화합니다. root의 Git 소유권 검사 때문에
+`safe.directory` 예외를 추가할 필요가 없습니다. 새 Nix 파일은 `git add`로
+추적 대상에 포함한 뒤 재빌드합니다.
 
 자세한 설치, 동기화, 복구 절차는
 [SYNC_GUIDE.md](./SYNC_GUIDE.md)를 참고하세요.

@@ -15,5 +15,8 @@ fi
 
 ln -sfn "$DIR" "$HOME/.dotfiles"
 
+# Resolve the Git-backed flake as its owner before sudo's root Git checks.
+FLAKE_STORE_PATH="$(nix flake metadata --json "$DIR" | /usr/bin/plutil -extract path raw -o - -)"
+
 exec sudo -H "$DARWIN_REBUILD" switch \
-  --flake "$DIR#$HOST_LABEL"
+  --flake "path:$FLAKE_STORE_PATH#$HOST_LABEL"

@@ -167,16 +167,28 @@ Bootstrap `darwin-rebuild` with the current machine's host label:
 
 ```bash
 HOST_LABEL="$(scutil --get LocalHostName)"
+FLAKE_STORE_PATH="$(
+  /nix/var/nix/profiles/default/bin/nix \
+    --extra-experimental-features 'nix-command flakes' \
+    flake metadata --json "$HOME/.dotfiles" |
+    /usr/bin/plutil -extract path raw -o - -
+)"
 
 sudo -H /nix/var/nix/profiles/default/bin/nix \
   --extra-experimental-features 'nix-command flakes' \
   run github:nix-darwin/nix-darwin/nix-darwin-26.05#darwin-rebuild -- \
-  switch --flake "$HOME/.dotfiles#$HOST_LABEL"
+  switch --flake "path:$FLAKE_STORE_PATH#$HOST_LABEL"
 ```
 
 The explicit experimental-feature flags are needed only during bootstrap.
 After the first successful switch, this configuration enables `nix-command` and
 `flakes`.
+
+Resolve the Git-backed flake as the repository owner before elevating privileges.
+This passes only Git-tracked files into an immutable Nix-store snapshot and avoids
+root's Git ownership check without adding `safe.directory` exceptions. The normal
+`rebuild.sh` wrapper uses the same handoff. Stage new Nix files with `git add` before
+building; untracked files are not included.
 
 Official reference:
 [nix-darwin getting started](https://github.com/nix-darwin/nix-darwin#flakes)

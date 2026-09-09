@@ -1,4 +1,4 @@
-{ manageHomebrewInstallation, migrateHomebrewInstallation, user, ... }:
+{ manageHomebrewInstallation, migrateHomebrewInstallation, pkgs, user, ... }:
 
 {
   # This machine uses standard upstream Nix, so let nix-darwin manage it.
@@ -45,6 +45,10 @@
     finder.CreateDesktop = false;          # clean desktop
     trackpad.Clicking = true;              # tap to click
   };
+  environment.systemPackages = [
+    (pkgs.callPackage ./packages/aerospace.nix { })
+  ];
+
   nix-homebrew = {
     # The company Mac keeps its externally managed Homebrew installation. The
     # personal Mac adopts its existing installation into nix-homebrew once.
@@ -62,10 +66,9 @@
       "felixkratz/formulae/borders"
       "felixkratz/formulae/sketchybar"
     ];
-    taps = [ "nikitabobko/tap" "felixkratz/formulae" ];
+    taps = [ "felixkratz/formulae" ];
     casks = [
       "wezterm"
-      "nikitabobko/tap/aerospace"
       "claude-code"
       "codex"
     ];

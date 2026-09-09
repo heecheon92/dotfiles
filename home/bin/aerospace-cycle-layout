@@ -1,0 +1,274 @@
+#!/usr/bin/env bun
+
+import { createHash, randomUUID } from "node:crypto";
+import {
+  chmodSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir, userInfo } from "node:os";
+import { join } from "node:path";
+
+const uid = userInfo().uid;
+const runtimeDir = join(tmpdir(), `aerospace-cycle-layout-${uid}`);
+
+function aerospace(args) {
+  const result = Bun.spawnSync(["aerospace", ...args], {
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  if (result.exitCode !== 0) {
+    const detail = result.stderr.toString().trim();
+    throw new Error(
+      `aerospace ${args.join(" ")} failed${detail ? `: ${detail}` : ""}`,
+    );
+  }
+  return result.stdout.toString().trim();
+}
+
+function aerospaceJson(args) {
+  const output = aerospace(args);
+  return output ? JSON.parse(output) : [];
+}
+
+function lockOwner(path) {
+  try {
+    return JSON.parse(readFileSync(join(path, "owner.json"), "utf8"));
+  } catch {
+    return null;
+  }
+}
+
+function processIsAlive(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error?.code === "EPERM";
+  }
+}
+
+async function acquireLock(path) {
+  const token = randomUUID();
+  for (let attempt = 0; attempt < 200; attempt++) {
+    try {
+      mkdirSync(path, { mode: 0o700 });
+      writeFileSync(
+        join(path, "owner.json"),
+        JSON.stringify({ pid: process.pid, token }),
+        { mode: 0o600 },
+      );
+      return () => {
+        try {
+          if (lockOwner(path)?.token === token) {
+            rmSync(path, { recursive: true, force: true });
+          }
+        } catch {
+          // Never mask the layout result with a lock-cleanup error.
+        }
+      };
+    } catch (error) {
+      if (error?.code !== "EEXIST") throw error;
+      const owner = lockOwner(path);
+      let age = 0;
+      try {
+        age = Date.now() - statSync(path).mtimeMs;
+      } catch {
+        continue;
+      }
+      if ((!owner && age > 30_000) || (owner && !processIsAlive(owner.pid))) {
+        rmSync(path, { recursive: true, force: true });
+        continue;
+      }
+      await Bun.sleep(25);
+    }
+  }
+  throw new Error("another layout cycle is still running for this workspace");
+}
+
+function readState(path) {
+  try {
+    const state = JSON.parse(readFileSync(path, "utf8"));
+    return typeof state.stage === "string" &&
+      typeof state.fingerprint === "string"
+      ? state
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeState(path, stage, fingerprint) {
+  const temporary = `${path}.${process.pid}.${randomUUID()}`;
+  writeFileSync(temporary, JSON.stringify({ stage, fingerprint }), {
+    mode: 0o600,
+  });
+  renameSync(temporary, path);
+}
+
+function fingerprint(rootLayout, windows) {
+  const entries = windows
+    .map((window) => [window.id, window.layout])
+    .sort(([left], [right]) => left - right);
+  return JSON.stringify([rootLayout, ...entries]);
+}
+
+function workspaceSnapshot(workspace) {
+  const snapshot = aerospaceJson([
+    "list-windows",
+    "--workspace",
+    workspace,
+    "--json",
+    "--format",
+    "%{window-id} %{window-layout} %{workspace-root-container-layout}",
+  ]);
+  if (snapshot.length === 0) {
+    return { windows: [], fingerprint: fingerprint(null, []) };
+  }
+
+  const windows = snapshot.map((window) => ({
+    id: window["window-id"],
+    layout: window["window-layout"],
+  }));
+  const rootLayout = snapshot[0]["workspace-root-container-layout"];
+  if (
+    windows.some(
+      (window) =>
+        !Number.isInteger(window.id) || typeof window.layout !== "string",
+    ) ||
+    typeof rootLayout !== "string"
+  ) {
+    throw new Error("aerospace returned an invalid window snapshot");
+  }
+  return { windows, fingerprint: fingerprint(rootLayout, windows) };
+}
+
+function moveToStart(ids, direction) {
+  for (const id of [...ids].reverse()) {
+    for (let step = 0; step < ids.length; step++) {
+      aerospace([
+        "move",
+        "--window-id",
+        String(id),
+        "--boundaries-action",
+        "stop",
+        direction,
+      ]);
+    }
+  }
+}
+
+function flattenAs(workspace, layout, ids, direction) {
+  aerospace(["flatten-workspace-tree", "--workspace", workspace]);
+  aerospace(["layout", layout, "--root", "--workspace", workspace]);
+  moveToStart(ids, direction);
+}
+
+function rowSizes(count) {
+  const rows = Math.max(1, Math.round(Math.sqrt(count)));
+  const small = Math.floor(count / rows);
+  const largeRows = count % rows;
+  return Array.from(
+    { length: rows },
+    (_, index) => small + (index >= rows - largeRows ? 1 : 0),
+  );
+}
+
+function setTiled(workspace, ids) {
+  for (const id of ids) {
+    aerospace(["layout", "tiling", "--window-id", String(id)]);
+  }
+  flattenAs(workspace, "h_tiles", ids, "left");
+  aerospace(["balance-sizes", "--workspace", workspace]);
+}
+
+
+function setGrid(workspace, ids) {
+  flattenAs(workspace, "v_tiles", ids, "up");
+  const sizes = rowSizes(ids.length);
+  let offset = 0;
+
+  for (const size of sizes) {
+    const row = ids.slice(offset, offset + size);
+    if (size > 1) {
+      aerospace(["join-with", "--window-id", String(row[0]), "down"]);
+      for (const id of row.slice(2)) {
+        aerospace([
+          "move",
+          "--window-id",
+          String(id),
+          "--boundaries-action",
+          "stop",
+          "up",
+        ]);
+      }
+      moveToStart(row, "left");
+    }
+    offset += size;
+  }
+
+  aerospace(["balance-sizes", "--workspace", workspace]);
+}
+
+function setFloating(ids) {
+  for (const id of ids) {
+    aerospace(["layout", "floating", "--window-id", String(id)]);
+  }
+}
+
+async function main() {
+  mkdirSync(runtimeDir, { recursive: true, mode: 0o700 });
+  chmodSync(runtimeDir, 0o700);
+
+  const focused = aerospaceJson([
+    "list-workspaces",
+    "--focused",
+    "--json",
+    "--format",
+    "%{workspace}",
+  ]);
+  if (focused.length !== 1 || typeof focused[0].workspace !== "string") {
+    throw new Error("could not identify the focused workspace");
+  }
+  const workspace = focused[0].workspace;
+  const key = createHash("sha256").update(`${uid}\0${workspace}`).digest("hex");
+  const releaseLock = await acquireLock(join(runtimeDir, `${key}.lock`));
+
+  try {
+    const current = workspaceSnapshot(workspace);
+    if (current.windows.length === 0) return;
+
+    const windows = current.windows;
+    const ids = windows.map((window) => window.id);
+    const statePath = join(runtimeDir, `${key}.json`);
+    const state = readState(statePath);
+
+    let stage;
+    if (windows.some((window) => window.layout === "floating")) {
+      stage = "tiled";
+      setTiled(workspace, ids);
+    } else if (
+      state?.stage === "grid" && state.fingerprint === current.fingerprint
+    ) {
+      stage = "floating";
+      setFloating(ids);
+    } else {
+      stage = "grid";
+      setGrid(workspace, ids);
+    }
+
+    writeState(statePath, stage, workspaceSnapshot(workspace).fingerprint);
+  } finally {
+    releaseLock();
+  }
+}
+
+main().catch((error) => {
+  console.error(`aerospace-cycle-layout: ${error?.message ?? error}`);
+  process.exitCode = 1;
+});
