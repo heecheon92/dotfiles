@@ -102,8 +102,11 @@ on-window-detected = [
 # All possible commands: https://nikitabobko.github.io/AeroSpace/commands
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#exec-and-forget
-# Open a new WezTerm window in the home directory, starting the app if needed.
-alt-enter = 'exec-and-forget wezterm start --cwd ~'
+# Launch a separate WezTerm instance without inheriting terminal or agent context.
+alt-enter = '''exec-and-forget
+/usr/bin/env -i HOME="$HOME" USER="$USER" LOGNAME="$LOGNAME" PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+  /usr/bin/open -na WezTerm --args start --always-new-process --cwd "$HOME"
+'''
 alt-b = 'exec-and-forget open -n /Applications/Safari.app'
 alt-c = 'close --quit-if-last-window'
 alt-e = 'exec-and-forget open .'

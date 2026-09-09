@@ -148,7 +148,9 @@ SketchyBar 32pt를 포함해 48pt를 예약합니다. 포커스가 다른 모니
 숫자·문자 persistent workspace를 유지하되 모니터별 이름이나 앱별 고정
 워크스페이스는 지정하지 않습니다.
 
-- `Option+Enter`: `wezterm start --cwd ~`로 홈 디렉터리에 새 WezTerm 창 열기
+- `Option+Enter`: 홈 디렉터리에 독립된 WezTerm 인스턴스 열기.
+  최소 사용자 환경으로 macOS 앱 런처를 호출하고 `--always-new-process`를 사용해,
+  기존 터미널·Herdr 환경을 상속하거나 실행 중인 WezTerm 프로세스를 재사용하지 않습니다.
 - `Option+B` / `Option+E`: 새 Safari 창 / Finder 열기
 - `Option+S`: 시스템 설정 열기 (이미 실행 중이면 활성화)
 - `Option+C`: 현재 창 닫기 (마지막 창이면 앱 종료)

@@ -69,8 +69,5 @@ description = "review the agent's last reply"
 name = "terminal"
 auto_switch = false
 
-[experimental]
-kitty_graphics = true
-
 [ui.sound]
 enabled = true
