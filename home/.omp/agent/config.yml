@@ -39,7 +39,7 @@ statusLine:
     - context_pct
     - token_rate
     - time_spent
-    - time
+    # - time
   segmentOptions:
     model:
       showThinkingLevel: true
@@ -51,9 +51,9 @@ statusLine:
       showStaged: true
       showUnstaged: true
       showUntracked: true
-    time:
-      format: 24h
-      showSeconds: true
+    # time:
+    #   format: 24h
+    #   showSeconds: true
 autocompleteMaxVisible: 20
 defaultThinkingLevel: high
 personality: pragmatic
