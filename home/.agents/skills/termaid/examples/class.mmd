@@ -1,0 +1,10 @@
+classDiagram
+    class Order {
+        +String id
+        +total() Money
+    }
+    class LineItem {
+        +int quantity
+        +subtotal() Money
+    }
+    Order *-- LineItem : contains

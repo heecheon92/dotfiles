@@ -1,0 +1,8 @@
+sequenceDiagram
+    participant C as Client
+    participant A as API
+    participant S as Store
+    C->>A: GET item
+    A->>S: Load item
+    S-->>A: Item data
+    A-->>C: 200 OK

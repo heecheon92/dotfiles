@@ -1,0 +1,7 @@
+architecture-beta
+    group platform[Platform]
+    service client[Client]
+    service api[API] in platform
+    service store[Store] in platform
+    client:R --> L:api
+    api:R --> L:store

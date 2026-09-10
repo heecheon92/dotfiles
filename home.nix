@@ -28,7 +28,7 @@ in
     fzf       # fuzzy finder
     jq        # json on the command line
     bun       # runtime and package manager for OMP plugins
-    lavishAxi # pinned CLI and bundled skill used by agent session hooks
+    lavishAxi # pinned CLI for explicitly requested HTML reviews; no ambient hooks
     fnm       # fast Node version manager, initialized lazily by Zsh
     lazygit
     neovim
@@ -344,9 +344,9 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".config/opencode/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
-  # Keep reviewed cross-agent skills in this repository. Lavish is linked
-  # from its pinned Nix package so its skill and CLI always share a version;
-  # unlisted third-party skills under ~/.agents/skills remain machine-local.
+  # Keep reviewed cross-agent skills in this repository; unlisted third-party
+  # skills under ~/.agents/skills remain machine-local. Lavish stays CLI-only
+  # so neither skill discovery nor session hooks promote it automatically.
   home.file.".agents/skills/README.md".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.agents/skills/README.md";
@@ -363,19 +363,8 @@ in
   home.file.".agents/skills/create-readme".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.agents/skills/create-readme";
-  home.file.".agents/skills/lavish" = {
-    source = "${lavishAxi}/lib/node_modules/lavish-axi/skills/lavish";
-    force = true;
-  };
-
-  # Keep supported clients' generated hook files machine-local while
-  # idempotently repairing Lavish's SessionStart entry after each rebuild.
-  home.activation.syncLavishHooks =
-    lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-      run ${lavishAxi}/bin/lavish-axi setup hooks
-    '';
-
-
+  home.file.".agents/skills/termaid".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/termaid";
   # Keep OMP credentials, databases, sessions, logs, and Herdr's generated
   # integration local. Link only portable authored configuration and the
   # sibling runtime-context extension.
@@ -391,9 +380,6 @@ in
   home.file.".omp/agent/extensions/herdr-runtime-context.ts".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/extensions/herdr-runtime-context.ts";
-  home.file.".omp/agent/extensions/lavish-runtime-context.ts".source =
-    config.lib.file.mkOutOfStoreSymlink
-      "${dotfiles}/home/.omp/agent/extensions/lavish-runtime-context.ts";
   # Keep OMP's plugin registry reproducible while leaving downloaded packages
   # machine-local. The activation below restores them from the pinned lockfile.
   home.file.".omp/plugins/package.json".source =

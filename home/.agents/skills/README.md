@@ -54,6 +54,12 @@ python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/inst
   --path home/.agents/skills/create-readme
 ```
 
+```bash
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
+  --repo heecheon92/dotfiles \
+  --path home/.agents/skills/termaid
+```
+
 ## Available skills
 
 ### documentation-lifecycle
@@ -117,6 +123,27 @@ Update the vendored copy and its source lock from the repository root with:
 cd home
 npx skills update create-readme --yes
 ```
+
+### termaid
+
+Renders Mermaid source into Unicode diagrams for direct inclusion in an agent's
+response, with optional Rich terminal colors. Uses pinned `uvx` execution rather
+than a permanent Termaid installation. Requires uv/uvx and a compatible Python
+runtime; the first run may download the runtime and packages into uv's cache.
+
+The skill is harness-neutral and available for both model-selected use and
+explicit requests such as:
+
+```text
+Use the termaid skill to show this request flow.
+```
+
+Harnesses with named skill invocation may also support `$termaid`. There is no
+OMP-specific API, hook, or tool dependency. The complete directory includes
+[runnable examples for all 18 supported diagram types](./termaid/references/examples.md),
+plus verified renderer limitations and guidance for visible response delivery.
+Home Manager links it into `~/.agents/skills/termaid`; other harnesses can install
+the same directory using their own supported skill mechanism.
 
 ## Other agent harnesses
 

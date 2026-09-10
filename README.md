@@ -359,20 +359,17 @@ smol·vision·commit 역할은 Luna, plan 역할은 Terra, advisor 역할은 Sol
 유지합니다. fallback에는 Sol을 넣지 않아 지원 역할이 예기치 않게 고비용 모델로
 복귀하지 않습니다.
 
-## OMP Lavish ambient context
+## 명시적 Lavish 사용
 
-Lavish CLI와 bundled skill은 `packages/lavish-axi.nix`에서 같은 version으로
-pin합니다. `./rebuild.sh`는 CLI를 설치하고 package 안의 `skills/lavish`를
-`~/.agents/skills/lavish`에 연결한 뒤, Claude Code, Codex, OpenCode 및 GitHub
-Copilot CLI의 machine-local `SessionStart` hook을 idempotent하게 등록하거나
-복구합니다. 별도의 `npm install -g lavish-axi` 또는 `lavish-axi setup hooks`
-실행은 필요하지 않습니다.
+Lavish CLI는 `packages/lavish-axi.nix`에서 version을 pin하며 `./rebuild.sh`로
+설치합니다. 사용자가 HTML review를 명시적으로 요청했을 때만
+`lavish-axi <html-file>`로 실행합니다.
 
-Home Manager는 `home/.omp/agent/extensions/lavish-runtime-context.ts`도 OMP의
-native extension으로 연결합니다. 이 extension은 session 시작 시 Nix가 관리하는
-`lavish-axi`를 한 번 실행하고 반환된 live review session 및 artifact 지침을 OMP
-system prompt에 추가합니다. 설치 또는 변경 후에는 새 agent session을 시작해야
-합니다.
+Lavish bundled skill은 전역 skill 목록에 연결하지 않고, Claude Code, Codex,
+OpenCode 및 GitHub Copilot CLI의 `SessionStart` hook이나 OMP ambient-context
+extension도 등록하지 않습니다. `lavish-axi setup hooks`를 실행하면 자동 주입이
+다시 설치되므로 실행하지 않습니다. 기존 hook을 제거한 뒤에는 실행 중인 harness를
+재시작하고 새 대화를 시작해야 이미 로드된 지침이 남지 않습니다.
 
 Lavish를 올릴 때는 Nix expression의 version과 npm tarball hash, 그리고
 `packages/lavish-axi/package.json` 및 `package-lock.json`의 dependency lock을
