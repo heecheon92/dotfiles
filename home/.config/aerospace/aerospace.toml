@@ -5,7 +5,7 @@ config-version = 2
 # AeroSpace owns both companions; do not also enable their Homebrew services.
 # Both detect an existing instance when AeroSpace restarts.
 after-startup-command = [
-    'exec-and-forget borders style=round width=10.0 hidpi=on active_color=0xff00e5ff inactive_color=0xff494d64',
+    'exec-and-forget borders style=round width=8.0 hidpi=on active_color=0xff00e5ff inactive_color=0xff494d64',
     'exec-and-forget sketchybar',
 ]
 
@@ -69,13 +69,13 @@ focus-follows-mouse.enabled = true
 #                 Monitor pattern is the same as for 'workspace-to-monitor-force-assignment'.
 #                 See:
 #                 https://nikitabobko.github.io/AeroSpace/guide#assign-workspaces-to-monitors
-gaps.inner.horizontal =   16
-gaps.inner.vertical =     16
-gaps.outer.left =         16
-gaps.outer.bottom =       16
-# Reserve the 32pt SketchyBar plus the existing 16pt breathing room.
-gaps.outer.top =          48
-gaps.outer.right =        16
+gaps.inner.horizontal =   12
+gaps.inner.vertical =     12
+gaps.outer.left =         12
+gaps.outer.bottom =       12
+# Reserve the 39pt SketchyBar, its 8pt offset, and 13pt breathing room.
+gaps.outer.top =          60
+gaps.outer.right =        12
 
 # System Settings uses many compact utility-style windows that are easier to
 # use floating. Applications not listed here, including terminals, stay tiled.

@@ -1,99 +1,135 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
+# Adopted from FelixKratz/dotfiles@e6288b3f4220ca1ac64a68e60fced2d4c3e3e20b (.config/sketchybar), with AeroSpace and local-runtime compatibility adaptations.
+CONFIG_DIR="${CONFIG_DIR:-$HOME/.config/sketchybar}"
+export CONFIG_DIR
+source "$CONFIG_DIR/environment.sh"
+
+source "$CONFIG_DIR/colors.sh" # Loads all defined colors
+source "$CONFIG_DIR/icons.sh"  # Loads all defined icons
+
+ITEM_DIR="$CONFIG_DIR/items"
 PLUGIN_DIR="$CONFIG_DIR/plugins"
-FONT="Hack Nerd Font Mono"
-CYAN=0xff00e5ff
-TEXT=0xffe6edf3
-MUTED=0xff7d8590
+export ITEM_DIR PLUGIN_DIR
 
-args=(
-  --hotload on
-  --bar
-  position=top
-  height=32
-  display=all
-  y_offset=0
-  margin=0
-  corner_radius=0
-  color=0xe60b1118
-  blur_radius=20
-  border_width=0
-  padding_left=8
-  padding_right=8
-  sticky=on
-  topmost=window
-  shadow=off
-  --default
-  "icon.font=$FONT:Bold:13.0"
-  "label.font=$FONT:Medium:13.0"
-  "icon.color=$CYAN"
-  "label.color=$TEXT"
-  icon.padding_left=5
-  icon.padding_right=3
-  label.padding_left=5
-  label.padding_right=5
-  padding_left=2
-  padding_right=2
-  --add event aerospace_workspace_change
+FONT="SF Pro" # Needs Regular, Bold, Semibold, Heavy and Black variants
+PADDINGS=3
+
+# Compile the Mach helper outside the managed config and keep one validated,
+# per-user process. A changed source replaces only the helper recorded here.
+HELPER="local.sketchybar.helper.$UID"
+HELPER_SOURCE_DIR="$CONFIG_DIR/helper"
+HELPER_CACHE_DIR="$HOME/Library/Caches/sketchybar/helper"
+HELPER_BIN="$HELPER_CACHE_DIR/helper"
+HELPER_PID_FILE="$HELPER_CACHE_DIR/helper.pid"
+HELPER_HASH_FILE="$HELPER_CACHE_DIR/source.sha256"
+mkdir -p "$HELPER_CACHE_DIR"
+
+helper_source_hash=$(
+  cat "$HELPER_SOURCE_DIR/helper.c" \
+      "$HELPER_SOURCE_DIR/cpu.h" \
+      "$HELPER_SOURCE_DIR/sketchybar.h" \
+    | /usr/bin/shasum -a 256 \
+    | /usr/bin/cut -d ' ' -f 1
 )
+helper_cached_hash=
+[ -r "$HELPER_HASH_FILE" ] && IFS= read -r helper_cached_hash < "$HELPER_HASH_FILE"
 
-workspace_list="$(aerospace list-workspaces --all 2>/dev/null)"
-if [ -z "$workspace_list" ]; then
-  workspace_list="$(seq 1 9)"
+helper_rebuilt=false
+if [ ! -x "$HELPER_BIN" ] || [ "$helper_source_hash" != "$helper_cached_hash" ]; then
+  if clang -std=c99 -O3 "$HELPER_SOURCE_DIR/helper.c" -o "$HELPER_BIN.tmp"; then
+    mv "$HELPER_BIN.tmp" "$HELPER_BIN"
+    printf '%s\n' "$helper_source_hash" > "$HELPER_HASH_FILE"
+    helper_rebuilt=true
+  else
+    rm -f "$HELPER_BIN.tmp"
+  fi
 fi
 
-while IFS= read -r sid; do
-  [ -n "$sid" ] || continue
-  item="space.$sid"
+helper_pid=
+helper_running=false
+if [ -r "$HELPER_PID_FILE" ]; then
+  IFS= read -r helper_pid < "$HELPER_PID_FILE"
+  helper_command=$(/bin/ps -p "$helper_pid" -o command= 2>/dev/null)
+  if [ "$helper_command" = "$HELPER_BIN $HELPER" ]; then
+    helper_running=true
+  fi
+fi
 
-  args+=(--add item "$item" left
-    --set "$item"
-      ignore_association=on
-      label="$sid"
-      "label.font=$FONT:Bold:12.0"
-      "label.color=$MUTED"
-      label.padding_left=7
-      label.padding_right=7
-      "background.color=$CYAN"
-      background.corner_radius=9
-      background.height=20
-      background.drawing=off
-      "click_script=$PLUGIN_DIR/workspace_click.sh")
-done <<EOF
-$workspace_list
-EOF
+if [ "$helper_rebuilt" = true ] && [ "$helper_running" = true ]; then
+  kill "$helper_pid" 2>/dev/null
+  helper_running=false
+  for _ in 1 2 3 4 5; do
+    kill -0 "$helper_pid" 2>/dev/null || break
+    sleep 0.1
+  done
+fi
 
-args+=(--add item workspace_controller left
-  --set workspace_controller
-    drawing=off
-    update_freq=5
-    "script=$PLUGIN_DIR/workspaces.sh"
-  --subscribe workspace_controller
-    aerospace_workspace_change
-    front_app_switched
-    display_change
-    space_windows_change
-    system_woke
-  --add item front_app left
-  --set front_app
-    icon.drawing=off
-    label.max_chars=40
-    label.padding_left=10
-    "script=$PLUGIN_DIR/front_app.sh"
-  --subscribe front_app front_app_switched system_woke
-  --add item clock right
-  --set clock
-    icon=CAL
-    "icon.font=$FONT:Bold:10.0"
-    update_freq=30
-    "script=$PLUGIN_DIR/clock.sh"
-  --subscribe clock system_woke
-  --add item volume right
-  --set volume
-    icon=VOL
-    "icon.font=$FONT:Bold:10.0"
-    "script=$PLUGIN_DIR/volume.sh"
-  --subscribe volume volume_change system_woke
-  --update)
+if [ "$helper_running" = false ] && [ -x "$HELPER_BIN" ]; then
+  "$HELPER_BIN" "$HELPER" >/dev/null 2>&1 &
+  printf '%s\n' "$!" > "$HELPER_PID_FILE"
+fi
 
-sketchybar "${args[@]}"
+bar=(
+  height=39
+  color=$BAR_COLOR
+  shadow=on
+  position=top
+  sticky=on
+  display=all
+  padding_right=10
+  padding_left=10
+  corner_radius=9
+  y_offset=8
+  margin=10
+  blur_radius=20
+  notch_width=0
+)
+sketchybar --bar "${bar[@]}"
+
+defaults=(
+  updates=when_shown
+  icon.font="$FONT:Bold:14.0"
+  icon.color=$ICON_COLOR
+  icon.padding_left=$PADDINGS
+  icon.padding_right=$PADDINGS
+  label.font="$FONT:Semibold:13.0"
+  label.color=$LABEL_COLOR
+  label.padding_left=$PADDINGS
+  label.padding_right=$PADDINGS
+  padding_right=$PADDINGS
+  padding_left=$PADDINGS
+  background.height=30
+  background.corner_radius=9
+  popup.background.border_width=2
+  popup.background.corner_radius=9
+  popup.background.border_color=$POPUP_BORDER_COLOR
+  popup.background.color=$POPUP_BACKGROUND_COLOR
+  popup.blur_radius=20
+  popup.background.shadow.drawing=on
+)
+sketchybar --default "${defaults[@]}"
+
+sketchybar --hotload on
+
+sketchybar --add event aerospace_workspace_change
+
+# Left
+source "$ITEM_DIR/apple.sh"
+source "$ITEM_DIR/spaces.sh"
+source "$ITEM_DIR/front_app.sh"
+
+# Center
+source "$ITEM_DIR/spotify.sh"
+
+# Right
+source "$ITEM_DIR/calendar.sh"
+source "$ITEM_DIR/brew.sh"
+source "$ITEM_DIR/github.sh"
+source "$ITEM_DIR/battery.sh"
+source "$ITEM_DIR/volume.sh"
+source "$ITEM_DIR/cpu.sh"
+
+sketchybar --update
+
+echo "sketchybar configuration loaded."

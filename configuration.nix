@@ -71,6 +71,7 @@
       "wezterm"
       "claude-code"
       "codex"
+      "font-sf-pro"
     ];
   };
 }

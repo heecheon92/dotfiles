@@ -142,8 +142,8 @@ AeroSpace를 종료하고 `brew uninstall --cask aerospace`를 실행합니다.
 동시에 실행하지 않습니다.
 
 로그인 시 자동 실행하며 시스템 설정 창만 floating으로 둡니다. 일반 창은 AeroSpace가
-tiling으로 관리하고, 창 안쪽과 화면 가장자리에 16pt 간격을 둡니다. 상단은
-SketchyBar 32pt를 포함해 48pt를 예약합니다. 포커스가 다른 모니터로 이동하면
+tiling으로 관리하고, 창 안쪽과 화면 가장자리에 12pt 간격을 둡니다. 상단은
+SketchyBar의 39pt 막대와 8pt 오프셋을 고려해 60pt를 예약합니다. 포커스가 다른 모니터로 이동하면
 포인터를 옮기며, 마우스가 가리키는 창에도 포커스를 맞춥니다.
 숫자·문자 persistent workspace를 유지하되 모니터별 이름이나 앱별 고정
 워크스페이스는 지정하지 않습니다.
@@ -244,7 +244,7 @@ macOS 14 이상에서 동작하며, AeroSpace의 `after-startup-command`가 로�
 실행합니다. 시작 주체를 하나로 유지하기 위해 `brew services start borders`는
 사용하지 않습니다. 별도 `bordersrc` 없이 모양도 같은 startup 명령에서 관리합니다.
 
-기본 모양은 둥근 10pt 테두리, HiDPI 켜짐, 활성 창은 밝은 cyan `0xff00e5ff`,
+기본 모양은 둥근 8pt 테두리, HiDPI 켜짐, 활성 창은 밝은 cyan `0xff00e5ff`,
 비활성 창은 `0xff494d64`입니다. 색은 `0xAARRGGBB` 형식입니다.
 기존 WezTerm의 비활성 창 흐림 효과는 그대로 유지합니다.
 
@@ -254,7 +254,7 @@ macOS 14 이상에서 동작하며, AeroSpace의 `after-startup-command`가 로�
 실행하면 현재 프로세스에 즉시 반영됩니다:
 
 ```sh
-borders style=round width=10.0 hidpi=on \
+borders style=round width=8.0 hidpi=on \
   active_color=0xff00e5ff inactive_color=0xff494d64
 ```
 
@@ -263,54 +263,77 @@ borders style=round width=10.0 hidpi=on \
 
 ### 상태 막대 (SketchyBar)
 
-`configuration.nix`에서 `felixkratz/formulae/sketchybar`를 설치하고 Home Manager가
-`home/.config/sketchybar`를 `~/.config/sketchybar`로 링크합니다.
-AeroSpace의 `after-startup-command`가 실행하므로 별도
-`brew services start sketchybar`는 사용하지 않습니다.
+`configuration.nix`에서 `felixkratz/formulae/sketchybar`와 공식 Homebrew cask
+`font-sf-pro`를 선언하고, Home Manager가 `home/.config/sketchybar`를
+`~/.config/sketchybar`로 링크합니다. 앱 아이콘에는
+`sketchybar-app-font` v1.0.4를 사용하며, Home Manager가 릴리스 파일과 SHA-256을
+고정해 `~/Library/Fonts/sketchybar-app-font.ttf`에 배치합니다. SketchyBar의
+텍스트에는 SF Pro 패밀리의 Regular, Bold, Semibold, Heavy, Black, Light Italic을 사용합니다.
 
-로그인으로 실행한 앱은 셸의 Nix 환경을 상속하지 않으므로
-`aerospace.toml`의 `exec.env-vars.PATH`에 `/run/current-system/sw/bin`과
-Homebrew 경로를 명시합니다. SketchyBar와 플러그인도 이 환경을 상속하여
-`aerospace` 명령으로 앱 이름을 조회합니다. 이 PATH를 변경한 경우
-`aerospace reload-config`나 `sketchybar --reload`만으로는 이미 실행 중인
-SketchyBar의 환경이 바뀌지 않습니다. SketchyBar를 종료한 뒤 AeroSpace를
-다시 실행하거나 다음 로그인에서 새 환경을 적용합니다.
+설정은 `FelixKratz/dotfiles`의
+`e6288b3f4220ca1ac64a68e60fced2d4c3e3e20b` 커밋
+(`.config/sketchybar` tree
+`d9d2805845488c1cad2d38dddb0279cd7ed9a121`)을 기준으로 저장소에 가져온 뒤
+AeroSpace와 이 dotfiles 실행 환경에 맞게 수정한 스냅샷입니다. 활성화할 때 upstream
+최신 파일을 다시 받지 않습니다. 막대는 모든 디스플레이 상단에 높이 39px,
+`y_offset=8`, 바깥 여백 10px로 표시하고, 둥근 9px 모서리와 blur 20을 사용합니다.
+AeroSpace의 상단 바깥 간격은 이 배치에 맞춰 60pt로 유지합니다.
 
-모든 디스플레이 상단에 32pt 어두운 막대를 표시합니다. 왼쪽에는 AeroSpace
-워크스페이스와 현재 앱, 오른쪽에는 음량과 날짜·시간을 표시합니다.
-숫자 1–9는 항상 표시하며, 문자 워크스페이스는 창이 있거나 포커스되었을 때
-표시합니다. 선택한 워크스페이스는 JankyBorders와 같은 cyan으로 강조하며
-클릭하면 해당 워크스페이스로 이동합니다. macOS 기본 Spaces 번호와는 다릅니다.
-막대 클릭은 기존 모니터의 워크스페이스로 포커스를 옮깁니다. 현재 모니터로
-워크스페이스를 가져오려면 `Ctrl+Option+1…9`를 사용합니다.
+왼쪽에는 AeroSpace 워크스페이스, 앱 아이콘과 현재 앱을 표시하고 오른쪽에는
+캘린더, Homebrew 업데이트, GitHub 알림, 배터리, 음량과 CPU 상태를 표시합니다.
+숫자 1–9는 항상 만들며, 그 밖의 워크스페이스는 포커스되었거나 창이 있을 때만
+표시합니다. 선택한 워크스페이스는 강조하고 왼쪽 클릭은
+`aerospace workspace`로 전환합니다. macOS Spaces나 yabai의 생성·삭제 이벤트 및
+layout 상태를 흉내 내지 않고, `aerospace_workspace_change` 이벤트와 2초 간격의
+`aerospace list-workspaces`/`list-windows` 조회로 AeroSpace 상태를 반영합니다.
 
-표시 이름은 현재 창 목록에서 자동으로 만듭니다. 예를 들어 서로 다른 앱 3개가
-있는 워크스페이스는 `5 ChatGPT · Claude +1`처럼 표시합니다. 같은 앱의 여러
-창은 한 번만 세고, 앱 이름을 정렬한 뒤 최대 2개와 나머지 앱 수를 표시합니다.
-긴 앱 이름은 각각 14자 이내로 줄이며, 빈 워크스페이스는 번호만 표시합니다.
-실제 워크스페이스 이름과 단축키는 바뀌지 않습니다.
+설정 원본은 `home/.config/sketchybar/sketchybarrc`이며 `items/*.sh`가 항목을,
+`plugins/*.sh`가 동작을 정의합니다. upstream의 C helper 소스도
+`helper/`에 추적합니다. 막대를 읽을 때 Xcode Command Line Tools의 `clang`으로
+`~/Library/Caches/sketchybar/helper/helper`를 만들고, 소스 SHA-256이 바뀔 때만
+다시 컴파일합니다. 실행 중 helper를 교체할 때는 기록한 PID와 명령을 확인해 해당
+프로세스만 종료하므로 다른 helper나 macOS OSD를 포괄적으로 종료하지 않습니다.
+따라서 새 Mac에는 Xcode Command Line Tools가 필요하지만 helper 바이너리를
+저장소에 커밋할 필요는 없습니다.
 
-설정 원본은 `home/.config/sketchybar/sketchybarrc`, 항목 동작은 같은 디렉터리의
-`plugins/*.sh`입니다. 별도 Lua 런타임이나 플러그인 프레임워크는 사용하지 않습니다.
-`sketchybar --hotload on`으로 설정 디렉터리의 변경을 감시하므로 설정이나
-플러그인 스크립트를 저장하면 자동으로 다시 읽습니다. 수동으로 다시 구성하려면:
+다음 연동은 선택 사항이며 이 SketchyBar 설정이 패키지나 자격 증명을 설치하지
+않습니다.
+
+- GitHub 항목은 `gh`, Nix로 이미 관리하는 `jq`, 유효한 `gh` 로그인이 모두 있을
+  때 알림 API를 조회합니다. 새 Mac의 인증은 필요할 때 `gh auth login`으로 로컬에
+  저장하며 저장소에는 복제하지 않습니다. `gh`가 없거나 인증/API 호출이 실패하면
+  회색 `–`를 표시합니다.
+- Spotify 앱은 선언하지 않습니다. 설치되지 않았거나 실행 중이 아니면 중앙 항목과
+  팝업은 숨겨지고, 백그라운드 갱신이나 강제 갱신이 Spotify를 실행하지 않습니다.
+  실행 중 항목에서 앨범 커버를 명시적으로 클릭할 때만 앱을 열 수 있습니다.
+  재생 제어를 처음 사용하면 macOS가 Spotify 제어를 위한 **자동화** 권한을 요청할
+  수 있으며, 이 승인은 Mac마다 로컬에서 처리합니다.
+- `SwitchAudioSource`도 선언하지 않습니다. 없으면 음량의 오른쪽 클릭 또는
+  Shift+클릭 장치 선택은 아무 작업도 하지 않으며, 기본 음량 표시와 슬라이더는
+  계속 동작합니다.
+
+GitHub 알림과 Homebrew 업데이트 확인, Spotify 앨범 아트에는 각각의 네트워크
+접근이 필요합니다. 네트워크 실패는 해당 선택 항목의 정보만 제한합니다.
+
+AeroSpace의 `after-startup-command`가 SketchyBar를 실행하므로 별도
+`brew services start sketchybar`는 사용하지 않습니다. 로그인으로 실행한 앱은
+셸의 Nix 환경을 상속하지 않으므로 `aerospace.toml`은 Nix 시스템·Homebrew 경로를
+전달하고, `sketchybarrc`와 각 플러그인은 `environment.sh`를 읽어 Nix 사용자
+프로필 경로까지 포함한 PATH를 설정합니다. 변경 후에는 `sketchybar --reload`로
+설정을 다시 읽습니다.
+AeroSpace가 전달하는 프로세스 시작 환경 자체를 변경한 경우에는
+SketchyBar를 종료한 뒤 AeroSpace를 다시 실행하거나 다음 로그인에서 적용합니다.
+
+`sketchybar --hotload on`으로 설정 변경을 감시합니다. 수동으로 다시 읽으려면:
 
 ```sh
 sketchybar --reload
 ```
 
-워크스페이스 전환은 AeroSpace의 `exec-on-workspace-change` 이벤트로 반영합니다.
-앱·창·디스플레이 이벤트에도 표시를 갱신하고, 이벤트가 없는 창 이동 등은
-5초 간격으로 현재 상태를 다시 읽어 반영합니다. 길이 제한은
-`plugins/workspaces.sh`의 `truncate_app`, 주기는 `sketchybarrc`의
-`workspace_controller`에 지정한 `update_freq`에서 조정합니다.
-새 워크스페이스 이름을 추가한 경우에도 `sketchybar --reload`로 버튼을 다시 만듭니다.
-막대 높이를 바꾸면 AeroSpace의 `gaps.outer.top`도 `높이 + 16`에 맞춥니다.
-
-새 Mac에서는 `./rebuild.sh` 적용 후 AeroSpace를 실행합니다.
-SketchyBar는 **디스플레이마다 개별 Spaces**가 켜져 있어야 하므로
-`com.apple.spaces`의 `spans-displays = false`를 관리합니다. 이 설정을 이전에
-꺼 두었다면 적용 후 로그아웃·로그인이 필요할 수 있습니다.
+새 Mac에서는 다른 dotfiles 구성과 동일하게 `./rebuild.sh`를 실행하고 AeroSpace를
+실행합니다. SketchyBar는 **디스플레이마다 개별 Spaces**가 켜져 있어야 하므로
+`configuration.nix`가 `com.apple.spaces`의 `spans-displays = false`를 관리합니다.
+이 설정을 이전에 꺼 두었다면 적용 후 로그아웃·로그인이 필요할 수 있습니다.
 기본 메뉴 막대는 삭제되지 않으며 화면 위쪽에 포인터를 올려 계속 사용할 수 있습니다.
 
 ## 터미널 전역 단축키
