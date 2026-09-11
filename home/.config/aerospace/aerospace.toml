@@ -12,6 +12,9 @@ after-startup-command = [
 # Launch the window manager and its status/border companions after login.
 start-at-login = true
 
+# Login-launched apps do not inherit the shell's Nix PATH.
+exec.env-vars.PATH = '/run/current-system/sw/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/local/sbin:${PATH}'
+
 # Automatically reload the config when the config file is saved
 # After setting this to true, reload once manually to start the auto-reloading
 auto-reload-config = true

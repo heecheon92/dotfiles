@@ -268,6 +268,14 @@ borders style=round width=10.0 hidpi=on \
 AeroSpace의 `after-startup-command`가 실행하므로 별도
 `brew services start sketchybar`는 사용하지 않습니다.
 
+로그인으로 실행한 앱은 셸의 Nix 환경을 상속하지 않으므로
+`aerospace.toml`의 `exec.env-vars.PATH`에 `/run/current-system/sw/bin`과
+Homebrew 경로를 명시합니다. SketchyBar와 플러그인도 이 환경을 상속하여
+`aerospace` 명령으로 앱 이름을 조회합니다. 이 PATH를 변경한 경우
+`aerospace reload-config`나 `sketchybar --reload`만으로는 이미 실행 중인
+SketchyBar의 환경이 바뀌지 않습니다. SketchyBar를 종료한 뒤 AeroSpace를
+다시 실행하거나 다음 로그인에서 새 환경을 적용합니다.
+
 모든 디스플레이 상단에 32pt 어두운 막대를 표시합니다. 왼쪽에는 AeroSpace
 워크스페이스와 현재 앱, 오른쪽에는 음량과 날짜·시간을 표시합니다.
 숫자 1–9는 항상 표시하며, 문자 워크스페이스는 창이 있거나 포커스되었을 때
