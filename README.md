@@ -39,6 +39,7 @@
     영문자·숫자·`_`·`$` 입력도 내장 자동 완성을 시작하므로 `<S`처럼 컴포넌트 이름을
     쓰기 시작하면 제안을 표시합니다. 서버가 제공하는 import 경로는 제안 오른쪽에
     표시되며, `Ctrl-N`/`Ctrl-P`로 선택하고 `Ctrl-Y`로 이름과 import를 함께 확정합니다.
+    `Ctrl-.`은 일반·입력·Visual 모드에서 LSP 코드 액션을 표시합니다.
     `Ctrl-X` → `Ctrl-O`로 수동 완성을 요청할 수 있습니다. 의존성이 많은 프로젝트에서도
     제안을 제공하도록 패키지 auto-import 색인을 활성화하며, 첫 연결 시 색인 시간이 필요합니다.
   - YAML (`.yaml`, `.yml`)은 Nix의 `yaml-language-server`, JSON/JSONC는
