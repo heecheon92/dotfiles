@@ -14,3 +14,14 @@ o.termguicolors = true          -- render colorschemes with the terminal's full 
 o.scrolloff = 16               -- keep cursor away from the screen edge
 o.undofile = true              -- persistent undo across sessions
 o.mouse = ''                   -- no mouse in nvim; also lets Herdr keep host mouse capture off so Escape isn't swallowed
+
+o.wildmenu = true
+o.wildoptions:append('pum')
+o.wildmode = 'noselect:full'
+vim.api.nvim_create_autocmd('CmdlineChanged', {
+  group = vim.api.nvim_create_augroup('native_cmdline_completion', { clear = true }),
+  pattern = ':',
+  callback = function()
+    vim.fn.wildtrigger()
+  end,
+})
