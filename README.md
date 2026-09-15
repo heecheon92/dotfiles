@@ -58,13 +58,26 @@
     그대로 사용할 수 있습니다. `<leader>l`로 검색 강조를 지웁니다.
   - 파일 검색은 `<leader>ff`로 현재 작업 디렉터리, `<leader>fF`로 홈 디렉터리를
     검색합니다. 두 검색 모두 숨김 파일을 포함하되 ignore 규칙은 유지합니다.
+    `<leader>/` 내용 검색도 숨김 파일을 포함하며 ignore 규칙은 유지합니다.
   - `Snacks.indent`는 중첩 깊이별 색상으로 들여쓰기 가이드를 표시하고 현재 범위를
     강조합니다. 애니메이션은 끕니다. `rainbow-delimiters.nvim`은 Sonokai 색상으로
     괄호 쌍을 구분하며, Lua/Python/JSON/YAML 파서도 `nvim-treesitter`로 설치합니다.
-  - `nvim-autopairs`는 괄호와 따옴표를 자동으로 짝지으며, Enter 줄바꿈과 `Ctrl-Y`
-    완성 확정 키는 유지합니다. `nvim-ts-autotag`는 HTML/JSX/TSX 태그를 자동으로 닫고
+  - `nvim-autopairs`는 괄호와 따옴표를 자동으로 짝지으며 `Ctrl-Y` 완성 확정 키는
+    유지합니다. 괄호와 태그 사이의 Enter 확장은 플러그인의 기본 규칙을 사용하며,
+    들여쓰기는 Neovim의 `indentexpr`, `shiftwidth`, `expandtab` 설정을 따릅니다.
+    짝 사이에서는 완성 팝업이 열려 있어도 현재 보이는 텍스트를 유지하며 완성을
+    종료한 뒤 펼칩니다. `Ctrl-E` 취소로 `>` 같은 문자가 되돌려지는 것을 방지합니다.
+    그 밖의 일반 줄바꿈과 완성 팝업의 Enter 동작, `Ctrl-Y` 수락은 유지합니다.
+    `nvim-ts-autotag`는 HTML/JSX/TSX 태그를 자동으로 닫고
     이름 변경 시 짝 태그도 갱신합니다. 필요한 HTML/JavaScript/TypeScript/TSX 파서는
     기존 `nvim-treesitter` 설치 설정에서 관리합니다.
+  - JSX/TSX, HTML, Vue, Svelte, XML에서 `<table>|</table>`처럼 여는 태그와 닫는
+    태그 사이에 커서를 놓고 Enter를 누르면 세 줄로 펼칩니다. `<Card>`,
+    `<Dialog.Content>` 같은 사용자 정의 태그와 JSX fragment도 지원합니다.
+    JSX/TSX와 HTML은 `nvim-treesitter`의 `indentexpr()`로 중첩 구조와 여러 줄에 걸친
+    태그 속성을 인식해 들여씁니다. 나머지 파일 형식은 해당 파일 형식의 들여쓰기를 사용합니다.
+    직접 줄을 교체하거나 공백을 삽입하지 않습니다. 플러그인의 Enter 확장은 `.` 반복 시
+    전체 줄 배치를 재현하지 못하는 제한이 있습니다.
 - Pi의 모델, 테마, 스킬 및 확장 패키지 기본 설정
 
 비밀번호, API 키, 인증 토큰, 회사 전용 정보처럼 외부에 공유하면 안

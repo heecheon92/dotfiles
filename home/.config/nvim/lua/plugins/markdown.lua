@@ -20,15 +20,35 @@ return {
         pattern = 'markdown',
         callback = function() vim.treesitter.start() end,
       })
+      vim.api.nvim_create_autocmd('FileType', {
+        pattern = { 'javascriptreact', 'typescriptreact', 'html' },
+        callback = function()
+          vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+        end,
+      })
     end,
   },
   {
     'windwp/nvim-autopairs',
     event = 'InsertEnter',
     opts = {
-      -- Keep native completion's <C-Y> acceptance and Enter newline behavior.
+      -- Keep visible completion text when expanding a pair with Enter.
       map_cr = false,
     },
+    config = function(_, opts)
+      local autopairs = require('nvim-autopairs')
+      autopairs.setup(opts)
+
+      local newline = autopairs.esc('<CR>')
+      vim.keymap.set('i', '<CR>', function()
+        local keys = vim.bo.buftype == '' and autopairs.autopairs_cr() or newline
+        if keys ~= newline and vim.fn.pumvisible() == 1 then
+          -- End completion without Ctrl-E rolling back visible tag punctuation.
+          vim.fn.complete(vim.fn.col('.'), {})
+        end
+        vim.api.nvim_feedkeys(keys, 'ni', false)
+      end, { desc = 'Smart newline with native indentation' })
+    end,
   },
   {
     'windwp/nvim-ts-autotag',
