@@ -48,6 +48,14 @@
     `vscode-langservers-extracted`의 JSON 서버를 사용합니다. `./rebuild.sh` 적용 후
     Neovim을 다시 열면 자동 연결되며, 구문 진단과 내장 자동 완성을 제공합니다.
     애플리케이션별 설정 키 검증에는 해당 JSON Schema가 필요합니다.
+  - 저장 시 포맷은 `lua/plugins/formatting.lua`의 `conform.nvim`이 담당합니다.
+    JavaScript/TypeScript·JSX/TSX·HTML·CSS·JSON은 Prettier, Lua는 StyLua,
+    Python은 `ruff format`을 사용합니다. Python import 정렬이나 lint 자동 수정은 하지 않습니다.
+    `./rebuild.sh`로 Nix의 `prettier`, `stylua`, `ruff`를 설치하고 Neovim을 다시 여세요.
+    Prettier는 프로젝트의 `node_modules` 실행 파일을 우선하며, 각 도구는 프로젝트 설정을 따릅니다.
+    저장 전에 최대 2초 동안 포맷하며, 해당 외부 포매터가 없을 때만 LSP 포맷으로 대체합니다.
+    외부 포매터의 오류나 시간 초과는 LSP 재시도로 숨기지 않습니다. 둘 다 없으면 그대로 저장합니다.
+    `:ConformInfo`로 현재 버퍼의 포매터와 실행 가능 여부를 확인할 수 있습니다.
   - Jupyter 노트북은 `jupynvim`으로 편집하고 실행합니다. Python 커널은 프로젝트의
     `.venv`에 두며 기존 Pyrefly와 내장 자동 완성을 유지합니다.
     설치와 이미지 렌더링 제한은 아래 **Neovim Jupyter 노트북**을 참고하세요.

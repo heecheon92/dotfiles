@@ -38,6 +38,9 @@ in
     typescript # TypeScript compiler and language service
     yaml-language-server # YAML validation and completion for Neovim
     vscode-langservers-extracted # JSON and JSONC language server for Neovim
+    prettier    # web formatting through conform.nvim
+    stylua      # Lua formatting through conform.nvim
+    ruff        # Python formatting through conform.nvim
     tree-sitter # parser compiler used by nvim-treesitter
     chafa       # notebook image fallback for terminals without Kitty placeholders
     tmux        # terminal multiplexer used by omp_parallel_bench

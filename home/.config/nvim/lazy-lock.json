@@ -1,4 +1,5 @@
 {
+  "conform.nvim": { "branch": "master", "commit": "016802de402556da54c36bd7359b441266b01cdd" },
   "diffview.nvim": { "branch": "main", "commit": "4516612fe98ff56ae0415a259ff6361a89419b0a" },
   "gitsigns.nvim": { "branch": "main", "commit": "31d6fb2d618bca1482b9f274751ead5f03461408" },
   "jupynvim": { "branch": "main", "commit": "5e8eb2c2a6e41c722ff502360a5335dde21a634f" },
