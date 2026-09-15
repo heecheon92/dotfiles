@@ -31,6 +31,20 @@ vim.lsp.config('pyrefly', {
   },
 })
 
+vim.lsp.config('ts_ls', {
+  cmd = { 'typescript-language-server', '--stdio' },
+  filetypes = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+  root_markers = { 'tsconfig.json', 'jsconfig.json', 'package.json', '.git' },
+  init_options = {
+    preferences = {
+      includeCompletionsForModuleExports = true,
+      includeCompletionsForImportStatements = true,
+      -- Keep dependency auto-imports enabled beyond TypeScript's automatic size limit.
+      includePackageJsonAutoImports = 'on',
+    },
+  },
+})
+
 vim.lsp.config('yamlls', {
   cmd = { 'yaml-language-server', '--stdio' },
   filetypes = { 'yaml' },
@@ -53,6 +67,17 @@ vim.api.nvim_create_autocmd('LspAttach', {
   callback = function(event)
     local client = vim.lsp.get_client_by_id(event.data.client_id)
     if client and client:supports_method('textDocument/completion') then
+      if client.name == 'ts_ls' then
+        -- Native autotrigger otherwise only requests on server-defined punctuation.
+        local completion = client.server_capabilities.completionProvider
+        local triggers = completion.triggerCharacters or {}
+        for char in ('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$'):gmatch('.') do
+          if not vim.list_contains(triggers, char) then
+            triggers[#triggers + 1] = char
+          end
+        end
+        completion.triggerCharacters = triggers
+      end
       local icons = require('mini.icons')
       vim.lsp.completion.enable(true, client.id, event.buf, {
         autotrigger = true,
@@ -65,5 +90,5 @@ vim.api.nvim_create_autocmd('LspAttach', {
     end
   end,
 })
-vim.lsp.enable({ 'lua_ls', 'pyrefly', 'yamlls', 'jsonls' })
+vim.lsp.enable({ 'lua_ls', 'pyrefly', 'ts_ls', 'yamlls', 'jsonls' })
 vim.diagnostic.config({ virtual_text = true })

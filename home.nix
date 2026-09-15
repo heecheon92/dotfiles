@@ -34,6 +34,8 @@ in
     neovim
     lua-language-server # Lua and Neovim API intelligence; launched by Neovim on demand
     pyrefly     # Python type checking and language server for Neovim
+    typescript-language-server # TypeScript/JavaScript and React LSP for Neovim
+    typescript # TypeScript compiler and language service
     yaml-language-server # YAML validation and completion for Neovim
     vscode-langservers-extracted # JSON and JSONC language server for Neovim
     tree-sitter # parser compiler used by nvim-treesitter

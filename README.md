@@ -31,6 +31,16 @@
     다시 열면 Python 파일에서 자동으로 시작합니다. 내장 자동 완성과 `Ctrl-X` → `Ctrl-O`
     수동 완성을 사용하며 `Ctrl-Y`로 확정합니다. 프로젝트 설정이 없는 파일에도 표준
     타입 검사를 적용하고, `pyrefly.toml` 또는 `[tool.pyrefly]` 프로젝트 설정을 우선합니다.
+  - TypeScript/JavaScript와 React (`.tsx`, `.jsx`)는 Nix의 `typescript-language-server`와
+    `typescript`를 사용합니다. `./rebuild.sh` 적용 후 Neovim을 다시 열면 `ts_ls`가
+    프로젝트에 연결됩니다. 프로젝트의 TypeScript 설치를 우선 사용하며, 라이브러리와
+    타입 정의도 프로젝트에 설치되어 있어야 합니다. `useSta` 같은 이름을 입력하고
+    React의 `useState` 제안을 `Ctrl-Y`로 확정하면 import도 추가됩니다.
+    영문자·숫자·`_`·`$` 입력도 내장 자동 완성을 시작하므로 `<S`처럼 컴포넌트 이름을
+    쓰기 시작하면 제안을 표시합니다. 서버가 제공하는 import 경로는 제안 오른쪽에
+    표시되며, `Ctrl-N`/`Ctrl-P`로 선택하고 `Ctrl-Y`로 이름과 import를 함께 확정합니다.
+    `Ctrl-X` → `Ctrl-O`로 수동 완성을 요청할 수 있습니다. 의존성이 많은 프로젝트에서도
+    제안을 제공하도록 패키지 auto-import 색인을 활성화하며, 첫 연결 시 색인 시간이 필요합니다.
   - YAML (`.yaml`, `.yml`)은 Nix의 `yaml-language-server`, JSON/JSONC는
     `vscode-langservers-extracted`의 JSON 서버를 사용합니다. `./rebuild.sh` 적용 후
     Neovim을 다시 열면 자동 연결되며, 구문 진단과 내장 자동 완성을 제공합니다.
