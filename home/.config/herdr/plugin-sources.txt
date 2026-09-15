@@ -1,6 +1,29 @@
 # Unpinned GitHub sources accepted by `herdr plugin install`.
 # Keep plugin checkouts, configuration, and runtime state machine-local.
+# Each install entry keeps its upstream URL and manifest plugin ID for removal.
+
+# https://github.com/edouard-andrei/herdr-layout-tools
+# Plugin ID: edi.layout-tools
 edouard-andrei/herdr-layout-tools
+
+# https://github.com/smarzban/herdr-file-viewer
+# Plugin ID: herdr-file-viewer
 smarzban/herdr-file-viewer
+
+# https://github.com/plannotator/herdr-annotate
+# Plugin ID: annotate
 plannotator/herdr-annotate
+
+# https://github.com/zenbu-labs/terminal-browser
+# Plugin subdirectory: herdr-plugin
+# Plugin ID: zenbu-labs.terminal-browser
 zenbu-labs/terminal-browser/herdr-plugin
+
+# https://github.com/hhdebb/herdr-radar
+# Plugin ID: hhdebb.herdr-radar
+# Before uninstalling: follow "Radar 제거" in README.md.
+hhdebb/herdr-radar
+
+# Local-only reference; not an entry in the shared install list:
+# https://github.com/ogulcancelik/herdr-browser
+# Plugin ID: official.browser

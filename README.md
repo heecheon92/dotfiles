@@ -378,6 +378,75 @@ iTerm의 기존 Hotkey Window 프로필은
 `DynamicProfiles` 디렉터리를 링크하며, 변경은 `./rebuild.sh`로 적용합니다.
 왼쪽 Option은 `Esc+`, 오른쪽 Option은 `Normal`로 유지합니다.
 
+## Herdr 설정과 Radar
+
+플러그인 출처는 `home/.config/herdr/plugin-sources.txt`에서 관리합니다.
+설치용 `owner/repo[/subdir]` 항목마다 **GitHub URL과 manifest의 plugin ID**를
+함께 기록합니다. URL은 원본 문서·변경 이력을 찾는 용도이고, ID는 Herdr의
+조회·제거 명령에 사용합니다. 설치 경로나 버전·resolved commit은 머신 로컬
+`herdr plugin list --json`에서 확인하며 공유 목록에 복사하지 않습니다.
+새 플러그인은 이 출처 정보와 별도 정리 절차가 있는지 함께 확인합니다.
+이 목록 자체는 자동 설치·제거를 수행하지 않습니다. 로컬 참고용 항목은 주석으로
+남기며 공유 설치 대상에 자동 추가하지 않습니다.
+
+### Radar 제거
+
+아래 절차는 **제거할 때만** 실행합니다. 단순히 소스 목록에서 항목을 지우거나
+`herdr plugin uninstall`만 실행하면 Radar가 수정한 설정과 사용자 폰트가 남습니다.
+[Radar 원본](https://github.com/hhdebb/herdr-radar)의 제거 액션을 먼저 실행해야 합니다.
+
+먼저 `config.toml`을 백업하고, 아래 조회 명령으로 현재 설치 정보와 설정 경로를
+확인합니다. 기존 Herdr 세션이나 다른 플러그인 디렉터리를 삭제하지 마세요.
+
+```sh
+herdr plugin list --plugin hhdebb.herdr-radar --json
+herdr plugin config-dir hhdebb.herdr-radar
+```
+
+체크아웃이 남아 있을 때 다음 순서로 실행합니다.
+
+```sh
+herdr plugin action invoke hhdebb.herdr-radar.unconfigure
+herdr plugin action invoke hhdebb.herdr-radar.uninstall-font
+herdr plugin uninstall hhdebb.herdr-radar
+```
+
+- `unconfigure`는 Radar 데몬과 토큰을 정리하고, 탭 바·테마·사이드바의 세 관리
+  블록을 제거한 뒤 Herdr 설정을 다시 불러옵니다. 기록된 원래 테마 설정이 있으면
+  복원하며, 변경 전 설정은 Radar 상태 디렉터리의 `backups/`에 보관합니다.
+  `state-stop`만으로는 이 정리가 끝나지 않습니다.
+- `uninstall-font`는 Radar 아이콘 폰트와 플러그인이 추가한 Ghostty/kitty
+  코드포인트 매핑을 제거합니다. 직접 추가한 WezTerm fallback은
+  자동 제거하지 않습니다. 사용 중이라 삭제하지 못한 폰트는 해당 터미널을 종료한
+  뒤 다시 확인하세요.
+- 마지막 `plugin uninstall`은 Herdr 등록과 관리되는 GitHub 체크아웃을 제거합니다.
+  플러그인 설정·상태·백업은 자동 삭제하지 않으며, `--purge` 옵션도 없습니다.
+
+직접 추가한 연결이 있으면 다음 파일에서도 정리합니다.
+
+- `config.toml`: `hhdebb.herdr-radar.settings`를 호출하는 `prefix+comma` 항목 등
+  Radar 전용 단축키를 제거합니다. 다른 단축키와 테마 설정은 유지합니다.
+- `home/.config/wezterm/wezterm.lua`: `Herdr Agent Icons Max` fallback을 제거하고
+  기본 `Hack Nerd Font Mono`는 유지합니다.
+- `plugin-sources.txt`: `hhdebb/herdr-radar` 설치 항목을 주석 처리합니다.
+  나중에 출처를 찾을 수 있도록 GitHub URL과 plugin ID는 참고 기록으로 남깁니다.
+
+완전히 지우려면 복구가 필요 없는지 확인한 뒤 **Radar 전용** 설정·상태 디렉터리만
+별도로 정리합니다. 기본 경로는 아래와 같으며, XDG 또는 Radar 경로를 재정의했다면
+위의 조회 결과와 실제 환경을 우선합니다.
+
+- 설정: `~/.config/herdr/plugins/config/hhdebb.herdr-radar`
+- 상태·캐시·설정 백업: `~/.local/state/herdr/plugins/hhdebb.herdr-radar`
+
+마지막으로 다음을 실행해 플러그인 목록에 Radar가 없는지, 설정이 유효한지,
+재로딩이 성공하는지 확인합니다. Herdr 서버를 종료할 필요는 없습니다.
+
+```sh
+herdr plugin list --plugin hhdebb.herdr-radar --json
+herdr config check
+herdr server reload-config
+```
+
 ## Herdr 스크래치 셸
 
 Herdr에서 `prefix+t`를 누르면 기본 `~/.zprofile`과 `~/.zshrc` 대신
