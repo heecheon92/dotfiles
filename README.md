@@ -380,6 +380,22 @@ iTerm의 기존 Hotkey Window 프로필은
 
 ## Herdr 설정과 Radar
 
+`home/.config/herdr/config.toml`은 여러 머신에 그대로 배포하는 활성 설정이 아니라,
+필요할 때 수동으로 적용하는 휴대 가능한 기준 설정입니다. Home Manager는
+`~/.config/herdr` 디렉터리 전체나 `config.toml`을 링크하지 않고
+`~/.config/herdr/plugin-sources.txt`만 저장소에 링크합니다. 따라서 Radar가
+원자적으로 저장해도 활성 `~/.config/herdr/config.toml`은 머신 로컬의 쓰기 가능한
+일반 파일로 유지됩니다.
+
+저장소 기준 설정에는 사용자가 관리하는 `prefix+comma` Radar 설정 단축키를
+유지하지만, Radar가 생성하는 탭 바·테마·사이드바 관리 블록은 넣지 않습니다.
+기준 설정과 활성 설정 사이에는 merge helper나 자동 동기화가 없습니다. 한쪽의
+변경이 다른 쪽에도 필요하면 내용을 검토해 수동으로 옮깁니다.
+
+같은 디렉터리에 생기는 세션·로그·플러그인 체크아웃과 개별 플러그인 설정도
+머신 로컬이며 동기화하지 않습니다. Radar 캐시·백업은
+`~/.local/state/herdr`, 설치된 아이콘 폰트는 사용자 폰트 디렉터리에 남습니다.
+
 플러그인 출처는 `home/.config/herdr/plugin-sources.txt`에서 관리합니다.
 설치용 `owner/repo[/subdir]` 항목마다 **GitHub URL과 manifest의 plugin ID**를
 함께 기록합니다. URL은 원본 문서·변경 이력을 찾는 용도이고, ID는 Herdr의
@@ -388,6 +404,39 @@ iTerm의 기존 Hotkey Window 프로필은
 새 플러그인은 이 출처 정보와 별도 정리 절차가 있는지 함께 확인합니다.
 이 목록 자체는 자동 설치·제거를 수행하지 않습니다. 로컬 참고용 항목은 주석으로
 남기며 공유 설치 대상에 자동 추가하지 않습니다.
+
+새 머신에서는 Herdr 0.9.0 이상과 Node 18 이상을 준비하고 먼저
+`./rebuild.sh`를 실행해 플러그인 출처 링크와 기존 통합을 적용합니다. 활성 설정이
+아직 없을 때만 저장소 기준을 수동으로 복사합니다.
+
+```sh
+mkdir -p ~/.config/herdr
+cp -n home/.config/herdr/config.toml ~/.config/herdr/config.toml
+```
+
+이미 `~/.config/herdr`에 설정·세션·플러그인 상태가 있으면 디렉터리나
+`config.toml`을 교체하지 마세요. 기존 활성 설정을 그대로 보존하고, 필요한 휴대
+설정만 저장소 기준과 비교해 수동으로 적용합니다. Home Manager rebuild는 활성
+설정을 기준 설정으로 덮어쓰지 않습니다.
+
+Radar는 에이전트 상태와 작업 공간 그룹을 사이드바에 표시합니다. 다음 명령으로
+설치하고 현재 세션에서 상태를 시작합니다.
+
+```sh
+herdr plugin install hhdebb/herdr-radar
+herdr plugin action invoke hhdebb.herdr-radar.state-start
+```
+
+Radar 설치 프로그램은 머신 로컬 활성 설정에 관리 블록을 추가하고 사용자 아이콘
+폰트를 설치합니다. 생성된 블록은 저장소 기준 설정에 복사하지 않습니다. WezTerm은
+공유 설정에서 기본 Hack Nerd Font 뒤에 `Herdr Agent Icons Max`를 명시적
+fallback으로 사용합니다. 그렇지 않으면 같은 코드포인트가 시스템 수학 폰트의 다른
+기호로 표시될 수 있습니다. 기존 `prefix+a`는 주석 기능에 유지하며,
+`prefix+comma` 또는 다음 명령으로 Radar 설정을 엽니다.
+
+```sh
+herdr plugin action invoke hhdebb.herdr-radar.settings
+```
 
 ### Radar 제거
 

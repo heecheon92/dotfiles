@@ -65,6 +65,11 @@ type = "plugin_action"
 command = "annotate.last"
 description = "review the agent's last reply"
 
+[[keys.command]]
+key = "prefix+comma"
+type = "plugin_action"
+command = "hhdebb.herdr-radar.settings"        # settings popup
+
 [theme]
 name = "terminal"
 auto_switch = false

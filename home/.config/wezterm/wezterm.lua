@@ -3,7 +3,10 @@ local wezterm = require("wezterm")
 local config = wezterm.config_builder()
 
 config.color_scheme = "Monokai Pro (Gogh)"
-config.font = wezterm.font("Hack Nerd Font Mono")
+config.font = wezterm.font_with_fallback({
+	"Hack Nerd Font Mono",
+	"Herdr Agent Icons Max",
+})
 config.font_size = 14.0
 config.window_background_opacity = 0.8
 config.macos_window_background_blur = 50
