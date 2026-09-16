@@ -45,6 +45,29 @@ vim.lsp.config('ts_ls', {
   },
 })
 
+vim.lsp.config('tailwindcss', {
+  cmd = { 'tailwindcss-language-server', '--stdio' },
+  filetypes = { 'html', 'css', 'javascript', 'javascriptreact', 'typescript', 'typescriptreact' },
+  root_markers = {
+    {
+      'tailwind.config.js',
+      'tailwind.config.cjs',
+      'tailwind.config.mjs',
+      'tailwind.config.ts',
+      'tailwind.config.cts',
+      'tailwind.config.mts',
+    },
+    'package.json',
+    '.git',
+  },
+  settings = {
+    tailwindCSS = {
+      classAttributes = { 'class', 'className', 'class:list', 'classList' },
+      classFunctions = { 'cn', 'clsx', 'cva' },
+    },
+  },
+})
+
 vim.lsp.config('yamlls', {
   cmd = { 'yaml-language-server', '--stdio' },
   filetypes = { 'yaml' },
@@ -67,8 +90,9 @@ vim.api.nvim_create_autocmd('LspAttach', {
   callback = function(event)
     local client = vim.lsp.get_client_by_id(event.data.client_id)
     if client and client:supports_method('textDocument/completion') then
-      if client.name == 'ts_ls' then
-        -- Native autotrigger otherwise only requests on server-defined punctuation.
+      if client.name == 'ts_ls' or client.name == 'tailwindcss' then
+        -- Native autotrigger otherwise only requests on server-defined punctuation,
+        -- not while typing identifiers or Tailwind class tokens.
         local completion = client.server_capabilities.completionProvider
         local triggers = completion.triggerCharacters or {}
         for char in ('abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$'):gmatch('.') do
@@ -90,5 +114,5 @@ vim.api.nvim_create_autocmd('LspAttach', {
     end
   end,
 })
-vim.lsp.enable({ 'lua_ls', 'pyrefly', 'ts_ls', 'yamlls', 'jsonls' })
+vim.lsp.enable({ 'lua_ls', 'pyrefly', 'ts_ls', 'tailwindcss', 'yamlls', 'jsonls' })
 vim.diagnostic.config({ virtual_text = true })

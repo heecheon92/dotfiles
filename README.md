@@ -44,6 +44,13 @@
     `Ctrl-.`은 일반·입력·Visual 모드에서 LSP 코드 액션을 표시합니다.
     `Ctrl-X` → `Ctrl-O`로 수동 완성을 요청할 수 있습니다. 의존성이 많은 프로젝트에서도
     제안을 제공하도록 패키지 auto-import 색인을 활성화하며, 첫 연결 시 색인 시간이 필요합니다.
+  - Tailwind CSS는 Nix의 `tailwindcss-language-server`와 Neovim 내장 완성을 사용합니다.
+    `./rebuild.sh` 적용 후 Neovim을 다시 열면 HTML/CSS/JS/TS/JSX/TSX에서 연결됩니다.
+    Tailwind v4는 프로젝트에 설치된 패키지와 `@import "tailwindcss"`가 있는 CSS 진입점을
+    사용합니다. `className` 안에서 `bg-r`처럼 입력하면 제안이 자동으로 표시되며,
+    `Ctrl-N`/`Ctrl-P`로 선택하고 `Ctrl-Y`로 확정합니다. `cn`, `clsx`, `cva`도 설정에 포함합니다.
+    클래스의 색상 미리보기는 Neovim 0.12의 기본 LSP document-color 배경 강조를 사용합니다.
+    별도 colorizer 플러그인이나 완성 엔진은 추가하지 않습니다.
   - YAML (`.yaml`, `.yml`)은 Nix의 `yaml-language-server`, JSON/JSONC는
     `vscode-langservers-extracted`의 JSON 서버를 사용합니다. `./rebuild.sh` 적용 후
     Neovim을 다시 열면 자동 연결되며, 구문 진단과 내장 자동 완성을 제공합니다.
