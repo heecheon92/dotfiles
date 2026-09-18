@@ -90,7 +90,7 @@ vim.api.nvim_create_autocmd('LspAttach', {
   callback = function(event)
     local client = vim.lsp.get_client_by_id(event.data.client_id)
     if client and client:supports_method('textDocument/completion') then
-      if client.name == 'ts_ls' or client.name == 'tailwindcss' then
+      if client.name == 'ts_ls' or client.name == 'tailwindcss' or client.name == 'pyrefly' then
         -- Native autotrigger otherwise only requests on server-defined punctuation,
         -- not while typing identifiers or Tailwind class tokens.
         local completion = client.server_capabilities.completionProvider
@@ -114,5 +114,27 @@ vim.api.nvim_create_autocmd('LspAttach', {
     end
   end,
 })
+
+vim.api.nvim_create_autocmd('InsertCharPre', {
+  group = vim.api.nvim_create_augroup('native_python_signature_help', { clear = true }),
+  callback = function(event)
+    if vim.bo[event.buf].filetype ~= 'python' then
+      return
+    end
+    for _, client in ipairs(vim.lsp.get_clients({ bufnr = event.buf, method = 'textDocument/signatureHelp' })) do
+      local provider = client.server_capabilities.signatureHelpProvider
+      if provider and vim.list_contains(provider.triggerCharacters or {}, vim.v.char) then
+        -- Wait until the character (and any automatic closing pair) is inserted.
+        vim.schedule(function()
+          if vim.api.nvim_get_current_buf() == event.buf and vim.fn.mode() == 'i' then
+            vim.lsp.buf.signature_help({ focusable = false, silent = true })
+          end
+        end)
+        return
+      end
+    end
+  end,
+})
+
 vim.lsp.enable({ 'lua_ls', 'pyrefly', 'ts_ls', 'tailwindcss', 'yamlls', 'jsonls' })
 vim.diagnostic.config({ virtual_text = true })

@@ -31,6 +31,12 @@
     다시 열면 Python 파일에서 자동으로 시작합니다. 내장 자동 완성과 `Ctrl-X` → `Ctrl-O`
     수동 완성을 사용하며 `Ctrl-Y`로 확정합니다. 프로젝트 설정이 없는 파일에도 표준
     타입 검사를 적용하고, `pyrefly.toml` 또는 `[tool.pyrefly]` 프로젝트 설정을 우선합니다.
+    TypeScript와 같은 문자 입력 트리거를 공유하므로 `te`를 입력하면 `test` 같은
+    이름을 자동으로 제안합니다. 후보는 미리 선택하지 않으며, `Ctrl-N`/`Ctrl-P`로
+    이동하고 `Ctrl-Y`로 선택 항목(선택 전에는 첫 항목)을 확정합니다.
+    Python에서는 서버가 알려 준 시그니처 트리거 문자(현재 Pyrefly의 `(`, `,`)를 입력하면
+    매개변수 힌트가 자동으로 표시됩니다. 팝업으로 포커스를 옮기지 않아 계속 입력할 수 있고,
+    입력 모드의 `Ctrl-S` 수동 시그니처 도움말도 유지합니다.
   - TypeScript/JavaScript와 React (`.tsx`, `.jsx`)는 Nix의 `typescript-language-server`와
     `typescript`를 사용합니다. `./rebuild.sh` 적용 후 Neovim을 다시 열면 `ts_ls`가
     프로젝트에 연결됩니다. 프로젝트의 TypeScript 설치를 우선 사용하며, 라이브러리와
