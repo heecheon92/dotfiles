@@ -27,6 +27,8 @@ local modes = {
 
 function _G._statusline()
 	local mode = modes[vim.fn.mode()] or vim.fn.mode():upper()
+	local register = vim.fn.reg_recording()
+	local recording = register ~= "" and ("%#DiagnosticWarn# REC @" .. register .. " %*") or ""
 	local branch = vim.b.git_branch and "%#StlGit# " .. vim.b.git_branch .. " %*" or ""
 	local path = vim.b.rel_path or "%f"
 
@@ -40,7 +42,7 @@ function _G._statusline()
 		end
 	end
 
-	return "%#StlMode# " .. mode .. " %*" .. branch .. " " .. path .. "%=" .. diag .. vim.bo.filetype .. " %l:%c"
+	return "%#StlMode# " .. mode .. " %*" .. recording .. branch .. " " .. path .. "%=" .. diag .. vim.bo.filetype .. " %l:%c"
 end
 
 vim.api.nvim_create_autocmd("BufEnter", {
@@ -59,6 +61,15 @@ vim.api.nvim_create_autocmd("BufEnter", {
 vim.api.nvim_create_autocmd("DiagnosticChanged", {
 	callback = function()
 		vim.cmd("redrawstatus!")
+	end,
+})
+
+vim.api.nvim_create_autocmd({ "RecordingEnter", "RecordingLeave" }, {
+	group = vim.api.nvim_create_augroup("statusline_recording", { clear = true }),
+	callback = function()
+		vim.schedule(function()
+			vim.cmd("redrawstatus!")
+		end)
 	end,
 })
 
