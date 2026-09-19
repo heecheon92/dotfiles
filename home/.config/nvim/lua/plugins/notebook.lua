@@ -1,17 +1,25 @@
 return {
   {
-    'sheng-tse/jupynvim',
-    version = '*',
+    "sheng-tse/jupynvim",
+    version = "*",
     -- Register BufReadCmd before Neovim opens an .ipynb as ordinary JSON.
     lazy = false,
     build = function(plugin)
-      local install = loadfile(plugin.dir .. '/lua/jupynvim/install.lua')()
+      local install = loadfile(plugin.dir .. "/lua/jupynvim/install.lua")()
       install.run(plugin)
     end,
     opts = {
-      -- WezTerm/iTerm2 do not support the Kitty placeholders used by this plugin.
-      -- v0.4.5 still gates code-cell images on Kitty detection; see README.
-      image_renderer = 'chafa',
+      -- WezTerm and iTerm2 need the static terminal-image fallback.
+      image_renderer = "chafa",
+      -- Keep LazyVim's global explorer, terminal, and picker mappings.
+      explorer_keys = {},
+      explorer_cwd_keys = {},
+      terminal_keys = {},
+      terminal_right_keys = {},
+      pick_keys = {
+        files = {},
+        grep = {},
+      },
     },
   },
 }

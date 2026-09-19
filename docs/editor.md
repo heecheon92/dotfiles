@@ -1,124 +1,119 @@
 # Neovim 편집 환경
 
-Neovim의 LSP, 자동 완성, 포맷, 탐색, UI와 Jupyter 노트북 동작을 설명합니다.
-이 문서의 저장소 경로와 `./rebuild.sh` 명령은 모두 저장소 루트를 기준으로 합니다.
+Neovim은 LazyVim을 기준으로 구성합니다. 시작 화면, Snacks 탐색기, 기본 LSP 키맵,
+Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고, 저장소에는 필요한
+언어 extra와 작은 로컬 조정만 둡니다. 언어별 동작을 점검할 때는
+[LSP 점검표](lsp-checklist.md)를 사용하되, 점검표를 구현 gate로 취급하지 않습니다.
 
-언어별 동작을 검토하고 실행 결과를 기록할 때는 [LSP 점검표](lsp-checklist.md)의
-공통 점검 영역과 기록 양식을 사용합니다. 점검표는 구현을 강제하는 통과 기준이 아닙니다.
+## 소스와 동기화
 
-> [!NOTE]
-> 플러그인은 `lazy.nvim`, 실행 도구는 Nix로 관리합니다. 아래 서버 바이너리가 이미
-> 설치된 환경에서는 LSP 설정 변경 후 `./rebuild.sh` 없이 Neovim만 다시 열면 적용됩니다.
+- 공유 설정의 원본은 `home/.config/nvim`입니다. Home Manager는 이 디렉터리를
+  `~/.config/nvim`에 out-of-store symlink로 연결하므로 저장소에서 수정한 내용이 원본입니다.
+- `home/.config/nvim/lazy-lock.json`은 플러그인 commit을, 같은 디렉터리의
+  `lazyvim.json`은 LazyVim extra와 메타데이터를 기록합니다. 재현 가능한 구성을 위해 둘 다
+  Git으로 관리합니다.
+- Mason이 언어 서버와 editor formatter를 전담합니다. 선택한 언어 extra와
+  `ensure_installed` 목록은 dotfiles로 동기화되지만, Mason이 설치한 바이너리의 정확한
+  버전은 `lazy-lock.json`에 고정되지 않습니다.
+- Nix는 Neovim, tree-sitter, ripgrep, fd, fzf, lazygit, chafa와 일반 CLI를 제공합니다.
+  LSP와 formatter를 Nix와 Mason에 중복 선언하지 않습니다.
+- 새 머신의 첫 실행 전에는 Node.js/npm과 Python/venv 등 Mason 설치에 필요한 runtime을
+  준비합니다. Mason의 editor 도구 경로는 Neovim 안에서 우선 적용되며, 셸 전역 도구
+  설치를 대신하지 않습니다.
 
-## 언어 도구와 편집 동작
+## 기본 편집 경험
 
-- completion capability가 있는 클라이언트에는 각 버퍼의 식별자 문자를 native completion
-  트리거에 더합니다. 서버가 원래 광고한 `.`, `:`, 따옴표 같은 문장부호 트리거는 그대로
-  유지합니다. signature help도 특정 언어 이름이 아니라, 연결된 서버가 광고한 trigger와
-  retrigger 문자에 맞춰 자동 호출합니다. 서버가 기능을 광고하지 않는 문맥에는 강제하지 않습니다.
-- Neovim의 Lua LSP는 Nix의 `lua-language-server`와 내장 자동 완성을 사용합니다.
-  `./rebuild.sh` 적용 후 Lua 파일을 열면 서버가 시작되며, `vim.o.` 등의
-  Neovim API를 완성할 수 있습니다. `Ctrl-Y`로 선택 항목을 확정하고,
-  `:checkhealth vim.lsp`로 연결 상태를 확인합니다. Mason은 사용하지 않습니다.
-  내장 자동 완성 메뉴는 기존 `mini.icons`의 종류별 아이콘과 색상을 표시하고,
-  선택한 항목의 문서는 옆 팝업에 표시합니다. 별도 완성 플러그인은 사용하지 않습니다.
-- Python LSP는 Nix의 `pyrefly`를 사용합니다. `./rebuild.sh` 적용 후 Neovim을
-  다시 열면 Python 파일에서 자동으로 시작합니다. 내장 자동 완성과 `Ctrl-X` → `Ctrl-O`
-  수동 완성을 사용하며 `Ctrl-Y`로 확정합니다. 프로젝트 설정이 없는 파일에도 표준
-  타입 검사를 적용하고, `pyrefly.toml` 또는 `[tool.pyrefly]` 프로젝트 설정을 우선합니다.
-  completion capability와 해당 버퍼의 식별자 문자를 사용하므로 `te`를 입력하면 `test` 같은
-  이름을 자동으로 제안합니다. 후보는 미리 선택하지 않으며, `Ctrl-N`/`Ctrl-P`로
-  이동하고 `Ctrl-Y`로 선택 항목(선택 전에는 첫 항목)을 확정합니다.
-  Pyrefly가 알려 준 시그니처 트리거 문자(현재 `(`, `,`)를 입력하면 매개변수 힌트가
-  자동으로 표시됩니다. 팝업으로 포커스를 옮기지 않아 계속 입력할 수 있고,
-  입력 모드의 `Ctrl-S` 수동 시그니처 도움말도 유지합니다.
-- TypeScript/JavaScript와 React (`.tsx`, `.jsx`)는 Nix의 `typescript-language-server`와
-  `typescript`를 사용합니다. `./rebuild.sh` 적용 후 Neovim을 다시 열면 `ts_ls`가
-  프로젝트에 연결됩니다. 프로젝트의 TypeScript 설치를 우선 사용하며, 라이브러리와
-  타입 정의도 프로젝트에 설치되어 있어야 합니다. `useSta` 같은 이름을 입력하고
-  React의 `useState` 제안을 `Ctrl-Y`로 확정하면 import도 추가됩니다.
-  영문자·숫자·`_`·`$` 입력도 내장 자동 완성을 시작하므로 `<S`처럼 컴포넌트 이름을
-  쓰기 시작하면 제안을 표시합니다. 서버가 제공하는 import 경로는 제안 오른쪽에
-  표시되며, `Ctrl-N`/`Ctrl-P`로 선택하고 `Ctrl-Y`로 이름과 import를 함께 확정합니다.
-  내장 완성은 `noselect`를 유지하며, 팝업에 선택된 항목이 없을 때 `Ctrl-Y`를 누르면
-  첫 번째 표시 항목을 확정합니다. 선택된 항목이 있거나 팝업이 없으면 기존 동작을 유지합니다.
-  `Ctrl-.`은 일반·입력·Visual 모드에서 LSP 코드 액션을 표시합니다.
-  `Ctrl-X` → `Ctrl-O`로 수동 완성을 요청할 수 있습니다. 의존성이 많은 프로젝트에서도
-  제안을 제공하도록 패키지 auto-import 색인을 활성화하며, 첫 연결 시 색인 시간이 필요합니다.
-- Tailwind CSS는 Nix의 `tailwindcss-language-server`와 Neovim 내장 완성을 사용합니다.
-  HTML에는 `vscode-html-language-server`, CSS/SCSS/Less에는
-  `vscode-css-language-server`를 함께 연결해 일반 태그·속성·CSS 구문을 완성합니다.
-  두 범용 서버는 이미 설치된 `vscode-langservers-extracted` 바이너리를 사용합니다.
-  Neovim을 다시 열면 HTML에는 범용 HTML 서버, CSS/SCSS/Less에는 범용 CSS 서버가
-  연결되고, Tailwind 서버는 HTML/CSS/JS/TS/JSX/TSX 프로젝트에서 함께 연결됩니다.
-  Tailwind v4는 프로젝트에 설치된 패키지와 `@import "tailwindcss"`가 있는 CSS 진입점을
-  사용합니다. `className` 안에서 `bg-r`처럼 입력하면 제안이 자동으로 표시되며,
-  `Ctrl-N`/`Ctrl-P`로 선택하고 `Ctrl-Y`로 확정합니다. `cn`, `clsx`, `cva`도 설정에 포함합니다.
-  클래스의 색상 미리보기는 Neovim 0.12의 기본 LSP document-color 배경 강조를 사용합니다.
-  별도 colorizer 플러그인이나 완성 엔진은 추가하지 않습니다.
-- YAML (`.yaml`, `.yml`)은 Nix의 `yaml-language-server`, JSON/JSONC는
-  `vscode-langservers-extracted`의 JSON 서버를 사용합니다. `./rebuild.sh` 적용 후
-  Neovim을 다시 열면 자동 연결되며, 구문 진단과 내장 자동 완성을 제공합니다.
-  애플리케이션별 설정 키 검증에는 해당 JSON Schema가 필요합니다.
-  Neovim 0.12.4에서는 자동으로 짝지어진 따옴표 안에서 JSON/JSONC Schema 속성 snippet을
-  수락하면 닫는 따옴표가 하나 더 남을 수 있습니다. 서버의 replacement range는 올바른
-  것으로 확인했으며, 별도 수락 hook이나 따옴표 정리 우회 처리는 추가하지 않았습니다.
-- 저장 시 포맷은 `lua/plugins/formatting.lua`의 `conform.nvim`이 담당합니다.
-  JavaScript/TypeScript·JSX/TSX·HTML·CSS·JSON은 Prettier, Lua는 StyLua,
-  Python은 `ruff format`을 사용합니다. Python import 정렬이나 lint 자동 수정은 하지 않습니다.
-  `./rebuild.sh`로 Nix의 `prettier`, `stylua`, `ruff`를 설치하고 Neovim을 다시 여세요.
-  Prettier는 프로젝트의 `node_modules` 실행 파일을 우선하며, 각 도구는 프로젝트 설정을 따릅니다.
-  저장 전에 최대 2초 동안 포맷하며, 해당 외부 포매터가 없을 때만 LSP 포맷으로 대체합니다.
-  외부 포매터의 오류나 시간 초과는 LSP 재시도로 숨기지 않습니다. 둘 다 없으면 그대로 저장합니다.
-  `:ConformInfo`로 현재 버퍼의 포매터와 실행 가능 여부를 확인할 수 있습니다.
-- Jupyter 노트북은 `jupynvim`으로 편집하고 실행합니다. Python 커널은 프로젝트의
-  `.venv`에 두며 기존 Pyrefly와 내장 자동 완성을 유지합니다.
-  설치와 이미지 렌더링 제한은 아래 **Neovim Jupyter 노트북**을 참고하세요.
-- Neovim UI 플러그인은 기존 `lazy.nvim`으로 관리합니다. Neovim 0.12 이상에서
-  `tiny-cmdline.nvim`은 `:` 명령줄을 중앙 팝업으로 표시하고 (`/`, `?` 검색은 하단 유지),
-  `modicator.nvim`은 모드에 따라 현재 줄 번호 색상을 바꿉니다.
-  `nvim-hlslens`는 검색 결과에 카운터를 표시하며 `n`, `N`, `*`, `#`, `g*`, `g#`를
-  그대로 사용할 수 있습니다. `<leader>l`로 검색 강조를 지웁니다.
-- `:` 명령줄은 글자를 입력할 때마다 Neovim 내장 완성 후보를 자동으로 표시합니다.
-  후보는 미리 선택하지 않으며, `Tab`으로 선택하기 전까지 입력 내용은 그대로 유지됩니다.
-  `/`, `?` 검색과 TypeScript/React의 코드 완성 동작은 변경하지 않습니다.
-- 파일 검색은 `<leader>ff`로 현재 작업 디렉터리, `<leader>fF`로 홈 디렉터리를
-  검색합니다. 두 검색 모두 숨김 파일을 포함하되 ignore 규칙은 유지합니다.
-  `<leader>/` 내용 검색도 숨김 파일을 포함하며 ignore 규칙은 유지합니다.
-  Snacks 탐색기와 파일 선택기의 숨김·Git ignored·untracked 파일명은 Sonokai의 `Grey`
-  색상을 사용합니다. `lua/plugins/colorscheme.lua`에서 지정하며, 투명 배경은 유지합니다.
-- `Snacks.indent`는 중첩 깊이별 색상으로 들여쓰기 가이드를 표시하고 현재 범위를
-  강조합니다. 애니메이션은 끕니다. `rainbow-delimiters.nvim`은 Sonokai 색상으로
-  괄호 쌍을 구분하며, Lua/Python/JSON/YAML 파서도 `nvim-treesitter`로 설치합니다.
-- `nvim-autopairs`는 괄호와 따옴표를 자동으로 짝지으며 `Ctrl-Y` 완성 확정 키는
-  유지합니다. 괄호와 태그 사이의 Enter 확장은 플러그인의 기본 규칙을 사용하며,
-  들여쓰기는 Neovim의 `indentexpr`, `shiftwidth`, `expandtab` 설정을 따릅니다.
-  짝 사이에서는 완성 팝업이 열려 있어도 현재 보이는 텍스트를 유지하며 완성을
-  종료한 뒤 펼칩니다. `Ctrl-E` 취소로 `>` 같은 문자가 되돌려지는 것을 방지합니다.
-  그 밖의 일반 줄바꿈과 완성 팝업의 Enter 동작, `Ctrl-Y` 수락은 유지합니다.
-  `nvim-ts-autotag`는 HTML/JSX/TSX 태그를 자동으로 닫고
-  이름 변경 시 짝 태그도 갱신합니다. 필요한 HTML/JavaScript/TypeScript/TSX 파서는
-  기존 `nvim-treesitter` 설치 설정에서 관리합니다.
-- JSX/TSX, HTML, Vue, Svelte, XML에서 `<table>|</table>`처럼 여는 태그와 닫는
-  태그 사이에 커서를 놓고 Enter를 누르면 세 줄로 펼칩니다. `<Card>`,
-  `<Dialog.Content>` 같은 사용자 정의 태그와 JSX fragment도 지원합니다.
-  JSX/TSX와 HTML은 `nvim-treesitter`의 `indentexpr()`로 중첩 구조와 여러 줄에 걸친
-  태그 속성을 인식해 들여씁니다. 나머지 파일 형식은 해당 파일 형식의 들여쓰기를 사용합니다.
-  직접 줄을 교체하거나 공백을 삽입하지 않습니다. 플러그인의 Enter 확장은 `.` 반복 시
-  전체 줄 배치를 재현하지 못하는 제한이 있습니다.
+- 인자 없이 열면 LazyVim의 Snacks dashboard가 표시됩니다. 검색, 세션, Lazy와
+  Lazy Extras 진입점도 기본 dashboard 동작을 사용합니다.
+- 키맵은 LazyVim 기본값을 기준으로 하되, 명시적으로 선택한 Oil 탐색기, 완성, hlslens
+  검색 동작을 조정합니다. `<leader>`는 Space이며 `which-key`로 현재 문맥의 키를 확인합니다.
+- 완성은 `blink.cmp`가 담당합니다. `default` 키 preset과
+  `preselect = false`, `auto_insert = false`로 메뉴가 열려도 후보를 자동 선택·삽입하지
+  않습니다. `<C-y>`는 선택한 후보를 수락하며 선택이 없으면 첫 후보를 수락합니다.
+  `<Enter>`는 완성을 수락하지 않고 일반 줄바꿈과 `mini.pairs` 들여쓰기를 유지합니다.
+  자동 signature popup은 유지하며, 설정은 `lua/plugins/completion.lua`에 둡니다.
+- 괄호와 따옴표 짝은 LazyVim의 `mini.pairs` 기본 동작을 사용합니다. 자동 짝은 LSP
+  capability가 아니며, snippet 수락과의 상호작용은 실제 filetype에서 따로 확인합니다.
+- `nvim-hlslens`는 Normal 모드의 `n`, `N`, `*`, `#`, `g*`, `g#` 검색에 현재/전체
+  일치 개수와 이동 횟수를 표시합니다. `3n` 같은 횟수 지정도 유지합니다. 표시된 이동
+  키와 실제 동작을 맞추기 위해 `n`/`N`은 기존 Vim 검색 방향을 따릅니다. `/` 검색 뒤
+  `n`은 앞으로, `?` 검색 뒤 `n`은 뒤로 이동하며 `N`은 그 반대입니다.
+  `<Esc>`로 검색 강조와 lens를 지우고, `<leader>l`은 Lazy plugin manager로 유지합니다.
+- Sonokai Atlantis를 투명 배경 모드로 사용합니다. Snacks picker의 hidden, ignored,
+  untracked 경로는 투명 배경에서도 읽히도록 `Grey`에 연결합니다. 설정 위치는
+  `home/.config/nvim/lua/plugins/appearance.lua`입니다.
+  같은 `ColorScheme` callback에서 `Comment`/`SpecialComment`는 `#b0b6c2`,
+  `LineNr`는 `#9299a8`, `LspInlayHint`는 `#a0a7b4`로 밝힙니다. foreground만 바꾸므로
+  기존 italic 속성, 배경 투명도와 다른 syntax 색은 유지하며 theme을 다시 적용해도 보존됩니다.
+  일반 들여쓰기 guide의 `SnacksIndent`도 `#9299a8`로 밝히며, 활성 scope 색은 그대로
+  유지해 구분합니다. 공백·기타 `NonText` 표시는 함께 밝히지 않습니다.
+  비슷한 문제가 다시 발생하면 [가독성 문제 대응 지침](../AGENTS.md#neovim-foreground-visibility)에
+  따라 표시의 생성 주체와 highlight group을 먼저 확인하고 좁은 범위로 조정합니다.
+- `gitsigns.nvim`은 현재 줄 blame을 표시합니다. LazyVim의 Git picker와 lazygit을
+  그대로 사용하며, `<leader>gg`는 저장소 root, `<leader>gG`는 현재 작업 디렉터리에서
+  lazygit을 엽니다. Neogit과 Diffview는 추가하지 않습니다.
+- `<leader>e`는 프로젝트 root의 Oil, `<leader>E`는 현재 작업 디렉터리의 Oil을 엽니다.
+  Snacks 탐색기는 기존 `<leader>fe`/`<leader>fE`에 각각 root/cwd 동작으로 유지합니다.
+  키 설정은 `lua/config/keymaps.lua`, Oil plugin 설정은 `lua/plugins/workflows.lua`에 둡니다.
 
-## Neovim Jupyter 노트북
+## 언어와 포맷
 
-`home/.config/nvim/lua/plugins/notebook.lua`에서 `jupynvim`의 안정 릴리스를
-사용하며, 실제 버전은 `lazy-lock.json`으로 고정합니다. `.ipynb` 읽기 전에
-플러그인을 로드해야 하므로 eager loading을 사용합니다. 최초 Neovim 실행 시
-Lazy가 설치하며, 필요하면 `:Lazy install jupynvim`으로 실행할 수 있습니다.
-Apple Silicon Mac에서는 upstream 설치기가 Rust 백엔드의 prebuilt와
-`SHA256SUMS`를 내려받아 검증합니다. Prebuilt가 없는 플랫폼에서는 `cargo`가
-필요합니다.
+`home/.config/nvim/lua/config/lazy.lua`는 로컬 `plugins`보다 먼저
+`lang.python`, `lang.typescript`, `lang.tailwind`, `lang.json`, `lang.yaml`,
+`lang.markdown`, `formatting.prettier` 공식 extra를 불러옵니다. HTML과 CSS/SCSS/Less는
+공식 언어 extra가 없는 범위를 `home/.config/nvim/lua/plugins/languages.lua`의
+`html`/`cssls` 서버 설정으로 보완합니다. Mason은 이 선언에서 필요한 서버와 formatter를
+설치합니다.
 
-Python 커널은 전역이 아니라 프로젝트 환경에 설치합니다. 기존 uv 프로젝트라면
-uv가 설치된 셸에서 프로젝트 디렉터리로 이동한 후 실행합니다:
+- Python은 Pyrefly와 Ruff, JavaScript/TypeScript/React는 기본 `vtsls`를 사용합니다.
+- Tailwind, JSON, YAML과 Markdown은 각각 `tailwindcss`, `jsonls`, `yamlls`,
+  `marksman`을 사용합니다. JSON/YAML schema, 프로젝트 의존성, Tailwind 진입점처럼
+  프로젝트별 조건은 별도로 갖춰야 합니다.
+- `lua/config/options.lua`의 `vim.g.lazyvim_python_lsp = "pyrefly"`로 공식 Python extra의
+  서버를 선택합니다. 이 선택은 Pyright/basedpyright를 비활성화합니다. 이전 Mason
+  Pyright 설치는 `:MasonUninstall pyright`로 정리합니다.
+- Python 타입 검사·완성은 Pyrefly, lint·format은 Ruff가 담당합니다. `languages.lua`에서
+  Pyrefly의 `python.pyrefly.typeCheckingMode`를 `default`로 설정해 별도 프로젝트 설정이
+  없어도 일반 타입 오류를 표시합니다. `strict` 모드가 아니며 `pyrefly.toml` 또는
+  `[tool.pyrefly]` 설정이 우선합니다. Pyrefly 기본 `auto` 모드는 설정이 없는 프로젝트에서
+  최소 검사인 `basic`으로 내려갑니다. 자세한 동작은
+  [공식 IDE 설정](https://pyrefly.org/en/docs/IDE/#pythonpyreflytypecheckingmode)을 참고합니다.
+- HTML과 CSS 계열은 `html`과 `cssls`의 일반 구문·완성을 사용하고, 해당 프로젝트에서는
+  Tailwind 서버가 함께 연결될 수 있습니다.
+- Prettier extra는 JS/TS/JSX/TSX, HTML, CSS/SCSS/Less, JSON/JSONC, YAML, Markdown 등
+  지원 filetype에 Prettier를 연결합니다. Markdown은 조건에 따라 `markdownlint-cli2`와
+  `markdown-toc`도 이어서 실행합니다. Lua는 LazyVim 기본 StyLua를 사용하고, Python은
+  Ruff LSP formatting을 fallback으로 사용할 수 있습니다.
+
+저장 포맷의 소유자는 LazyVim의 `LazyVim.format`과 Conform입니다. LazyVim이 등록한
+`BufWritePre` 흐름이 저장 전에 선택된 formatter를 호출하며, 별도
+`conform.nvim` `format_on_save` 설정은 두지 않습니다. 수동 포맷은 `<leader>cf`,
+현재 buffer의 formatter와 실행 경로는 `:ConformInfo`, LSP 연결은 `:LspInfo`, Mason
+설치 상태는 `:Mason`에서 확인합니다. formatter가 없을 때의 LSP fallback을 formatter
+실행 실패 재시도와 혼동하지 않습니다.
+
+## Jupyter 노트북
+
+`home/.config/nvim/lua/plugins/notebook.lua`는 `jupynvim`을 시작 시 로드해 `.ipynb`를
+일반 JSON보다 먼저 처리합니다. 기존 노트북은 `nvim analysis.ipynb`, 새 노트북은
+`:JupynvimOpen analysis.ipynb`으로 엽니다. 대표 명령은 다음과 같습니다.
+
+- `:JupynvimRunCell`, `:JupynvimRunAll`: 현재 셀 또는 전체 코드 셀 실행
+- `:JupynvimKernel`, `:JupynvimRestart`: 커널 선택 또는 재시작
+- `:JupynvimClearCellOutput`, `:JupynvimClearOutputs`: 출력 정리
+- `:JupynvimSaveImage [path]`, `:JupynvimImageMode chafa`: 이미지 저장과 renderer 선택
+
+노트북 buffer 안의 셀 키맵은 jupynvim 기본값을 사용합니다. 예를 들어 `<leader>nr` 또는
+Shift+Enter는 셀을 실행하고 다음 셀로 이동하며, `<leader>nR`은 전체 셀을 실행합니다.
+반면 explorer, terminal, picker의 전역 dispatch mapping 목록은 모두 비워 두어 LazyVim의
+전역 탐색기·터미널·picker 키를 가로채지 않습니다.
+
+노트북은 기본적으로 셀 선택용 COMMAND 모드로 열립니다. `<CR>` 또는 `i`를 한 번
+눌러 EDIT 모드로 들어간 뒤 일반 Vim 편집 키를 사용합니다. COMMAND 모드에서 바로
+`cc`를 누르면 수정 불가 오류가 나는 것이 기본 동작입니다. EDIT 모드의 Normal 상태에서
+`<Esc>`를 누르면 다시 COMMAND 모드로 돌아갑니다.
+
+Python kernel은 프로젝트 `.venv`에 둡니다. uv 프로젝트에서는 다음처럼 설치합니다.
 
 ```bash
 uv add --dev ipykernel
@@ -126,36 +121,9 @@ uv sync
 nvim analysis.ipynb
 ```
 
-uv를 쓰지 않는 프로젝트는 `python3 -m venv .venv`로 환경을 만들고
-`.venv/bin/python -m pip install ipykernel`로 설치할 수 있습니다.
-이미 커널이 있는 `.venv`는 다시 만들 필요가 없습니다. 플러그인은 노트북의
-상위 디렉터리에서 `.venv`를 자동 탐색하므로 사용자 kernelspec을 별도로
-등록하지 않아도 됩니다. Python/uv와 프로젝트 의존성은 각 머신·프로젝트에서
-관리하며 이 설정은 전역 Python 환경을 변경하지 않습니다.
-
-새 노트북은 `:JupynvimOpen analysis.ipynb`으로 생성합니다. 노트북 안에서만
-기본 키맵이 적용됩니다 (`<leader>`는 Space):
-
-- `<leader>nr` 또는 Shift+Enter: 셀 실행 후 다음 셀로 이동
-- Ctrl+Enter: 현재 셀 실행 후 그대로 유지
-- `<leader>nR`: 전체 실행
-- `<leader>na` / `<leader>nb`: 위 / 아래에 셀 추가
-- `<leader>nm` / `<leader>ny`: Markdown / 코드 셀로 변환
-- `<leader>nK`: 커널 선택, `<leader>ni`: 중단, `<leader>nx`: 재시작
-- `:w`: 코드와 실행 결과 저장
-
-터미널에서 수정키+Enter를 구분하지 못하면 `<leader>nr`을 사용합니다.
-실행 중인 커널의 완성·hover는 `jupynvim_kernel` LSP가 제공하며, 기존 내장
-완성과 `Ctrl-Y`를 그대로 사용합니다. Pyrefly는 notebook protocol로 연결됩니다.
-프로젝트 루트와 `.venv`를 올바르게 탐지하려면 프로젝트에 `pyproject.toml`
-또는 `pyrefly.toml`을 두는 것이 좋습니다. 원격 SSH 프로필은 설정하지 않습니다.
-
-이미지는 WezTerm/iTerm2를 고려해 `image_renderer = 'chafa'`로 설정합니다.
-`chafa`는 Nix로 관리하므로 `./rebuild.sh` 적용 후 사용할 수 있습니다.
-다만 **검증한 jupynvim v0.4.5에는 코드 셀 이미지의 capability 검사 버그**가
-있어 Kitty/Ghostty가 아닌 터미널에서는 chafa fallback에 도달하지 않습니다.
-이 환경에서는 텍스트 출력과 실행·저장은 동작하지만 코드 셀 이미지는 표시되지
-않습니다. 이미지 데이터는 `.ipynb`에 그대로 저장됩니다. Upstream 코드는
-수정하거나 monkey-patch하지 않습니다. 실제 그래픽에는 Kitty 또는 Ghostty
-1.3+와 `image_renderer = 'placeholder'` 설정이 필요하며, multiplexer 조합은
-별도 확인이 필요합니다.
+이미지 renderer는 `chafa`로 선택하고 실행 파일은 Nix가 제공합니다. 다만 현재 고정된
+`jupynvim`은 Chafa 선택 여부와 무관하게 Kitty/Ghostty terminal 감지를 먼저 요구합니다.
+2026-09-19 iTerm 실행에서는 이미지 생성·노트북 저장·`:JupynvimSaveImage path.png`의
+원본 PNG export는 확인했지만, inline 표시는 이 upstream 제한으로 동작하지 않았습니다.
+terminal 환경 위장이나 plugin 내부 patch는 추가하지 않습니다. 이미지 지원이 바뀌면
+실제 사용 terminal에서 다시 확인합니다.
