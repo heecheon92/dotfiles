@@ -3,12 +3,19 @@
 Neovim의 LSP, 자동 완성, 포맷, 탐색, UI와 Jupyter 노트북 동작을 설명합니다.
 이 문서의 저장소 경로와 `./rebuild.sh` 명령은 모두 저장소 루트를 기준으로 합니다.
 
+언어별 동작을 검토하고 실행 결과를 기록할 때는 [LSP 점검표](lsp-checklist.md)의
+공통 점검 영역과 기록 양식을 사용합니다. 점검표는 구현을 강제하는 통과 기준이 아닙니다.
+
 > [!NOTE]
-> 플러그인은 `lazy.nvim`, 실행 도구는 Nix로 관리합니다. 설정을 바꾼 뒤
-> `./rebuild.sh`를 적용하고 Neovim을 다시 여세요.
+> 플러그인은 `lazy.nvim`, 실행 도구는 Nix로 관리합니다. 아래 서버 바이너리가 이미
+> 설치된 환경에서는 LSP 설정 변경 후 `./rebuild.sh` 없이 Neovim만 다시 열면 적용됩니다.
 
 ## 언어 도구와 편집 동작
 
+- completion capability가 있는 클라이언트에는 각 버퍼의 식별자 문자를 native completion
+  트리거에 더합니다. 서버가 원래 광고한 `.`, `:`, 따옴표 같은 문장부호 트리거는 그대로
+  유지합니다. signature help도 특정 언어 이름이 아니라, 연결된 서버가 광고한 trigger와
+  retrigger 문자에 맞춰 자동 호출합니다. 서버가 기능을 광고하지 않는 문맥에는 강제하지 않습니다.
 - Neovim의 Lua LSP는 Nix의 `lua-language-server`와 내장 자동 완성을 사용합니다.
   `./rebuild.sh` 적용 후 Lua 파일을 열면 서버가 시작되며, `vim.o.` 등의
   Neovim API를 완성할 수 있습니다. `Ctrl-Y`로 선택 항목을 확정하고,
@@ -19,11 +26,11 @@ Neovim의 LSP, 자동 완성, 포맷, 탐색, UI와 Jupyter 노트북 동작을 
   다시 열면 Python 파일에서 자동으로 시작합니다. 내장 자동 완성과 `Ctrl-X` → `Ctrl-O`
   수동 완성을 사용하며 `Ctrl-Y`로 확정합니다. 프로젝트 설정이 없는 파일에도 표준
   타입 검사를 적용하고, `pyrefly.toml` 또는 `[tool.pyrefly]` 프로젝트 설정을 우선합니다.
-  TypeScript와 같은 문자 입력 트리거를 공유하므로 `te`를 입력하면 `test` 같은
+  completion capability와 해당 버퍼의 식별자 문자를 사용하므로 `te`를 입력하면 `test` 같은
   이름을 자동으로 제안합니다. 후보는 미리 선택하지 않으며, `Ctrl-N`/`Ctrl-P`로
   이동하고 `Ctrl-Y`로 선택 항목(선택 전에는 첫 항목)을 확정합니다.
-  Python에서는 서버가 알려 준 시그니처 트리거 문자(현재 Pyrefly의 `(`, `,`)를 입력하면
-  매개변수 힌트가 자동으로 표시됩니다. 팝업으로 포커스를 옮기지 않아 계속 입력할 수 있고,
+  Pyrefly가 알려 준 시그니처 트리거 문자(현재 `(`, `,`)를 입력하면 매개변수 힌트가
+  자동으로 표시됩니다. 팝업으로 포커스를 옮기지 않아 계속 입력할 수 있고,
   입력 모드의 `Ctrl-S` 수동 시그니처 도움말도 유지합니다.
 - TypeScript/JavaScript와 React (`.tsx`, `.jsx`)는 Nix의 `typescript-language-server`와
   `typescript`를 사용합니다. `./rebuild.sh` 적용 후 Neovim을 다시 열면 `ts_ls`가
@@ -39,7 +46,11 @@ Neovim의 LSP, 자동 완성, 포맷, 탐색, UI와 Jupyter 노트북 동작을 
   `Ctrl-X` → `Ctrl-O`로 수동 완성을 요청할 수 있습니다. 의존성이 많은 프로젝트에서도
   제안을 제공하도록 패키지 auto-import 색인을 활성화하며, 첫 연결 시 색인 시간이 필요합니다.
 - Tailwind CSS는 Nix의 `tailwindcss-language-server`와 Neovim 내장 완성을 사용합니다.
-  `./rebuild.sh` 적용 후 Neovim을 다시 열면 HTML/CSS/JS/TS/JSX/TSX에서 연결됩니다.
+  HTML에는 `vscode-html-language-server`, CSS/SCSS/Less에는
+  `vscode-css-language-server`를 함께 연결해 일반 태그·속성·CSS 구문을 완성합니다.
+  두 범용 서버는 이미 설치된 `vscode-langservers-extracted` 바이너리를 사용합니다.
+  Neovim을 다시 열면 HTML에는 범용 HTML 서버, CSS/SCSS/Less에는 범용 CSS 서버가
+  연결되고, Tailwind 서버는 HTML/CSS/JS/TS/JSX/TSX 프로젝트에서 함께 연결됩니다.
   Tailwind v4는 프로젝트에 설치된 패키지와 `@import "tailwindcss"`가 있는 CSS 진입점을
   사용합니다. `className` 안에서 `bg-r`처럼 입력하면 제안이 자동으로 표시되며,
   `Ctrl-N`/`Ctrl-P`로 선택하고 `Ctrl-Y`로 확정합니다. `cn`, `clsx`, `cva`도 설정에 포함합니다.
@@ -49,6 +60,9 @@ Neovim의 LSP, 자동 완성, 포맷, 탐색, UI와 Jupyter 노트북 동작을 
   `vscode-langservers-extracted`의 JSON 서버를 사용합니다. `./rebuild.sh` 적용 후
   Neovim을 다시 열면 자동 연결되며, 구문 진단과 내장 자동 완성을 제공합니다.
   애플리케이션별 설정 키 검증에는 해당 JSON Schema가 필요합니다.
+  Neovim 0.12.4에서는 자동으로 짝지어진 따옴표 안에서 JSON/JSONC Schema 속성 snippet을
+  수락하면 닫는 따옴표가 하나 더 남을 수 있습니다. 서버의 replacement range는 올바른
+  것으로 확인했으며, 별도 수락 hook이나 따옴표 정리 우회 처리는 추가하지 않았습니다.
 - 저장 시 포맷은 `lua/plugins/formatting.lua`의 `conform.nvim`이 담당합니다.
   JavaScript/TypeScript·JSX/TSX·HTML·CSS·JSON은 Prettier, Lua는 StyLua,
   Python은 `ruff format`을 사용합니다. Python import 정렬이나 lint 자동 수정은 하지 않습니다.
