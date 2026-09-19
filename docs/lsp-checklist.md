@@ -1,7 +1,7 @@
 # 언어별 LSP 점검표
 
-이 문서는 LSP 설정을 바꾸거나 새 언어를 추가할 때 공통 영역을 빠뜨리지 않고 검토하기 위한
-기록 양식입니다. 아래 항목은 최소 의무 사항이나 구현 gate가 아닙니다. 서버·언어·프로젝트의
+이 문서는 LSP나 저장 시 포맷 설정을 바꾸거나 새 언어를 추가할 때 공통 영역을 빠뜨리지 않고
+검토하기 위한 기록 양식입니다. 아래 항목은 최소 의무 사항이나 구현 gate가 아닙니다. 서버·언어·프로젝트의
 성격에 따라 지원하지 않거나 upstream 제약이 있는 동작, 아직 검증하지 않은 동작을 그대로
 기록할 수 있습니다. 점검표를 맞추기 위한 복잡한 hook이나 입력 보정은 요구하지 않습니다.
 
@@ -40,6 +40,32 @@
 - 팝업의 포커스 유지, 쉼표 입력 뒤 active parameter 갱신, `Ctrl-S` 수동 호출을 구분해
   기록합니다. hover와 본문 inlay hint는 다른 기능이며 inlay hint 활성화는 선택 사항입니다.
 
+### 5. 저장 시 포맷 — conform.nvim
+
+`conform.nvim`은 LSP 서버가 아니라 외부 formatter와 LSP formatting을 실행하는 플러그인입니다.
+자동 완성·진단의 정상 동작만으로 저장 시 포맷까지 확인한 것으로 기록하지 않습니다.
+
+- [ ] 대상 버퍼의 `:set filetype?`와 `:ConformInfo`에서 설정된 formatter, 실행 파일의
+  가용성·경로, 관련 로그를 확인합니다. 설치 여부와 실제 선택되는 formatter를 구분합니다.
+- [ ] 프로젝트의 formatter 설정과 적용 범위를 확인합니다. 예를 들어 Prettier 설정,
+  `.stylua.toml`/`stylua.toml`, Ruff의 `pyproject.toml`/`ruff.toml` 등이 실제 결과에
+  반영되는지 살펴봅니다. ignore 규칙이나 제외된 파일은 오류와 구분해 기록합니다.
+- [ ] 의도적으로 서식이 흐트러진 작은 fixture를 `:w`로 저장하고, 버퍼뿐 아니라 디스크에
+  기록된 내용도 예상한 결과인지 확인합니다. 다시 저장했을 때 불필요한 추가 변경이 없는지도
+  필요에 따라 확인합니다.
+- [ ] 외부 formatter가 선택됐는지, 사용 가능한 외부 formatter가 없어 LSP fallback을
+  사용했는지 구분합니다. fallback은 formatter 실행 오류나 timeout 시 자동 재시도를 뜻하지 않습니다.
+- [ ] 실제로 문제가 발생한 경우 실행 파일 누락, 구문 오류, timeout 등의 원인과
+  저장 결과를 `:ConformInfo` 로그와 함께 기록합니다. 확인을 위해 정상 환경을 일부러 망가뜨릴 필요는 없습니다.
+- [ ] 포맷과 lint 자동 수정·import 정렬을 구분합니다. 필요한 경우에만 별도 동작으로 점검합니다.
+
+현재 설정의 출처는 `home/.config/nvim/lua/plugins/formatting.lua`입니다.
+JS/JSX/TS/TSX·HTML·CSS·JSON은 `prettier`, Lua는 `stylua`, Python은 `ruff_format`을
+지정합니다. 저장 시 제한 시간은 `2000ms`, `lsp_format`은 `'fallback'`입니다.
+Python lint 자동 수정이나 import 정렬은 이 설정에 포함하지 않습니다. 그 밖의 filetype은
+명시적인 외부 formatter 설정과 LSP formatting 지원을 따로 확인합니다.
+이 목록은 구성 확인이며, 언어별 실제 저장 동작을 새로 검증했다는 뜻은 아닙니다.
+
 결과에는 `확인`, `부분 확인`, `미지원`, `upstream 제한`, `해당 없음`, `미확인`처럼 관찰에
 맞는 표현을 씁니다. 미지원·제한·미확인은 구현 실패를 뜻하지 않으며 우회 구현을 요구하지
 않습니다. 예를 들어 일반 JSON/YAML 값에는 함수 호출 시그니처가 없어 `해당 없음`으로
@@ -67,13 +93,17 @@ root marker / 실제 root:
     증거: (), [], {}, 따옴표, 태그, 완성·snippet 수락 뒤 closer
 [ ] 자동 시그니처 — capability: / 설정 지원: / 실행 관찰: / 상태:
     증거: trigger, retrigger, active parameter, 수동 Ctrl-S, focus 유지
+[ ] 저장 시 포맷 — conform.nvim 설정: / 실행 관찰: / 상태:
+    filetype=, formatter·버전·실행 경로=, available=, 프로젝트 설정·제외 규칙=
+    증거: 저장 전후 buffer·disk diff=, 재저장 변화=, LSP fallback 사용 여부=
+    오류·timeout·로그=, lint 자동 수정·import 정렬과 구분=
 
 UI 키: Ctrl-X Ctrl-O=수동 완성, Ctrl-N/P=후보 이동,
        Ctrl-Y=수락, Ctrl-E=완성 취소, Ctrl-S=수동 시그니처
 선택 점검: hover / diagnostics / code actions / rename / references /
-           format / inlay hints / snippets / imports / ghost text
+           inlay hints / snippets / imports / ghost text
 요약:
-관찰 증거: 입력 문자열, 화면 상태, 결과 텍스트 또는 import diff
+관찰 증거: 입력 문자열, 화면 상태, 결과 텍스트, import diff 또는 저장 전후 diff
 ```
 
 snippet 플러그인이나 별도 설정이 없다는 이유만으로 Neovim의 native snippet 지원을

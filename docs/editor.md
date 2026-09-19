@@ -85,6 +85,8 @@ Neovim의 LSP, 자동 완성, 포맷, 탐색, UI와 Jupyter 노트북 동작을 
 - 파일 검색은 `<leader>ff`로 현재 작업 디렉터리, `<leader>fF`로 홈 디렉터리를
   검색합니다. 두 검색 모두 숨김 파일을 포함하되 ignore 규칙은 유지합니다.
   `<leader>/` 내용 검색도 숨김 파일을 포함하며 ignore 규칙은 유지합니다.
+  Snacks 탐색기와 파일 선택기의 숨김·Git ignored·untracked 파일명은 Sonokai의 `Grey`
+  색상을 사용합니다. `lua/plugins/colorscheme.lua`에서 지정하며, 투명 배경은 유지합니다.
 - `Snacks.indent`는 중첩 깊이별 색상으로 들여쓰기 가이드를 표시하고 현재 범위를
   강조합니다. 애니메이션은 끕니다. `rainbow-delimiters.nvim`은 Sonokai 색상으로
   괄호 쌍을 구분하며, Lua/Python/JSON/YAML 파서도 `nvim-treesitter`로 설치합니다.
