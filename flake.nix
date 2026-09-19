@@ -17,10 +17,10 @@
     let
       user = "heecheonpark";
       mkDarwinConfiguration =
-        { manageHomebrewInstallation, migrateHomebrewInstallation ? false }:
+        { desktopProfile, manageHomebrewInstallation, migrateHomebrewInstallation ? false }:
         nix-darwin.lib.darwinSystem {
           specialArgs = {
-            inherit user manageHomebrewInstallation migrateHomebrewInstallation;
+            inherit desktopProfile user manageHomebrewInstallation migrateHomebrewInstallation;
           };
           modules = [
             ./configuration.nix
@@ -30,7 +30,7 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "before-home-manager";
-              home-manager.extraSpecialArgs = { inherit user; };
+              home-manager.extraSpecialArgs = { inherit desktopProfile user; };
               home-manager.users.${user} = import ./home.nix;
             }
           ];
@@ -38,9 +38,11 @@
     in
     {
       darwinConfigurations."Mac-mini" = mkDarwinConfiguration {
+        desktopProfile = "aerospace";
         manageHomebrewInstallation = false;
       };
       darwinConfigurations."MacBook-Pro" = mkDarwinConfiguration {
+        desktopProfile = "hammerspoon";
         manageHomebrewInstallation = true;
         migrateHomebrewInstallation = true;
       };

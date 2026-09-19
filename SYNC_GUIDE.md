@@ -12,10 +12,10 @@ git pull -> validate -> darwin-rebuild switch
 
 ## Current hosts
 
-| Flake profile | Machine | User | Homebrew installation |
-| --- | --- | --- | --- |
-| `Mac-mini` | Company Mac | `heecheonpark` | Existing installation; nix-homebrew takeover disabled |
-| `MacBook-Pro` | Personal Mac | `heecheonpark` | Existing installation migrated to nix-homebrew |
+| Flake profile | Machine | User | Desktop profile | Homebrew installation |
+| --- | --- | --- | --- | --- |
+| `Mac-mini` | Company Mac | `heecheonpark` | `aerospace` | Existing installation; nix-homebrew takeover disabled |
+| `MacBook-Pro` | Personal Mac | `heecheonpark` | `hammerspoon` | Existing installation migrated to nix-homebrew |
 
 Do not run `./rebuild.sh` on another Mac until `flake.nix` contains a separate
 profile matching that Mac's `LocalHostName`.
@@ -34,14 +34,24 @@ Hostnames do not need to match between machines. The profile names should match
 each machine's `LocalHostName` because `rebuild.sh` selects that profile
 automatically.
 
+`desktopProfile` is required for every host. The `aerospace` profile enables
+AeroSpace, SketchyBar, Borders, their font and tap, the Spaces override, and the
+hidden menu-bar behavior. The `hammerspoon` profile enables Hammerspoon and keeps
+the macOS menu bar visible, including in fullscreen. Do not apply both desktop
+stacks to one host. The `Mac-mini` profile retains the company Mac's existing
+remote-desktop software.
+
 ## Repository files
 
 - `flake.nix`: declares dependencies and machine profiles.
 - `flake.lock`: pins the exact dependency revisions. Commit this file.
 - `configuration.nix`: shared macOS, Nix, and Homebrew configuration.
 - `home.nix`: shared Home Manager packages and user configuration.
-- `home/`: edit-in-place application configuration linked by Home Manager.
+- `home/`: portable application configuration; Home Manager either links the
+  authored file or merges the portable subset into writable local state.
 - `rebuild.sh`: selects the current host and applies its configuration.
+- `home/bin/sync-herdr-config.py`: merges shared Herdr keys into the active
+  machine-local configuration during activation.
 - `SYNC_GUIDE.md`: this runbook.
 
 ## Safety rules
@@ -111,9 +121,10 @@ Ask Codex to add a separate host profile. A useful prompt is:
 
 > Inspect this Mac and the dotfiles repository. Add a home-machine
 > `darwinConfiguration` matching this Mac's LocalHostName without changing the
-> company profile. Keep shared configuration reusable, enable nix-homebrew only
-> if appropriate for this Mac, preserve existing Homebrew packages, run
-> read-only validation, and show me the changes before activation.
+> company profile. Keep shared configuration reusable, choose exactly one
+> supported `desktopProfile` for this Mac, enable nix-homebrew only if
+> appropriate, preserve existing Homebrew packages, run read-only validation,
+> and show me the changes before activation.
 
 After installing Nix as described below, confirm the new profile exists:
 
@@ -190,6 +201,17 @@ root's Git ownership check without adding `safe.directory` exceptions. The norma
 `rebuild.sh` wrapper uses the same handoff. Stage new Nix files with `git add` before
 building; untracked files are not included.
 
+That first activation also creates `~/.config/wezterm/host.lua` from the selected
+desktop profile and links only the shared `~/.config/wezterm/wezterm.lua` file.
+Do not edit the generated host file. It reports `aerospace = true` only for the
+AeroSpace host, which makes the shared Lua disable WezTerm's `Alt+Enter` default
+assignment there.
+
+Herdr's active `~/.config/herdr/config.toml` remains a writable local regular
+file. If it does not exist, first activation seeds it from the portable
+configuration. If it already exists, activation performs the three-way key
+merge described below instead of replacing it.
+
 Official reference:
 [nix-darwin getting started](https://github.com/nix-darwin/nix-darwin#flakes)
 
@@ -244,6 +266,10 @@ Apply the configuration:
 ./rebuild.sh
 ```
 
+The rebuild regenerates WezTerm's local `host.lua` and runs the Herdr key merge.
+Editing either generated/local active file is not a substitute for changing the
+portable source and rebuilding.
+
 After successful validation and activation:
 
 ```bash
@@ -256,6 +282,22 @@ git push
 
 Prefer explicit file names instead of `git add .` so unrelated or sensitive
 files are not accidentally published.
+
+### First rebuild on an existing host
+
+Before the first rebuild that enables managed Herdr key synchronization, review
+the existing writable file without copying it into the repository:
+
+```bash
+ls -l ~/.config/herdr/config.toml
+```
+
+Run the normal `./rebuild.sh`. Activation creates the one-time mode-`0600`
+backup `~/.config/herdr/config.toml.before-dotfiles-sync` before rewriting an
+existing file, and records the managed baseline in
+`~/.config/herdr/config.toml.dotfiles-keys.json`. Keep both files machine-local.
+The merge preserves unrelated settings, Radar comments, local key overrides,
+and local key deletions; there is no manual-copy step.
 
 ## Machine-local shell configuration
 
@@ -391,7 +433,45 @@ associated files.
 Reference:
 [nix-homebrew](https://github.com/zhaofengli/nix-homebrew)
 
-## Herdr integrations and plugins
+## Herdr configuration, integrations, and plugins
+
+The repository file `home/.config/herdr/config.toml` is the portable source for
+command-binding arrays such as `[[keys.command]]`, with one string `key` per
+shared entry. It is not linked over the active config. Built-in local `[keys]`
+settings, indexed bindings, and local command aliases remain local.
+During every rebuild, Home Manager runs `home/bin/sync-herdr-config.py` with
+Nix-provided Python and `tomlkit` before file links are created. The helper uses
+the binding's mode and `key` as its identity and compares:
+
+1. the current portable source;
+2. the previously managed values in
+   `~/.config/herdr/config.toml.dotfiles-keys.json`; and
+3. the current writable `~/.config/herdr/config.toml`.
+
+On the first run, an identical local binding is adopted and a missing portable
+binding is added. A conflicting local value is preserved. On later runs, a
+previously managed binding is updated or removed only while the active value
+still matches the prior managed value. Local edits and local deletions therefore
+win. Settings outside `[keys]`, plugin-generated sections, and Radar comments
+remain local. A missing active file is seeded from the portable config.
+
+The original active file is backed up once as
+`~/.config/herdr/config.toml.before-dotfiles-sync`, and the active, backup, and
+state files are written with mode `0600`. Change shared keys in the repository,
+then run `./rebuild.sh`; do not manually copy the portable file over the active
+file.
+
+Radar's marked tab-bar, theme, and sidebar blocks are preserved verbatim, outside
+the shared command bindings. Incomplete or overlapping markers stop the sync
+before any write rather than risking damage to plugin-owned configuration.
+
+Run the helper's regression tests with the same pinned Python dependency:
+
+```bash
+nix shell --impure --expr \
+  'let p = (builtins.getFlake (toString ./.)).darwinConfigurations."MacBook-Pro".pkgs; in p.python3.withPackages (ps: [ ps.tomlkit ])' \
+  -c python -m unittest discover -s tests -v
+```
 
 Herdr calls its Claude, Codex, and OpenCode hooks **integrations** rather than
 plugins. Their desired set is declared in `home.nix`. During Home Manager
@@ -402,6 +482,13 @@ The generated hook scripts and agent-local settings remain local because they
 are produced by the installed Herdr version and may coexist with other local
 agent configuration. Removing an integration from the Nix list causes a later
 rebuild to uninstall only integrations previously recorded as Nix-managed.
+
+After a Homebrew upgrade, `herdr status server --json` can report
+`compatible: false` because the running server is still old. Activation saves
+the config and updates integration files but warns and skips server reload.
+It never stops Herdr: stopping its server ends all pane processes. Save your
+work and restart Herdr deliberately before using new server-dependent plugins
+such as Radar (server and client both need 0.9.0+).
 
 The portable list of third-party plugin sources lives in
 `home/.config/herdr/plugin-sources.txt`. Each non-comment line is an unpinned

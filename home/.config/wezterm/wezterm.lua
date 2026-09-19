@@ -1,4 +1,15 @@
 local wezterm = require("wezterm")
+-- A first pull can precede Home Manager's generated host module. Keep native
+-- terminal shortcuts until that rebuild; do not hide malformed module errors.
+local host = { aerospace = false }
+local host_path = wezterm.config_dir .. "/host.lua"
+local host_file, host_error, host_errno = io.open(host_path, "r")
+if host_file then
+	host_file:close()
+	host = dofile(host_path)
+elseif host_errno ~= 2 then
+	error(host_error)
+end
 
 local config = wezterm.config_builder()
 
@@ -13,11 +24,12 @@ config.macos_window_background_blur = 50
 config.hide_tab_bar_if_only_one_tab = true
 config.window_decorations = "RESIZE"
 
--- AeroSpace owns fullscreen via Option+F. Avoid WezTerm's separate
--- fullscreen mode, which auto-hides the macOS menu bar.
-config.keys = {
-	{ key = "Enter", mods = "ALT", action = wezterm.action.DisableDefaultAssignment },
-}
+-- Only AeroSpace hosts hand fullscreen control to the window manager.
+if host.aerospace then
+	config.keys = {
+		{ key = "Enter", mods = "ALT", action = wezterm.action.DisableDefaultAssignment },
+	}
+end
 
 config.default_cursor_style = "BlinkingBlock"
 config.cursor_blink_rate = 200

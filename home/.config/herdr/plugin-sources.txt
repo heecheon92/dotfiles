@@ -21,7 +21,7 @@ zenbu-labs/terminal-browser/herdr-plugin
 
 # https://github.com/hhdebb/herdr-radar
 # Plugin ID: hhdebb.herdr-radar
-# Before uninstalling: follow "Radar 제거" in README.md.
+# Before uninstalling: follow "Radar 제거" in docs/terminals-herdr.md.
 hhdebb/herdr-radar
 
 # Local-only reference; not an entry in the shared install list:

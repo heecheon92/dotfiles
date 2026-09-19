@@ -1,8 +1,10 @@
-{ config, lib, pkgs, user, ... }:
+{ config, desktopProfile, lib, pkgs, user, ... }:
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
   lavishAxi = pkgs.callPackage ./packages/lavish-axi.nix { };
+  aerospaceEnabled = desktopProfile == "aerospace";
+  herdrPython = pkgs.python3.withPackages (ps: [ ps.tomlkit ]);
   # These existing Herdr integrations are now owned by Home Manager. The local
   # marker lets a later rebuild uninstall an integration only after it has been
   # removed from this Nix-managed list.
@@ -44,7 +46,6 @@ in
     ruff        # Python formatting through conform.nvim
     tree-sitter # parser compiler used by nvim-treesitter
     chafa       # notebook image fallback for terminals without Kitty placeholders
-    tmux        # terminal multiplexer used by omp_parallel_bench
     # the font everything renders in
     nerd-fonts.hack
   ];
@@ -295,17 +296,27 @@ in
 
   # Keep WezTerm's live config linked to this repository so its automatic
   # config reload sees edits without needing another rebuild.
-  home.file.".config/wezterm".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm";
-  home.file.".config/aerospace/aerospace.toml".source =
-    config.lib.file.mkOutOfStoreSymlink
+  home.file.".config/wezterm/wezterm.lua".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/wezterm/wezterm.lua";
+  home.file.".config/wezterm/host.lua".text = ''
+    return { aerospace = ${lib.boolToString aerospaceEnabled} }
+  '';
+  home.file.".hammerspoon/init.lua" = lib.mkIf (desktopProfile == "hammerspoon") {
+    source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.hammerspoon/init.lua";
+  };
+  home.file.".config/aerospace/aerospace.toml" = lib.mkIf aerospaceEnabled {
+    source = config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.config/aerospace/aerospace.toml";
-  home.file.".config/sketchybar".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/sketchybar";
-  # Pin the app-glyph font used by the adopted SketchyBar workspace labels.
-  home.file."Library/Fonts/sketchybar-app-font.ttf".source = pkgs.fetchurl {
-    url = "https://github.com/kvndrsslr/sketchybar-app-font/releases/download/v1.0.4/sketchybar-app-font.ttf";
-    hash = "sha256-kbTNCeHC6A9OtGnR/u7dtJiCJQqYWcFqyWtiayK/mNo=";
+  };
+  home.file.".config/sketchybar" = lib.mkIf aerospaceEnabled {
+    source = config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/sketchybar";
+  };
+  # Pin the app-glyph font only on hosts running SketchyBar.
+  home.file."Library/Fonts/sketchybar-app-font.ttf" = lib.mkIf aerospaceEnabled {
+    source = pkgs.fetchurl {
+      url = "https://github.com/kvndrsslr/sketchybar-app-font/releases/download/v1.0.4/sketchybar-app-font.ttf";
+      hash = "sha256-kbTNCeHC6A9OtGnR/u7dtJiCJQqYWcFqyWtiayK/mNo=";
+    };
   };
   home.file.".config/nvim".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/nvim";
@@ -330,19 +341,17 @@ in
   home.file.".config/zsh/scratch".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.config/zsh/scratch";
-  # Keep Herdr's active config and runtime machine-local so Radar can update
-  # them. Share only the reviewed plugin provenance list.
+  # Keep active configuration writable for Radar; activation merges shared
+  # keybindings without replacing local settings or generated plugin sections.
   home.file.".config/herdr/plugin-sources.txt".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.config/herdr/plugin-sources.txt";
-  # Keep personal executable scripts in the repository and expose them through
-  # the shared user command path.
-  home.file.".local/bin/omp_parallel_bench".source =
-    config.lib.file.mkOutOfStoreSymlink
-      "${dotfiles}/home/bin/omp_parallel_bench";
-  home.file.".local/bin/aerospace-cycle-layout".source =
-    config.lib.file.mkOutOfStoreSymlink
+  # Expose the personal AeroSpace helper through the shared user command path
+  # only on hosts that use the AeroSpace desktop profile.
+  home.file.".local/bin/aerospace-cycle-layout" = lib.mkIf aerospaceEnabled {
+    source = config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/bin/aerospace-cycle-layout";
+  };
   home.file.".codex/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".claude/CLAUDE.md".source =
@@ -435,6 +444,26 @@ in
   home.file.".pi/agent/settings.json".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.pi/agent/settings.json";
 
+  # Convert only the previous repository-owned directory link. The active
+  # directory now contains the shared source link and a generated host module.
+  home.activation.prepareWeztermConfig =
+    lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
+      weztermDir="${config.home.homeDirectory}/.config/wezterm"
+      if [[ -L "$weztermDir" ]] \
+        && [[ "$(realpath "$weztermDir")" == "$(realpath "${dotfiles}/home/.config/wezterm")" ]]; then
+        run rm "$weztermDir"
+        run mkdir -p "$weztermDir"
+      fi
+    '';
+
+  home.activation.syncHerdrConfig =
+    lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
+      run mkdir -p "${config.home.homeDirectory}/.config/herdr"
+      run ${herdrPython}/bin/python ${./home/bin/sync-herdr-config.py} \
+        "${dotfiles}/home/.config/herdr/config.toml" \
+        "${config.home.homeDirectory}/.config/herdr/config.toml"
+    '';
+
   # Reload Herdr's machine-local config after links are ready, then synchronize
   # the existing Nix-managed integrations. Agent-local settings stay local.
   home.activation.syncHerdrIntegrations =
@@ -453,8 +482,13 @@ in
       if [[ -z "$herdrBin" ]]; then
         echo "warning: Herdr is not installed yet; run rebuild again to sync its integrations" >&2
       else
-        if "$herdrBin" status server >/dev/null 2>&1; then
-          run "$herdrBin" server reload-config
+        if serverStatus="$("$herdrBin" status server --json 2>/dev/null)" \
+          && ${pkgs.jq}/bin/jq -e '.running == true' <<< "$serverStatus" >/dev/null; then
+          if ${pkgs.jq}/bin/jq -e '.compatible == true' <<< "$serverStatus" >/dev/null; then
+            run "$herdrBin" server reload-config
+          else
+            echo "warning: Herdr config saved but the running server is incompatible; restart Herdr after closing its panes, then rebuild to reload integrations" >&2
+          fi
         fi
 
         managedFile="${config.home.homeDirectory}/.config/herdr/nix-managed-integrations"
