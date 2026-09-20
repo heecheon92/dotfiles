@@ -10,10 +10,10 @@ Zsh·Starship, 터미널, Neovim과 에이전트 설정을 Git으로 동기화�
 
 ## 호스트 경계
 
-| 호스트 | 용도 | 데스크톱 프로필 | Homebrew |
-| --- | --- | --- | --- |
-| `Mac-mini` | 회사 Mac | AeroSpace + SketchyBar + JankyBorders | 기존 설치 유지 |
-| `MacBook-Pro` | 개인 Mac | Hammerspoon + macOS 메뉴 막대 | nix-homebrew로 관리 |
+| 호스트 | 데스크톱 프로필 | Homebrew |
+| --- | --- | --- |
+| `Mac-mini` | AeroSpace + SketchyBar + JankyBorders | 기존 설치 유지 |
+| `MacBook-Pro` | Hammerspoon + macOS 메뉴 막대 | nix-homebrew로 관리 |
 
 `flake.nix`의 필수 `desktopProfile`이 두 구성을 분리합니다. `MacBook-Pro`에는
 기존 Hammerspoon 설정과 전체 화면에서도 보이는 macOS 메뉴 막대를 유지하며,
