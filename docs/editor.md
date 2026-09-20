@@ -45,8 +45,9 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
   같은 `ColorScheme` callback에서 `Comment`/`SpecialComment`는 `#b0b6c2`,
   `LineNr`는 `#9299a8`, `LspInlayHint`는 `#a0a7b4`로 밝힙니다. foreground만 바꾸므로
   기존 italic 속성, 배경 투명도와 다른 syntax 색은 유지하며 theme을 다시 적용해도 보존됩니다.
-  일반 들여쓰기 guide의 `SnacksIndent`도 `#9299a8`로 밝히며, 활성 scope 색은 그대로
-  유지해 구분합니다. 공백·기타 `NonText` 표시는 함께 밝히지 않습니다.
+  일반 들여쓰기 guide의 `SnacksIndent`는 `#9299a8`로 유지하고, 활성 scope의
+  `SnacksIndentScope`는 더 밝은 lavender `#d6bdff`로 구분해 애니메이션을 드러냅니다.
+  애니메이션 속도와 공백·기타 `NonText` 표시는 변경하지 않습니다.
   비슷한 문제가 다시 발생하면 [가독성 문제 대응 지침](../AGENTS.md#neovim-foreground-visibility)에
   따라 표시의 생성 주체와 highlight group을 먼저 확인하고 좁은 범위로 조정합니다.
 - `gitsigns.nvim`은 현재 줄 blame을 표시합니다. LazyVim의 Git picker와 lazygit을
@@ -54,7 +55,18 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
   lazygit을 엽니다. Neogit과 Diffview는 추가하지 않습니다.
 - `<leader>e`는 프로젝트 root의 Oil, `<leader>E`는 현재 작업 디렉터리의 Oil을 엽니다.
   Snacks 탐색기는 기존 `<leader>fe`/`<leader>fE`에 각각 root/cwd 동작으로 유지합니다.
-  키 설정은 `lua/config/keymaps.lua`, Oil plugin 설정은 `lua/plugins/workflows.lua`에 둡니다.
+  키 설정은 `lua/config/keymaps.lua`, Oil/Snacks plugin 설정은 `lua/plugins/workflows.lua`에 둡니다.
+  Snacks의 파일 검색, grep(단어 검색 포함), 탐색기는 `hidden = true`로 숨김 파일과
+  디렉터리를 기본 표시하되, Git ignore 규칙은 계속 적용합니다.
+  Oil도 `view_options.show_hidden = true`로 숨김 항목을 기본 표시하며,
+  기존의 Git ignore 처리 방식은 변경하지 않습니다.
+  Normal 모드의 `<leader>fh`는 Oil과 Snacks의 숨김 표시를 세션 전체에서 함께 토글합니다.
+  열려 있는 탐색기·검색 결과(다른 탭 포함)를 갱신하고, 이후 여는 파일 검색·grep·탐색기도
+  같은 상태를 사용합니다. Neovim을 다시 시작하면 숨김 항목은 기본 표시 상태로 돌아갑니다.
+  검색 입력 중에는 `<Esc>`를 한 번 누른 뒤 `<Space>fh`를 사용합니다.
+  상태가 플러그인별로 달라지지 않도록 기존 `g.`, Snacks의 `Alt+h`와 탐색기의 `H`
+  숨김 토글은 제거합니다. Oil 디렉터리 버퍼에 저장하지 않은 편집이 있으면 해당 편집을
+  보호하기 위해 모든 플러그인의 토글을 함께 보류합니다.
 
 ## 언어와 포맷
 

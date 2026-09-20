@@ -16,6 +16,7 @@ return {
             LineNr = "#9299a8",
             LspInlayHint = "#a0a7b4",
             SnacksIndent = "#9299a8",
+            SnacksIndentScope = "#d6bdff",
           }) do
             local highlight = vim.api.nvim_get_hl(0, { name = group, link = false })
             highlight.fg = foreground
