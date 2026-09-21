@@ -161,6 +161,9 @@ borders style=round width=8.0 hidpi=on \
 `sketchybar-app-font` v1.0.4를 사용하며, Home Manager가 릴리스 파일과 SHA-256을
 고정해 `~/Library/Fonts/sketchybar-app-font.ttf`에 배치합니다. SketchyBar의
 텍스트에는 SF Pro 패밀리의 Regular, Bold, Semibold, Heavy, Black, Light Italic을 사용합니다.
+macOS가 Nix store를 가리키는 폰트 링크를 자동 등록하지 않아도 아이콘을 표시하도록,
+`sketchybarrc`에서 항목 생성 전에 `sketchybar --load-font`로 해당 파일을 직접 읽습니다.
+이 로드를 제거하면 앱 아이콘 대신 `:terminal:` 같은 ligature 이름이 글자로 보일 수 있습니다.
 
 설정은 `FelixKratz/dotfiles`의
 `e6288b3f4220ca1ac64a68e60fced2d4c3e3e20b` 커밋
@@ -171,13 +174,25 @@ AeroSpace와 이 dotfiles 실행 환경에 맞게 수정한 스냅샷입니다. 
 `y_offset=8`, 바깥 여백 10px로 표시하고, 둥근 9px 모서리와 blur 20을 사용합니다.
 AeroSpace의 상단 바깥 간격은 이 배치에 맞춰 60pt로 유지합니다.
 
-왼쪽에는 AeroSpace 워크스페이스, 앱 아이콘과 현재 앱을 표시하고 오른쪽에는
-캘린더, Homebrew 업데이트, GitHub 알림, 배터리, 음량과 CPU 상태를 표시합니다.
+왼쪽에는 AeroSpace 워크스페이스, 앱 아이콘과 현재 앱을 표시합니다. 오른쪽에는
+모드·입력 언어 배지, CPU, 음량, 배터리, GitHub 알림, Homebrew 업데이트와 캘린더를 표시합니다.
 숫자 1–9는 항상 만들며, 그 밖의 워크스페이스는 포커스되었거나 창이 있을 때만
 표시합니다. 선택한 워크스페이스는 강조하고 왼쪽 클릭은
 `aerospace workspace`로 전환합니다. macOS Spaces나 yabai의 생성·삭제 이벤트 및
 layout 상태를 흉내 내지 않고, `aerospace_workspace_change` 이벤트와 2초 간격의
 `aerospace list-workspaces`/`list-windows` 조회로 AeroSpace 상태를 반영합니다.
+
+오른쪽 CPU 표시 왼편의 모드 배지는 `main`에서는 숨기고, `resize`에서는 노란색 `RESIZE`,
+`service`에서는 빨간색 `SERVICE`를 표시합니다. `on-mode-changed`가
+`aerospace_mode_change` 이벤트를 보내며, 배지는 현재 모드를 다시 조회하므로
+서비스 명령 실행 뒤 자동으로 main으로 돌아가는 경우에도 갱신됩니다.
+
+파란색 입력 언어 배지는 한국어 입력기에 `한`, 영어 입력기에 `EN`을 표시합니다.
+macOS 입력 소스 변경 알림을 구독하고, C helper의 Carbon API로 실제 선택된
+입력기의 언어를 읽습니다. 다른 언어는 언어 코드를 대문자로, 조회 실패는 `?`로
+표시합니다. 두 배지는 별도 polling 없이 시작·막대 reload·잠자기 해제 때도 갱신합니다.
+설정은 `items/mode.sh`, `plugins/mode.sh`, `items/keyboard.sh`,
+`plugins/keyboard.sh`와 `helper/input_source.h`에 있습니다.
 
 설정 원본은 `home/.config/sketchybar/sketchybarrc`이며 `items/*.sh`가 항목을,
 `plugins/*.sh`가 동작을 정의합니다. upstream의 C helper 소스도

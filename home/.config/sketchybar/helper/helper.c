@@ -1,3 +1,4 @@
+#include "input_source.h"
 #include "cpu.h"
 #include "sketchybar.h"
 
@@ -19,14 +20,18 @@ void handler(env env) {
   }
 }
 
-int main (int argc, char** argv) {
-  cpu_init(&g_cpu);
-
-  if (argc < 2) {
-    printf("Usage: provider \"<bootstrap name>\"\n");
-    exit(1);
+int main(int argc, char** argv) {
+  if (argc == 2 && strcmp(argv[1], "--input-source") == 0) {
+    return input_source_print_language() ? 0 : 1;
   }
 
+  if (argc < 2) {
+    fprintf(stderr,
+            "Usage: helper \"<bootstrap name>\" | helper --input-source\n");
+    return 1;
+  }
+
+  cpu_init(&g_cpu);
   event_server_begin(handler, argv[1]);
   return 0;
 }

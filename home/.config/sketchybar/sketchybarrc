@@ -15,6 +15,9 @@ export ITEM_DIR PLUGIN_DIR
 FONT="SF Pro" # Needs Regular, Bold, Semibold, Heavy and Black variants
 PADDINGS=3
 
+# Load the Nix-linked font directly; macOS may not discover symlinked fonts.
+sketchybar --load-font "$HOME/Library/Fonts/sketchybar-app-font.ttf"
+
 # Compile the Mach helper outside the managed config and keep one validated,
 # per-user process. A changed source replaces only the helper recorded here.
 HELPER="local.sketchybar.helper.$UID"
@@ -28,6 +31,7 @@ mkdir -p "$HELPER_CACHE_DIR"
 helper_source_hash=$(
   cat "$HELPER_SOURCE_DIR/helper.c" \
       "$HELPER_SOURCE_DIR/cpu.h" \
+      "$HELPER_SOURCE_DIR/input_source.h" \
       "$HELPER_SOURCE_DIR/sketchybar.h" \
     | /usr/bin/shasum -a 256 \
     | /usr/bin/cut -d ' ' -f 1
@@ -37,7 +41,7 @@ helper_cached_hash=
 
 helper_rebuilt=false
 if [ ! -x "$HELPER_BIN" ] || [ "$helper_source_hash" != "$helper_cached_hash" ]; then
-  if clang -std=c99 -O3 "$HELPER_SOURCE_DIR/helper.c" -o "$HELPER_BIN.tmp"; then
+  if clang -std=c99 -O3 "$HELPER_SOURCE_DIR/helper.c" -framework Carbon -o "$HELPER_BIN.tmp"; then
     mv "$HELPER_BIN.tmp" "$HELPER_BIN"
     printf '%s\n' "$helper_source_hash" > "$HELPER_HASH_FILE"
     helper_rebuilt=true
@@ -129,6 +133,8 @@ source "$ITEM_DIR/github.sh"
 source "$ITEM_DIR/battery.sh"
 source "$ITEM_DIR/volume.sh"
 source "$ITEM_DIR/cpu.sh"
+source "$ITEM_DIR/keyboard.sh"
+source "$ITEM_DIR/mode.sh"
 
 sketchybar --update
 
