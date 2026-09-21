@@ -1,0 +1,8 @@
+providers:
+  openrouter:
+    modelOverrides:
+      openai/gpt-oss-120b:
+        compat:
+          openRouterRouting:
+            # Prefer Cerebras while allowing other OpenRouter providers as fallbacks.
+            order: [cerebras]

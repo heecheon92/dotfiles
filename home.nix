@@ -379,6 +379,8 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".omp/agent/config.yml".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/agent/config.yml";
+  home.file.".omp/agent/models.yml".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/agent/models.yml";
   home.file.".omp/agent/config-budget.yml".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/config-budget.yml";

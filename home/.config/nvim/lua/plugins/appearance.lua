@@ -17,6 +17,7 @@ return {
             LspInlayHint = "#a0a7b4",
             SnacksIndent = "#9299a8",
             SnacksIndentScope = "#d6bdff",
+            SnacksDashboardHeader = "#7199ff",
           }) do
             local highlight = vim.api.nvim_get_hl(0, { name = group, link = false })
             highlight.fg = foreground
@@ -38,5 +39,39 @@ return {
   {
     "LazyVim/LazyVim",
     opts = { colorscheme = "sonokai" },
+  },
+  {
+    "folke/snacks.nvim",
+    opts = function(_, opts)
+      local header = [[
+        ▄██████▄ ▄████▄
+      ▄██████████████████▄
+    ▄██████████████████████▄
+    ████▀              ▀████
+    ████   ▀▄           ████
+    ████    ▄▀    ▄▄▄   ████
+    ████   ▀            ████
+     ███▄              ▄███
+      ▀██████████████████▀
+          ▄██████████▄
+        ▄███  › ▄▄  ███▄
+        ███ ████████ ███
+        ▀▀  ███  ███  ▀▀
+            ███  ███
+            ▀▀▀  ▀▀▀
+
+           ▄▄▄▄▄▄▄▄▄▄
+]]
+      -- Snacks centers each row separately; equal widths preserve the silhouette.
+      local lines = vim.split(header, "\n", { trimempty = true })
+      local width = 0
+      for _, line in ipairs(lines) do
+        width = math.max(width, vim.fn.strdisplaywidth(line))
+      end
+      for i, line in ipairs(lines) do
+        lines[i] = line .. string.rep(" ", width - vim.fn.strdisplaywidth(line))
+      end
+      opts.dashboard.preset.header = table.concat(lines, "\n")
+    end,
   },
 }

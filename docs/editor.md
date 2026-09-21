@@ -25,6 +25,9 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
 
 - 인자 없이 열면 LazyVim의 Snacks dashboard가 표시됩니다. 검색, 세션, Lazy와
   Lazy Extras 진입점도 기본 dashboard 동작을 사용합니다.
+  배너는 `lua/plugins/appearance.lua`의 파란색 Codex pet 블록 아트로 바꿉니다.
+  줄 너비를 맞춰 그림의 정렬을 유지하며, `SnacksDashboardHeader`의 전경색만
+  `#7199ff`로 지정해 배경 투명도와 기존 dashboard 메뉴·시작 통계는 유지합니다.
 - 키맵은 LazyVim 기본값을 기준으로 하되, 명시적으로 선택한 Oil 탐색기, 완성, hlslens
   검색 동작을 조정합니다. `<leader>`는 Space이며 `which-key`로 현재 문맥의 키를 확인합니다.
 - 완성은 `blink.cmp`가 담당합니다. `default` 키 preset과
