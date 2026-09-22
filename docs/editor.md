@@ -97,8 +97,14 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
   Tailwind 서버가 함께 연결될 수 있습니다.
 - Prettier extra는 JS/TS/JSX/TSX, HTML, CSS/SCSS/Less, JSON/JSONC, YAML, Markdown 등
   지원 filetype에 Prettier를 연결합니다. Markdown은 조건에 따라 `markdownlint-cli2`와
-  `markdown-toc`도 이어서 실행합니다. Lua는 LazyVim 기본 StyLua를 사용하고, Python은
-  Ruff LSP formatting을 fallback으로 사용할 수 있습니다.
+  `markdown-toc`도 이어서 실행합니다. Lua는 LazyVim 기본 StyLua를 사용합니다.
+- Python은 `languages.lua`의 Conform 설정에서 `ruff_fix` 다음 `ruff_format`을 실행합니다.
+  `ruff_fix`는 `--select F401,I001`로 범위를 제한해 미사용 import 제거와 import
+  정렬·그룹화를 수행하고, 이어서 코드 포맷을 적용합니다. 안전하지 않은 수정은 활성화하지
+  않습니다. 누락된 import 추가나 잘못된 import 수정은 포함하지 않으며, 저장하면 아직
+  사용하지 않은 import도 제거될 수 있습니다. 의도적인 재수출·부수 효과 import는 명시적인
+  export 또는 필요한 예외로 표현합니다. Ruff LSP 연결과 별도로 `:ConformInfo`에서
+  두 외부 formatter의 가용성을 확인합니다.
 
 저장 포맷의 소유자는 LazyVim의 `LazyVim.format`과 Conform입니다. LazyVim이 등록한
 `BufWritePre` 흐름이 저장 전에 선택된 formatter를 호출하며, 별도

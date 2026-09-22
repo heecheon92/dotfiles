@@ -57,16 +57,37 @@ Conform은 LSP 서버가 아니라 외부 formatter와 LSP formatting을 연결�
 - [ ] formatter 실행, lint 자동 수정과 import 정렬을 서로 다른 동작으로 기록합니다.
 
 현재 선언은 `home/.config/nvim/lua/config/lazy.lua`의 공식 extra와
-`home/.config/nvim/lua/plugins/languages.lua`의 HTML/CSS 서버 보완에 있습니다.
-Prettier extra는 지원하는 웹·데이터·Markdown filetype을 Conform에 연결합니다.
-Markdown extra는 조건에 따라 `markdownlint-cli2`와 `markdown-toc`도 조합합니다.
-Lua는 LazyVim 기본 StyLua를 사용하고, Python은 Pyrefly와 Ruff를 연결해 Ruff LSP
-formatting을 fallback으로 사용할 수 있습니다. 이는 구성 설명이며 실제 저장 결과를
-새로 확인했다는 뜻은 아닙니다.
+`home/.config/nvim/lua/plugins/languages.lua`의 HTML/CSS 서버 보완과 Python Conform
+설정에 있습니다. Prettier extra는 지원하는 웹·데이터·Markdown filetype을 Conform에
+연결합니다. Markdown extra는 조건에 따라 `markdownlint-cli2`와 `markdown-toc`도
+조합합니다. Lua는 LazyVim 기본 StyLua를 사용하고, Python은 Conform에서
+`ruff_fix`(`--select F401,I001`) 다음 `ruff_format`을 실행합니다. Pyrefly/Ruff LSP
+연결과 외부 Ruff formatter 실행은 별개입니다. 이는 구성 설명이며 실제 저장 결과를 새로
+확인했다는 뜻은 아닙니다.
 
 결과에는 `확인`, `부분 확인`, `미지원`, `upstream 제한`, `해당 없음`, `미확인`처럼
 관찰에 맞는 표현을 씁니다. `미지원`이나 `미확인`은 구현 실패나 우회 구현 요구가 아닙니다.
 일반 JSON/YAML처럼 함수 호출 signature가 없는 영역은 `해당 없음`으로 기록할 수 있습니다.
+
+### 6. import 정리
+
+- completion 수락 시 누락된 import를 추가하는 기능과, 기존 import를 정렬·그룹화하는
+  organize imports를 구분합니다. 미사용 import 제거와 잘못된 import 수정도 별도 동작입니다.
+- 언어별 provider가 LSP code action인지 외부 도구인지, 수동 실행인지 저장 시 실행인지
+  기록합니다. formatting 지원만으로 import 정리도 지원한다고 가정하지 않습니다.
+- Python의 현재 저장 흐름은 `languages.lua`의 Conform
+  `ruff_fix`(`--select F401,I001`) → `ruff_format`입니다. Ruff의 안전한 수정으로
+  미사용 import 제거(`F401`)와 정렬·그룹화(`I001`)를 수행하며, 누락된 import 추가나
+  잘못된 import 수정은 포함하지 않습니다. 저장하면 아직 사용하지 않은 import도 제거될 수
+  있습니다. 의도적인 재수출·부수 효과 import는 명시적인 export 또는 필요한 예외로 표현합니다.
+- 기존 LazyVim 저장 흐름을 재사용합니다. 같은 작업을 위한 별도 `BufWritePre`나
+  `format_on_save`를 중복 등록하지 않습니다.
+- [ ] 필요한 formatter 또는 code action의 가용성과 프로젝트 설정·제외 규칙을 확인합니다.
+- [ ] 순서가 뒤섞인 import를 가진 disposable fixture에서 `:w`를 실행하고 정렬·그룹화,
+  buffer와 disk 결과, 두 번째 저장의 변경 여부를 확인합니다.
+- [ ] 미사용 import 제거 등 추가 변경이 있었다면 어떤 규칙이 수행했는지 따로 기록합니다.
+- [ ] headless 저장 hook 검증과 실제 TUI에서 저장한 관찰을 구분합니다. import가 없는
+  언어는 `해당 없음`, 확인하지 않은 언어는 `미확인`으로 남깁니다.
 
 ## 재사용 기록 양식
 
@@ -93,6 +114,9 @@ root marker / 실제 root:
     filetype=, formatter·버전·실행 경로=, available=, 프로젝트 설정·제외 규칙=
     증거: 저장 전후 buffer·disk diff=, 재저장 변화=, LSP fallback 사용 여부=
     오류·timeout·로그=, lint 자동 수정·import 정렬과 구분=
+[ ] import 정리 — provider·규칙: / 저장 시·수동: / 실행 관찰: / 상태:
+    증거: 정렬·그룹화 전후 buffer·disk diff=, 재저장 변화=, 프로젝트 설정·제외 규칙=
+    자동 import 추가·미사용 import 제거와 구분=, headless·실제 TUI=
 
 선택 점검: hover / diagnostics / code actions / rename / references /
            inlay hints / snippets / imports / ghost text
