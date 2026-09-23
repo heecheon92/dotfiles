@@ -1,0 +1,121 @@
+setupVersion: 2
+modelRoles:
+  default: openai-codex/gpt-6-sol:medium
+  smol: openai-codex/gpt-6-luna:high
+  spark: openai-codex/gpt-6-luna:medium
+  slow: openai-codex/gpt-6-astra:xhigh
+  vision: openai-codex/gpt-6-sol:medium
+  plan: openai-codex/gpt-6-astra:xhigh
+  commit: openai-codex/gpt-6-luna:medium
+  task: openai-codex/gpt-6-sol:high
+  advisor: openai-codex/gpt-6-astra:high
+  daybreak-blue: openai-codex/gpt-daybreak-blue-latest:high
+cycleOrder:
+  - spark
+  - smol
+  - default
+  - slow
+  - daybreak-blue
+theme:
+  dark: monokai-custom
+  light: monokai-custom
+symbolPreset: nerd
+statusLine:
+  compactThinkingLevel: false
+  preset: custom
+  separator: powerline-thin
+  contextLine: "off"
+  leftSegments:
+    - pi
+    - hostname
+    - model
+    - mode
+    - path
+    - git
+    - pr
+    - subagents
+  rightSegments:
+    - session_name
+    - context_pct
+    - token_rate
+    - time_spent
+  segmentOptions:
+    model:
+      showThinkingLevel: true
+    path:
+      abbreviate: true
+      maxLength: 30
+    git:
+      showBranch: true
+      showStaged: true
+      showUnstaged: true
+      showUntracked: true
+autocompleteMaxVisible: 20
+defaultThinkingLevel: high
+personality: pragmatic
+providers:
+  autoThinkingMaxEffort: xhigh
+  openaiWebsockets: auto
+  tinyModel: lfm2.5-230m
+  tinyModelDevice: default
+  tinyModelDtype: default
+tier:
+  openai: priority
+retry:
+  enabled: true
+  maxRetries: 4
+  baseDelayMs: 500
+  maxDelayMs: 30000
+  modelFallback: true
+  fallbackRevertPolicy: cooldown-expiry
+  fallbackChains:
+    default:
+      - openai-codex/gpt-6-sol:high
+      - openai-codex/gpt-6-luna:high
+    smol:
+      - openai-codex/gpt-6-terra:medium
+      - openai-codex/gpt-6-sol:low
+    slow:
+      - openai-codex/gpt-6-sol:high
+      - openai-codex/gpt-6-terra:xhigh
+    vision:
+      - openai-codex/gpt-6-terra:high
+    plan:
+      - openai-codex/gpt-6-sol:xhigh
+      - openai-codex/gpt-6-terra:xhigh
+    commit:
+      - openai-codex/gpt-6-terra:low
+    task:
+      - openai-codex/gpt-6-terra:medium
+      - openai-codex/gpt-6-sol:low
+    advisor:
+      - openai-codex/gpt-6-sol:high
+    spark:
+      - openai-codex/gpt-5.3-codex-spark:high
+dev:
+  autoqaConsent: granted
+display:
+  hideToolActivity: false
+memory:
+  backend: local
+autolearn:
+  enabled: true
+  autoContinue: false
+task:
+  agentModelOverrides:
+    security-reviewer: "@daybreak-blue @advisor"
+    sonic: "@spark"
+  eager: preferred
+  enableEffort: false
+terminal:
+  showImages: true
+images:
+  autoResize: true
+  blockImages: false
+hideThinkingBlock: true
+composer:
+  shape: box
+browser:
+  headless: true
+power:
+  sleepPrevention: system

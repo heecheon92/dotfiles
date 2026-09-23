@@ -4,6 +4,13 @@
 설명합니다. 이 문서의 저장소 경로와 `./rebuild.sh` 명령은 모두 저장소 루트를
 기준으로 합니다.
 
+## Claude Code 설치 채널
+
+`configuration.nix`는 Homebrew의 `claude-code@latest` cask로 Claude Code를 관리합니다.
+일반 `claude-code` cask와는 충돌하므로 두 cask를 동시에 선언하거나 설치하지 않습니다.
+다른 호스트에 일반 cask가 설치되어 있다면 재빌드 전에 해당 cask를 제거하고
+`claude-code@latest`로 전환하세요. 인증과 로컬 설정은 저장소에 넣지 않습니다.
+
 ## 공유 에이전트 스킬
 
 이 저장소에서 관리하는 에이전트 스킬 목록과 개별 설치 방법은
@@ -26,6 +33,15 @@ ob
 smol·vision·commit 역할은 Luna, plan 역할은 Terra, advisor 역할은 Sol high를
 유지합니다. fallback에는 Sol을 넣지 않아 지원 역할이 예기치 않게 고비용 모델로
 복귀하지 않습니다.
+
+## OMP 실험용 오버레이
+
+`oe`는 `omp --config ~/.omp/agent/config-experimental.yml`을 실행합니다.
+Home Manager가 `home/.omp/agent/config-experimental.yml`을 해당 경로에 연결하며,
+alias와 파일 연결을 처음 추가한 뒤에는 `./rebuild.sh`로 적용해야 합니다.
+새 셸에서 `oe`를 실행하면 기본 설정 위에 실험용 overlay를 적용합니다.
+이후 YAML 내용만 수정할 때는 재빌드 없이 다음 `oe` 실행에 반영됩니다.
+일반 `omp`와 `ob`의 설정은 변경하지 않습니다.
 
 ## 명시적 Lavish 사용
 

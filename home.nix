@@ -222,6 +222,7 @@ in
       cc = "claude --dangerously-skip-permissions";
       cx = "codex --yolo";
       ob = "omp --config ~/.omp/agent/config-budget.yml";
+      oe = "omp --config ~/.omp/agent/config-experimental.yml";
     };
   };
 
@@ -384,6 +385,9 @@ in
   home.file.".omp/agent/config-budget.yml".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/config-budget.yml";
+  home.file.".omp/agent/config-experimental.yml".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/agent/config-experimental.yml";
   home.file.".omp/agent/themes".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/agent/themes";
   home.file.".omp/agent/extensions/herdr-runtime-context.ts".source =

@@ -77,7 +77,7 @@ lib.mkMerge [
     taps = lib.optional isAerospace "felixkratz/formulae";
     casks = [
       "wezterm"
-      "claude-code"
+      "claude-code@latest"
       "codex"
     ]
     ++ lib.optional isAerospace "font-sf-pro"
