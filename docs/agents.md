@@ -4,6 +4,11 @@
 설명합니다. 이 문서의 저장소 경로와 `./rebuild.sh` 명령은 모두 저장소 루트를
 기준으로 합니다.
 
+OMP의 모델 역할, 내장 에이전트, 위임 시 모델 선택 우선순위와 백그라운드 동작은
+[모델 라우팅 가이드](../home/.omp/agent/MODEL-ROUTING.md)를 참고하세요.
+이 문서는 사람이 요청할 때 확인한 최신 안정 버전의 동작만 유지하며, Home Manager로
+`~/.omp/agent/MODEL-ROUTING.md`에도 연결합니다.
+
 ## Claude Code 설치 채널
 
 `configuration.nix`는 Homebrew의 `claude-code@latest` cask로 Claude Code를 관리합니다.
@@ -29,10 +34,11 @@ Codex 사용량을 아껴야 할 때는 `ob` Zsh alias로 OMP를 실행합니다
 ob
 ```
 
-기본(default)·slow·task 역할은 OpenRouter GLM 5.3 flash max를 사용하고,
-smol·vision·commit 역할은 Luna, plan 역할은 Terra, advisor 역할은 Sol high를
-유지합니다. fallback에는 Sol을 넣지 않아 지원 역할이 예기치 않게 고비용 모델로
-복귀하지 않습니다.
+기본(default)·slow·task 역할은 OpenRouter GLM 5.3 Flash max를 사용하고,
+smol·vision·commit 역할은 GPT-6 Luna, plan 역할은 GLM 5.3 high,
+advisor 역할은 GPT-6 Sol high를 사용합니다. 명시적인 fallback은
+GLM 5.3 Flash, DeepSeek V4.1 Flash, GPT-6 Luna로 구성하며 Sol은 포함하지
+않습니다. DeepSeek V4.1 Flash는 이미지 입력도 지원하므로 vision fallback에도 사용합니다.
 
 ## OMP 실험용 오버레이
 

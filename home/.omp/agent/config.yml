@@ -9,7 +9,10 @@ modelRoles:
   commit: openai-codex/gpt-5.6-luna:medium
   task: openai-codex/gpt-5.6-sol:medium
   advisor: openai-codex/gpt-6-astra:high
-  daybreak-blue: openai-codex/gpt-daybreak-blue-latest:high
+  daybreak-blue: openai-codex/gpt-daybreak-blue-latest:max
+  tiny: local/lfm2.5-230m
+  memory: openai-codex/gpt-6-luna
+  judge: openrouter/~typesafe/jev-latest
 cycleOrder:
   - spark
   - smol
@@ -56,7 +59,6 @@ personality: pragmatic
 providers:
   autoThinkingMaxEffort: xhigh
   openaiWebsockets: auto
-  tinyModel: lfm2.5-230m
   tinyModelDevice: default
   tinyModelDtype: default
 tier:
@@ -71,28 +73,30 @@ retry:
   fallbackChains:
     default:
       - openai-codex/gpt-5.6-sol:high
-      - openai-codex/gpt-5.6-terra:high
+      - openai-codex/gpt-6-sol:high
       - openai-codex/gpt-5.6-luna:high
     smol:
-      - openai-codex/gpt-5.6-terra:medium
+      - openai-codex/gpt-6-sol:medium
       - openai-codex/gpt-5.6-sol:low
     slow:
       - openai-codex/gpt-5.6-sol:high
-      - openai-codex/gpt-5.6-terra:xhigh
+      - openai-codex/gpt-6-sol:xhigh
     vision:
-      - openai-codex/gpt-5.6-terra:high
+      - openai-codex/gpt-6-sol:high
     plan:
       - openai-codex/gpt-5.6-sol:xhigh
-      - openai-codex/gpt-5.6-terra:xhigh
+      - openai-codex/gpt-6-sol:xhigh
     commit:
-      - openai-codex/gpt-5.6-terra:low
+      - openai-codex/gpt-6-sol:low
     task:
-      - openai-codex/gpt-5.6-terra:medium
+      - openai-codex/gpt-6-sol:medium
       - openai-codex/gpt-5.6-sol:low
     advisor:
       - openai-codex/gpt-5.6-sol:high
     spark:
       - openai-codex/gpt-5.3-codex-spark:high
+    openrouter/~typesafe/jev-latest:
+      - openrouter/~typesafe/jev-latest
 dev:
   autoqaConsent: granted
 display:
@@ -104,7 +108,7 @@ autolearn:
   autoContinue: false
 task:
   agentModelOverrides:
-    security-reviewer: "@daybreak-blue @advisor"
+    security-reviewer: "@daybreak-blue, @advisor"
     sonic: "@spark"
   eager: preferred
   enableEffort: false

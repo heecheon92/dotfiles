@@ -2,14 +2,15 @@
 # The normal config remains authoritative for every setting not listed here.
 modelRoles:
   default: openrouter/z-ai/glm-5.3-flash:max
-  smol: openai-codex/gpt-5.6-luna:medium
+  smol: openai-codex/gpt-6-luna:medium
   spark: openai-codex/gpt-5.3-codex-spark:high
   slow: openrouter/z-ai/glm-5.3-flash:max
-  vision: openai-codex/gpt-5.6-luna:high
-  plan: openai-codex/gpt-5.6-terra:high
-  commit: openai-codex/gpt-5.6-luna:low
+  vision: openai-codex/gpt-6-luna:high
+  plan: openrouter/z-ai/glm-5.3:high
+  commit: openai-codex/gpt-6-luna:low
   task: openrouter/z-ai/glm-5.3-flash:max
-  advisor: openai-codex/gpt-5.6-sol:high
+  advisor: openai-codex/gpt-6-sol:high
+  judge: openrouter/~typesafe/jev-latest
 cycleOrder:
   - spark
   - smol
@@ -18,26 +19,26 @@ cycleOrder:
 retry:
   fallbackChains:
     default:
-      - openai-codex/gpt-5.4-mini:high
-      - openai-codex/gpt-5.6-terra:medium
+      - openrouter/z-ai/glm-5.3-flash:high
+      - openrouter/deepseek/deepseek-v4.1-flash:high
     smol:
-      - openai-codex/gpt-5.4-mini:low
-      - openai-codex/gpt-5.6-terra:low
+      - openrouter/z-ai/glm-5.3-flash:low
+      - openrouter/deepseek/deepseek-v4.1-flash:low
     slow:
-      - openai-codex/gpt-5.4-mini:xhigh
-      - openai-codex/gpt-5.6-luna:xhigh
+      - openrouter/z-ai/glm-5.3-flash:max
+      - openai-codex/gpt-6-luna:xhigh
     vision:
-      - openai-codex/gpt-5.4-mini:high
-      - openai-codex/gpt-5.6-terra:medium
+      - openrouter/z-ai/glm-5.3-flash:high
+      - openrouter/deepseek/deepseek-v4.1-flash:high
     plan:
-      - openai-codex/gpt-5.4-mini:high
-      - openai-codex/gpt-5.6-luna:xhigh
+      - openrouter/z-ai/glm-5.3-flash:high
+      - openai-codex/gpt-6-luna:xhigh
     commit:
-      - openai-codex/gpt-5.4-mini:low
-      - openai-codex/gpt-5.6-terra:low
+      - openrouter/z-ai/glm-5.3-flash:low
+      - openrouter/deepseek/deepseek-v4.1-flash:low
     task:
-      - openai-codex/gpt-5.4-mini:high
-      - openai-codex/gpt-5.6-terra:medium
+      - openrouter/z-ai/glm-5.3-flash:high
+      - openrouter/deepseek/deepseek-v4.1-flash:high
     advisor:
-      - openai-codex/gpt-5.4-mini:xhigh
-      - openai-codex/gpt-5.6-luna:xhigh
+      - openrouter/z-ai/glm-5.3-flash:max
+      - openai-codex/gpt-6-luna:xhigh

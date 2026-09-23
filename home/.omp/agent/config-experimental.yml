@@ -9,7 +9,8 @@ modelRoles:
   commit: openai-codex/gpt-6-luna:medium
   task: openai-codex/gpt-6-sol:high
   advisor: openai-codex/gpt-6-astra:high
-  daybreak-blue: openai-codex/gpt-daybreak-blue-latest:high
+  daybreak-blue: openai-codex/gpt-daybreak-blue-latest:max
+  judge: openrouter/~typesafe/jev-latest
 cycleOrder:
   - spark
   - smol
@@ -73,23 +74,21 @@ retry:
       - openai-codex/gpt-6-sol:high
       - openai-codex/gpt-6-luna:high
     smol:
-      - openai-codex/gpt-6-terra:medium
       - openai-codex/gpt-6-sol:low
+      - openai-codex/gpt-6-luna:high
     slow:
-      - openai-codex/gpt-6-sol:high
-      - openai-codex/gpt-6-terra:xhigh
+      - openai-codex/gpt-6-sol:xhigh
+      - openai-codex/gpt-6-luna:max
     vision:
-      - openai-codex/gpt-6-terra:high
+      - openai-codex/gpt-6-sol:high
     plan:
       - openai-codex/gpt-6-sol:xhigh
-      - openai-codex/gpt-6-terra:xhigh
     commit:
-      - openai-codex/gpt-6-terra:low
+      - openai-codex/gpt-6-luna:low
     task:
-      - openai-codex/gpt-6-terra:medium
-      - openai-codex/gpt-6-sol:low
+      - openai-codex/gpt-6-luna:max
     advisor:
-      - openai-codex/gpt-6-sol:high
+      - openai-codex/gpt-6-sol:xhigh
     spark:
       - openai-codex/gpt-5.3-codex-spark:high
 dev:
@@ -103,7 +102,7 @@ autolearn:
   autoContinue: false
 task:
   agentModelOverrides:
-    security-reviewer: "@daybreak-blue @advisor"
+    security-reviewer: "@daybreak-blue, @advisor"
     sonic: "@spark"
   eager: preferred
   enableEffort: false
