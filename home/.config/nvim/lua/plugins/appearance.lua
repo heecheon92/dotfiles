@@ -24,6 +24,13 @@ return {
             vim.api.nvim_set_hl(0, group, highlight)
           end
 
+          -- Give visual selections a distinct fill over transparent backgrounds.
+          for _, group in ipairs({ "Visual", "VisualNOS" }) do
+            local highlight = vim.api.nvim_get_hl(0, { name = group, link = false })
+            highlight.bg = "#526b8a"
+            vim.api.nvim_set_hl(0, group, highlight)
+          end
+
           for _, group in ipairs({
             "SnacksPickerPathHidden",
             "SnacksPickerPathIgnored",

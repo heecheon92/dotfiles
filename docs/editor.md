@@ -51,6 +51,10 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
   일반 들여쓰기 guide의 `SnacksIndent`는 `#9299a8`로 유지하고, 활성 scope의
   `SnacksIndentScope`는 더 밝은 lavender `#d6bdff`로 구분해 애니메이션을 드러냅니다.
   애니메이션 속도와 공백·기타 `NonText` 표시는 변경하지 않습니다.
+  Visual 선택 영역은 `Visual`/`VisualNOS`의 배경만 `#526b8a`로 지정해 더 뚜렷하게
+  구분합니다. 문자·줄·블록 선택에 공통 적용하며, 기존 전경색·밑줄 속성과
+  선택 밖의 배경 투명도는 유지합니다. `appearance.lua` 변경 후에는 Neovim을
+  다시 시작해야 callback이 갱신되며, Nix rebuild는 필요하지 않습니다.
   비슷한 문제가 다시 발생하면 [가독성 문제 대응 지침](../AGENTS.md#neovim-foreground-visibility)에
   따라 표시의 생성 주체와 highlight group을 먼저 확인하고 좁은 범위로 조정합니다.
 - `gitsigns.nvim`은 현재 줄 blame을 표시합니다. LazyVim의 Git picker와 lazygit을
