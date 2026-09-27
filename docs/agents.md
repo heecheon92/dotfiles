@@ -23,24 +23,37 @@ OMP의 모델 역할, 내장 에이전트, 위임 시 모델 선택 우선순위
 참고하세요. 전체 dotfiles 구성을 적용하지 않아도 원하는 스킬 디렉터리만
 에이전트 또는 Codex 기본 설치 도구로 설치할 수 있습니다.
 
+## OMP 입력 자동완성
+
+`home/.omp/agent/config.yml`은 `spelling.autocomplete: auto`를 명시합니다.
+OMP 18.3.5에서 `auto`는 로컬 N-gram 엔진을 사용하며, 입력 문맥과 로컬
+프롬프트 기록을 바탕으로 희미한 단어 완성 제안을 표시합니다.
+`Tab`은 제안과 뒤쪽 공백을, 오른쪽 화살표는 공백 없이 제안을 수락합니다.
+이 설정은 Neovim 자동완성이나 응답 모델 선택과는 별개입니다.
+
+`auto`는 OMP의 기본 엔진 선택을 따르며 SmolLM 모델을 내려받지 않습니다.
+`ngram`은 엔진을 고정하고, `apple`은 macOS 사전 기반 제안,
+`smollm`은 별도 모델 다운로드가 필요한 로컬 예측, `off`는 제안 끄기입니다.
+YAML 변경은 기존 연결을 통해 다음 OMP 실행에 반영되므로 Nix 재빌드는
+필요하지 않습니다.
+
 ## OMP 저비용 모델 오버레이
 
-Codex 사용량을 아껴야 할 때는 `ob` Zsh alias로 OMP를 실행합니다. 이 설정은
+사용 비용을 줄이고 싶을 때는 `ob` Zsh alias로 OMP를 실행합니다. 이 설정은
 기본 설정과 인증·세션 상태는 그대로 공유하면서
 `home/.omp/agent/config-budget.yml`의 저비용 모델 역할과 fallback만 현재
-프로세스에 덮어씁니다. 일반 `omp` 실행은 기존 고성능 모델 구성을 유지합니다.
+프로세스에 덮어씁니다. 일반 `omp` 실행은 기본 설정을 그대로 사용합니다.
 
 ```bash
 ob
 ```
 
-기본(default)·slow·task 역할은 OpenRouter GLM 5.3 Flash max를 사용하고,
-smol·vision·commit 역할은 GPT-6 Luna, plan 역할은 GLM 5.3 high,
-advisor 역할은 GPT-6 Sol high를 사용합니다. 명시적인 fallback은
-GLM 5.3 Flash, DeepSeek V4.1 Flash, GPT-6 Luna로 구성하며 Sol은 포함하지
-않습니다. DeepSeek V4.1 Flash는 이미지 입력도 지원하므로 vision fallback에도 사용합니다.
+각 overlay의 모델 선택과 세부 설정은 해당 YAML 파일을 기준으로 확인합니다.
 
 ## OMP 실험용 오버레이
+
+`config-experimental.yml`은 새로 출시된 모델을 시험하기 위한 설정입니다.
+최상위 성능의 모델만을 대상으로 하지는 않습니다.
 
 `oe`는 `omp --config ~/.omp/agent/config-experimental.yml`을 실행합니다.
 Home Manager가 `home/.omp/agent/config-experimental.yml`을 해당 경로에 연결하며,
@@ -48,6 +61,35 @@ alias와 파일 연결을 처음 추가한 뒤에는 `./rebuild.sh`로 적용해
 새 셸에서 `oe`를 실행하면 기본 설정 위에 실험용 overlay를 적용합니다.
 이후 YAML 내용만 수정할 때는 재빌드 없이 다음 `oe` 실행에 반영됩니다.
 일반 `omp`와 `ob`의 설정은 변경하지 않습니다.
+
+## OMP Ultra 오버레이
+
+`home/.omp/agent/config-ultra.yml`은 구독 기반 사용량을 적극적으로
+사용하도록 구성한 overlay입니다.
+
+모델 역할과 task fallback만 덮어쓰며, 나머지 설정은 기본 설정을 상속합니다.
+
+저장소 루트에서는 새 링크를 적용하기 전에도 실행할 수 있습니다.
+
+```bash
+omp --config ./home/.omp/agent/config-ultra.yml
+```
+
+Home Manager 링크를 처음 추가한 뒤에는 `./rebuild.sh`로 적용합니다.
+이후에는 아래 경로를 사용하며, YAML 내용만 바꿀 때는 재빌드가 필요 없습니다.
+일반 `omp` 실행에는 이 overlay가 자동 적용되지 않습니다.
+
+```bash
+omp --config ~/.omp/agent/config-ultra.yml
+# 어려운 작업에서 백그라운드 검토를 추가할 때만:
+omp --config ~/.omp/agent/config-ultra.yml --advisor
+```
+
+advisor 모델을 지정하는 것만으로 검토가 켜지지는 않습니다.
+실행 중에는 `/advisor on`, `/advisor status`, `/advisor off`로 제어합니다.
+기본 advisor는 주 에이전트의 새 진행 내용을 검토하고 읽기 도구로 조사한 뒤
+조언을 전달합니다. 심각한 문제는 진행을 중단하거나 방향을 바꿀 수 있지만,
+작업 전 승인을 보장하는 장치는 아니며 별도 모델 사용량을 소비합니다.
 
 ## 명시적 Lavish 사용
 

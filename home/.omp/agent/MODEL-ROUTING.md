@@ -55,6 +55,7 @@ In this repository:
 - [config.yml](config.yml): shared baseline settings and model-role assignments.
 - [config-budget.yml](config-budget.yml): the additional overlay loaded by `ob`.
 - [config-experimental.yml](config-experimental.yml): the additional overlay loaded by `oe`.
+- [config-ultra.yml](config-ultra.yml): opt-in overlay configured to actively consume subscription-based usage, loaded with `omp --config ~/.omp/agent/config-ultra.yml`; see [usage and optional advisor](../../../docs/agents.md#omp-ultra-오버레이).
 - [models.yml](models.yml): custom model/provider definitions and catalog overrides; this is different from assigning roles.
 
 Effective settings are merged in this order, with later layers winning:

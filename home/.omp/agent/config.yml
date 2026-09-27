@@ -120,6 +120,8 @@ images:
 hideThinkingBlock: true
 composer:
   shape: box
+spelling:
+  autocomplete: auto
 browser:
   headless: true
 power:
