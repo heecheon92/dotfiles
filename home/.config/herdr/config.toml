@@ -69,6 +69,7 @@ description = "review the agent's last reply"
 key = "prefix+comma"
 type = "plugin_action"
 command = "hhdebb.herdr-radar.settings"        # settings popup
+description = "herdr radar settings"
 
 [theme]
 name = "terminal"
