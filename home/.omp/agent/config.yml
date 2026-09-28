@@ -126,3 +126,5 @@ browser:
   headless: true
 power:
   sleepPrevention: system
+tui:
+  codexResetFireworks: true
