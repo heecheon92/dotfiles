@@ -94,7 +94,7 @@ retry:
     advisor:
       - openai-codex/gpt-5.6-sol:high
     spark:
-      - openai-codex/gpt-5.3-codex-spark:high
+      - openai-codex/gpt-6-luna:medium
     openrouter/~typesafe/jev-latest:
       - openrouter/~typesafe/jev-latest
 dev:

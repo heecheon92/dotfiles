@@ -90,7 +90,7 @@ retry:
     advisor:
       - openai-codex/gpt-6-sol:xhigh
     spark:
-      - openai-codex/gpt-5.3-codex-spark:high
+      - openai-codex/gpt-6-luna:medium
 dev:
   autoqaConsent: granted
 display:

@@ -3,7 +3,7 @@
 modelRoles:
   default: openrouter/z-ai/glm-5.3-flash:max
   smol: openai-codex/gpt-6-luna:medium
-  spark: openai-codex/gpt-5.3-codex-spark:high
+  spark: openai-codex/gpt-6-luna:medium
   slow: openrouter/z-ai/glm-5.3-flash:max
   vision: openai-codex/gpt-6-luna:high
   plan: openrouter/z-ai/glm-5.3:high
