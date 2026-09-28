@@ -285,7 +285,6 @@ In this version, headless child sessions use `tools.approvalMode: yolo` because 
 - **Eval `completion()`:** stateless, tool-free one-shot inference. Its public model choices are `default`, `smol`, and `slow`; `default` prefers the active session model. It does not create a scout/reviewer/task persona.
 - **Eval `judge()` / `judge_batch()`:** typed judgment requests through the `judge` role, not reviewer agents or the advisor subsystem.
 - **Background eval cells / supervised shell processes:** execution scheduling for code or programs; no model role is selected merely because a process runs in the background.
-- **Agent-swarm:** a separately activated orchestration system with its own profiles and inference settings. Ordinary OMP delegation does not automatically use it, and its workers should not be assumed to obey OMP task-agent overrides.
 
 ### Cost and concurrency
 
