@@ -74,6 +74,12 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
   상태가 플러그인별로 달라지지 않도록 기존 `g.`, Snacks의 `Alt+h`와 탐색기의 `H`
   숨김 토글은 제거합니다. Oil 디렉터리 버퍼에 저장하지 않은 편집이 있으면 해당 편집을
   보호하기 위해 모든 플러그인의 토글을 함께 보류합니다.
+- Normal 모드의 `Ctrl+h/j/k/l`은 일반 편집 버퍼와 Oil에서 왼쪽/아래/위/오른쪽
+  split으로 이동합니다. Oil의 기존 `Ctrl+h` 열기와 `Ctrl+l` 새로고침 매핑을 제거해
+  LazyVim의 창 이동 매핑을 그대로 사용합니다. Oil에서 선택한 항목은 `Ctrl+s`로
+  가로 split, `Ctrl+v`로 세로 split에 엽니다(Snacks picker와 동일).
+  따라서 Oil의 기존 `Ctrl+s` 세로 split 동작은 `Ctrl+v`로 옮겨졌으며,
+  디렉터리 새로고침은 `gR`입니다. 변경 후 Neovim을 다시 시작하면 적용됩니다.
 
 ## 언어와 포맷
 

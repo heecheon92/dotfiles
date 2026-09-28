@@ -5,7 +5,14 @@ return {
     opts = {
       default_file_explorer = false,
       view_options = { show_hidden = true },
-      keymaps = { ["g."] = false },
+      keymaps = {
+        ["g."] = false,
+        ["<C-h>"] = false,
+        ["<C-l>"] = false,
+        ["<C-s>"] = { "actions.select", opts = { horizontal = true } },
+        ["<C-v>"] = { "actions.select", opts = { vertical = true } },
+        ["gR"] = { "actions.refresh", mode = "n" },
+      },
     },
   },
   {
