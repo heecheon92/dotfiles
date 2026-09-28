@@ -453,7 +453,8 @@ binding is added. A conflicting local value is preserved. On later runs, a
 previously managed binding is updated or removed only while the active value
 still matches the prior managed value. Local edits and local deletions therefore
 win. Settings outside `[keys]`, plugin-generated sections, and Radar comments
-remain local. A missing active file is seeded from the portable config.
+remain local except for the narrow sidebar style policy below. A missing active
+file is seeded from the portable config.
 
 The original active file is backed up once as
 `~/.config/herdr/config.toml.before-dotfiles-sync`, and the active, backup, and
@@ -461,9 +462,23 @@ state files are written with mode `0600`. Change shared keys in the repository,
 then run `./rebuild.sh`; do not manually copy the portable file over the active
 file.
 
-Radar's marked tab-bar, theme, and sidebar blocks are preserved verbatim, outside
-the shared command bindings. Incomplete or overlapping markers stop the sync
-before any write rather than risking damage to plugin-owned configuration.
+Radar's marked tab-bar and theme blocks are preserved verbatim. The sidebar block
+has one explicit exception: Home Manager passes
+`home/.config/herdr/sidebar-overrides.toml` as the helper's optional third argument.
+Its `[agents]` table maps token names to `fg` and/or `dim` overrides, applied to
+matching tokens in default Agents rows and every per-agent row definition. The
+current six overrides use `#9a9eb3` with `dim = false`. Other token attributes,
+Spaces rows, comments, layout, and status/brand colors remain unchanged. Without
+that argument, all marked Radar blocks retain the original verbatim behavior.
+Missing sidebar blocks are not created. Incomplete or overlapping markers stop
+the sync before any write rather than risking damage to plugin-owned configuration.
+
+This is a sync-time override, not a Radar plugin customization or watcher.
+Radar can overwrite it when regenerating appearance settings; rerun the helper
+and reload the compatible Herdr server afterward. The
+[Herdr guide](docs/terminals-herdr.md#herdr-설정과-radar) includes the standalone
+command, which avoids a full system rebuild. Generated blocks and installed
+plugin files must not be copied into the portable baseline.
 
 Run the helper's regression tests with the same pinned Python dependency:
 

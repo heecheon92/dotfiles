@@ -30,8 +30,8 @@ iTerm의 기존 Hotkey Window 프로필은
 `home/.config/herdr/config.toml`은 호스트 사이에 공유할 `[keys]` mode와
 key binding의 기준입니다. 활성 `~/.config/herdr/config.toml`은 저장소에
 링크하지 않고 각 Mac의 쓰기 가능한 일반 파일로 유지합니다. 따라서 Radar가
-원자적으로 저장한 관리 블록, 주석과 테마를 포함한 `[keys]` 밖의 설정 및 다른
-머신 로컬 설정은 동기화 대상이 아닙니다.
+원자적으로 저장한 관리 블록, 주석과 테마를 포함한 `[keys]` 밖의 설정은
+머신 로컬입니다. 예외적으로 아래의 Agents 텍스트 스타일만 동기화 때 덮어씁니다.
 
 `./rebuild.sh`를 실행하면 Home Manager가 파일 링크를 만들기 전에 Nix의 Python과
 `tomlkit`으로 `home/bin/sync-herdr-config.py`를 실행합니다. helper는 mode와
@@ -58,6 +58,30 @@ Radar가 생성하는 탭 바·테마·사이드바 관리 블록은 넣지 않�
 생기는 세션·로그·플러그인 체크아웃과 개별 플러그인 설정도 머신 로컬입니다.
 Radar 캐시·백업은 `~/.local/state/herdr`, 설치된 아이콘 폰트는 사용자 폰트
 디렉터리에 남습니다.
+
+`home/.config/herdr/sidebar-overrides.toml`은 Agents 영역의 흐릿한 그룹·연결선·
+오래된 아이콘과 제목에 적용할 작은 스타일 정책입니다. 여섯 token의 `fg`를
+Spaces 라벨과 같은 `#9a9eb3`으로, `dim`을 `false`로 설정합니다. helper는
+Radar가 표시한 sidebar 관리 블록의 기본 `rows`와 모든 `rows_by_agent`에서
+일치하는 token의 지정 속성만 갱신합니다. 다른 글꼴 속성, 상태·브랜드 색상,
+Spaces, 테마, 탭 바, 레이아웃은 보존하며 Radar 블록이 없으면 만들지 않습니다.
+
+이 정책은 rebuild 때 재적용되지만 Radar 자체의 설정은 아닙니다. Radar가 설정
+변경이나 appearance 갱신으로 블록을 다시 생성하면 덮어써질 수 있습니다.
+그때는 저장소 루트에서 다음 명령으로 전체 rebuild 없이 다시 적용합니다.
+Nix가 고정된 Python과 `tomlkit`을 제공합니다.
+
+```sh
+nix shell --impure --expr \
+  'let p = (builtins.getFlake (toString ./.)).darwinConfigurations."MacBook-Pro".pkgs; in p.python3.withPackages (ps: [ ps.tomlkit ])' \
+  -c python home/bin/sync-herdr-config.py \
+  home/.config/herdr/config.toml "$HOME/.config/herdr/config.toml" \
+  home/.config/herdr/sidebar-overrides.toml
+herdr config check && herdr server reload-config
+```
+
+마지막 reload는 실행 중인 서버와 CLI가 호환될 때 사용합니다. 설치된 Radar
+플러그인을 수정하거나 변경을 감시하는 프로세스를 추가하지 않습니다.
 
 `home/.config/herdr/plugin-sources.txt`는 설치 가능한 출처를 기록하고 Home
 Manager가 활성 경로에 링크할 뿐, 플러그인을 자동으로 설치하거나 제거하지

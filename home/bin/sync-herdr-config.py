@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Synchronize shared Herdr key bindings into a writable local config."""
+"""Synchronize portable Herdr keys and optional Radar sidebar styles."""
 
 from __future__ import annotations
 
+from collections.abc import Mapping, MutableSequence
 import copy
 import json
 import os
@@ -22,6 +23,7 @@ STATE_SUFFIX = ".dotfiles-keys.json"
 RADAR_NAMES = ("herdr-radar", "herdr-kit")
 RADAR_BLOCKS = ("tab-bar", "theme", "sidebar")
 RADAR_GUARD_PREFIX = "__dotfiles_sync_radar_guard_"
+SUPPORTED_STYLE_FIELDS = frozenset(("fg", "dim"))
 
 
 class SyncError(Exception):
@@ -86,12 +88,99 @@ def shield_radar_blocks(raw: bytes, path: Path) -> tuple[bytes, list[tuple[str, 
     return text.encode("utf-8"), guards
 
 
-def restore_radar_blocks(text: str, guards: list[tuple[str, str]], path: Path) -> str:
+def restore_radar_blocks(
+    text: str,
+    guards: list[tuple[str, str]],
+    path: Path,
+    agent_overrides: dict[str, dict[str, Any]] | None = None,
+) -> str:
     for guard, block in guards:
+        if agent_overrides is not None and any(
+            block.startswith(f"# >>> {name} sidebar block") for name in RADAR_NAMES
+        ):
+            block = apply_sidebar_overrides(block, agent_overrides, path)
         if text.count(guard) != 1:
             raise SyncError(f"Radar guard was not preserved while updating {path}")
         text = text.replace(guard, block)
     return text
+
+
+def load_agent_overrides(path: Path) -> dict[str, dict[str, Any]]:
+    if not path.is_file():
+        raise SyncError(f"sidebar override is not a regular file: {path}")
+    document = parse_toml(read_bytes(path, "sidebar override"), path)
+    if set(document) != {"agents"}:
+        raise SyncError(f"{path} must contain only an [agents] table")
+    agents = document["agents"]
+    if not isinstance(agents, Mapping):
+        raise SyncError(f"agents in {path} must be a table")
+
+    result: dict[str, dict[str, Any]] = {}
+    for token, style in agents.items():
+        if not isinstance(token, str) or not token:
+            raise SyncError(f"agent override tokens in {path} must be non-empty strings")
+        if not isinstance(style, Mapping):
+            raise SyncError(f"override for {token!r} in {path} must be a table")
+        fields = set(style)
+        unsupported = fields - SUPPORTED_STYLE_FIELDS
+        if unsupported:
+            names = ", ".join(sorted(unsupported))
+            raise SyncError(f"unsupported fields for {token!r} in {path}: {names}")
+        if not fields:
+            raise SyncError(f"override for {token!r} in {path} must set fg or dim")
+
+        values = style.unwrap()
+        if "fg" in values and not isinstance(values["fg"], str):
+            raise SyncError(f"fg for {token!r} in {path} must be a string")
+        if "dim" in values and type(values["dim"]) is not bool:
+            raise SyncError(f"dim for {token!r} in {path} must be a boolean")
+        result[token] = values
+    return result
+
+
+def patch_agent_rows(
+    rows: Any, overrides: dict[str, dict[str, Any]]
+) -> bool:
+    if not isinstance(rows, MutableSequence):
+        return False
+    changed = False
+    for row in rows:
+        if not isinstance(row, MutableSequence):
+            continue
+        for style in row:
+            if not isinstance(style, Mapping):
+                continue
+            token = style.get("token")
+            if token not in overrides:
+                continue
+            for name, value in overrides[token].items():
+                current = style.get(name)
+                current_value = (
+                    current.unwrap() if hasattr(current, "unwrap") else current
+                )
+                if current_value != value:
+                    style[name] = value
+                    changed = True
+    return changed
+
+
+def apply_sidebar_overrides(
+    block: str, overrides: dict[str, dict[str, Any]], path: Path
+) -> str:
+    document = parse_toml(block.encode("utf-8"), path)
+    try:
+        agents = document["ui"]["sidebar"]["agents"]
+    except (KeyError, TypeError):
+        return block
+    if not isinstance(agents, Mapping):
+        return block
+
+    changed = patch_agent_rows(agents.get("rows"), overrides)
+    rows_by_agent = agents.get("rows_by_agent")
+    if isinstance(rows_by_agent, Mapping):
+        for rows in rows_by_agent.values():
+            changed = patch_agent_rows(rows, overrides) or changed
+    return tomlkit.dumps(document) if changed else block
 
 
 def plain_binding(
@@ -352,13 +441,19 @@ def needs_write(path: Path, data: bytes) -> bool:
     return stat.S_IMODE(metadata.st_mode) != 0o600 or read_bytes(path, "file") != data
 
 
-def sync(shared_path: Path, active_path: Path) -> str:
+def sync(
+    shared_path: Path, active_path: Path, override_path: Path | None = None
+) -> str:
     if shared_path == active_path:
         raise SyncError("SHARED and ACTIVE must be different paths")
     if not shared_path.is_file():
         raise SyncError(f"shared config is not a regular file: {shared_path}")
     if not active_path.parent.is_dir():
         raise SyncError(f"active config directory does not exist: {active_path.parent}")
+
+    agent_overrides = (
+        load_agent_overrides(override_path) if override_path is not None else None
+    )
 
     shared_document = parse_toml(read_bytes(shared_path, "shared config"), shared_path)
     _, shared = inspect_keys(shared_document, shared_path, allow_aliases=False)
@@ -420,7 +515,9 @@ def sync(shared_path: Path, active_path: Path) -> str:
                 _, active_after_updates = inspect_keys(active_document, active_path)
 
     obsolete_removed = remove_obsolete_setting(active_document, active_path)
-    active_text = restore_radar_blocks(tomlkit.dumps(active_document), radar_guards, active_path)
+    active_text = restore_radar_blocks(
+        tomlkit.dumps(active_document), radar_guards, active_path, agent_overrides
+    )
     active_data = active_text.encode("utf-8")
     parse_toml(active_data, active_path)
     state_data = serialized_state(shared)
@@ -445,11 +542,15 @@ def sync(shared_path: Path, active_path: Path) -> str:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 3:
-        print(f"Usage: {Path(argv[0]).name} SHARED ACTIVE", file=sys.stderr)
+    if len(argv) not in (3, 4):
+        print(
+            f"Usage: {Path(argv[0]).name} SHARED ACTIVE [SIDEBAR_OVERRIDES]",
+            file=sys.stderr,
+        )
         return 2
     try:
-        summary = sync(Path(argv[1]), Path(argv[2]))
+        override_path = Path(argv[3]) if len(argv) == 4 else None
+        summary = sync(Path(argv[1]), Path(argv[2]), override_path)
     except SyncError as exc:
         print(f"sync-herdr-config: {exc}", file=sys.stderr)
         return 1

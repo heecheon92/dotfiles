@@ -1,0 +1,7 @@
+[agents]
+"$group_parent" = { fg = "#9a9eb3", dim = false }
+"$group" = { fg = "#9a9eb3", dim = false }
+"$group_stale" = { fg = "#9a9eb3", dim = false }
+"$split_mark" = { fg = "#9a9eb3", dim = false }
+"$logo_stale" = { fg = "#9a9eb3", dim = false }
+"$title_idle_stale" = { fg = "#9a9eb3", dim = false }

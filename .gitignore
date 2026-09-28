@@ -40,6 +40,7 @@ home/.pi/agent/extensions/**/dist/
 home/.config/herdr/*
 !home/.config/herdr/config.toml
 !home/.config/herdr/plugin-sources.txt
+!home/.config/herdr/sidebar-overrides.toml
 !home/.config/herdr/scripts/
 !home/.config/herdr/scripts/**
 

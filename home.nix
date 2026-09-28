@@ -464,7 +464,8 @@ in
       run mkdir -p "${config.home.homeDirectory}/.config/herdr"
       run ${herdrPython}/bin/python ${./home/bin/sync-herdr-config.py} \
         "${dotfiles}/home/.config/herdr/config.toml" \
-        "${config.home.homeDirectory}/.config/herdr/config.toml"
+        "${config.home.homeDirectory}/.config/herdr/config.toml" \
+        "${dotfiles}/home/.config/herdr/sidebar-overrides.toml"
     '';
 
   # Reload Herdr's machine-local config after links are ready, then synchronize
