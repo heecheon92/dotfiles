@@ -107,6 +107,8 @@ autolearn:
   enabled: true
   autoContinue: false
 task:
+  # Wait for the complete task call before launching agents; set true to opt in.
+  speculativeLaunch: false
   agentModelOverrides:
     security-reviewer: "@daybreak-blue, @advisor"
     sonic: "@spark"
