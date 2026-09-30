@@ -9,7 +9,7 @@ modelRoles:
   plan: openrouter/z-ai/glm-5.3:high
   commit: openai-codex/gpt-6-luna:low
   task: openrouter/z-ai/glm-5.3-flash:max
-  advisor: openai-codex/gpt-6-sol:high
+  advisor: openai-codex/gpt-6.1-sol:high
   judge: openrouter/~typesafe/jev-latest
 cycleOrder:
   - spark
