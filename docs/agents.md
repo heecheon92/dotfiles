@@ -37,6 +37,26 @@ OMP 18.3.5에서 `auto`는 로컬 N-gram 엔진을 사용하며, 입력 문맥�
 YAML 변경은 기존 연결을 통해 다음 OMP 실행에 반영되므로 Nix 재빌드는
 필요하지 않습니다.
 
+## OMP 데스크톱 제어
+
+`home/.omp/agent/config.yml`은 `computer.enabled: true`로 데스크톱 제어를
+기본 활성화합니다. 새 OMP 실행부터 적용되며 Nix 재빌드는 필요하지 않습니다.
+현재 세션에서는 `/computer on`, `/computer off`, `/computer status`로
+활성화 상태를 제어하거나 확인합니다.
+
+macOS에서는 실행 호스트에 화면 기록과 손쉬운 사용 권한이 필요하며,
+권한 부여 후 호스트를 재시작해야 할 수 있습니다. 이 설정은 기존 도구 승인
+정책을 변경하지 않습니다. `tools.approvalMode`가 `yolo`이면 입력 동작에도
+별도 승인 창이 보장되지 않으므로 실제 앱을 조작할 때 주의하세요.
+
+## OMP 도구 출력 보관
+
+OMP 18.4.9부터 bash·Python·JavaScript 실행의 저장 출력 artifact는 기본
+16 MiB 제한을 따릅니다. 공유 설정은 이 기본값을 유지하며, 큰 출력은 앞부분과
+끝부분만 남고 중간은 생략됩니다. 전체 로그가 필요한 작업은 별도 파일에
+명시적으로 저장하세요. `tools.artifactMaxBytes: 0`은 무제한 보관이므로
+기본 설정에 추가하지 않습니다.
+
 ## OMP 저비용 모델 오버레이
 
 사용 비용을 줄이고 싶을 때는 `ob` Zsh alias로 OMP를 실행합니다. 이 설정은

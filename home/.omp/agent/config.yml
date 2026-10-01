@@ -122,6 +122,8 @@ spelling:
   autocomplete: auto
 browser:
   headless: true
+computer:
+  enabled: true
 power:
   sleepPrevention: system
 tui:
