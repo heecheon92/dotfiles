@@ -145,6 +145,28 @@ plus verified renderer limitations and guidance for visible response delivery.
 Home Manager links it into `~/.agents/skills/termaid`; other harnesses can install
 the same directory using their own supported skill mechanism.
 
+### mermaid
+
+Chooses an appropriate visual form, authors diagrams, and verifies their rendered output.
+Includes all 31 official Mermaid diagram types (catalog checked 2026-10-02), each with an
+adaptable example, recommended use, alternative choice, and common semantic/rendering trap.
+Use it for browser/GitHub-style Mermaid graphics; `termaid` serves terminal text output.
+
+```text
+$mermaid explain this service request with the most appropriate diagram types
+```
+
+Named invocation is harness-specific; “Use the mermaid skill” is also suitable.
+Read [the selection catalog](./mermaid/references/catalog.md) and
+[renderer guidance](./mermaid/references/rendering.md). The included Python helper validates
+and optionally renders examples using an existing Mermaid CLI; it does not install tools.
+
+This is an independently authored, harness-neutral skill maintained separately from upstream
+`mermaid-diagrams`. Home Manager declares the link at
+`~/.agents/skills/mermaid`; apply a normal dotfiles rebuild to activate a new link. An agent can
+also read this repository's `home/.agents/skills/mermaid/SKILL.md` directly before activation.
+Other harnesses can install/copy the entire directory through their own skill mechanism.
+
 ## Other agent harnesses
 
 If a harness does not support the Codex installer, copy the selected skill

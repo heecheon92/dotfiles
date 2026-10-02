@@ -373,6 +373,8 @@ in
       "${dotfiles}/home/.agents/skills/create-readme";
   home.file.".agents/skills/termaid".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/termaid";
+  home.file.".agents/skills/mermaid".source =
+    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/mermaid";
   # Keep OMP credentials, databases, sessions, logs, and Herdr's generated
   # integration local. Link only portable authored configuration and the
   # sibling runtime-context extension.
