@@ -30,7 +30,7 @@ AeroSpace를 종료하고 `brew uninstall --cask aerospace`를 실행합니다.
 자동 삭제되지 않습니다. 새 앱을 실행하기 전에는 Homebrew와 Nix 버전을
 동시에 실행하지 않습니다.
 
-로그인 시 자동 실행하며 시스템 설정 창만 floating으로 둡니다. 일반 창은 AeroSpace가
+로그인 시 자동 실행하며 새 Finder와 시스템 설정 창을 floating으로 둡니다. 일반 창은 AeroSpace가
 tiling으로 관리하고, 창 안쪽과 화면 가장자리에 12pt 간격을 둡니다. 상단은
 SketchyBar의 39pt 막대와 8pt 오프셋을 고려해 60pt를 예약합니다. 포커스가 다른 모니터로 이동하면
 포인터를 옮기며, 마우스가 가리키는 창에도 포커스를 맞춥니다.
@@ -40,7 +40,8 @@ SketchyBar의 39pt 막대와 8pt 오프셋을 고려해 60pt를 예약합니다.
 - `Option+Enter`: 홈 디렉터리에 독립된 WezTerm 인스턴스 열기.
   최소 사용자 환경으로 macOS 앱 런처를 호출하고 `--always-new-process`를 사용해,
   기존 터미널·Herdr 환경을 상속하거나 실행 중인 WezTerm 프로세스를 재사용하지 않습니다.
-- `Option+B` / `Option+E`: 새 Safari 창 / Finder 열기
+- `Option+B`: 새 Safari 창 열기
+- `Option+E`: 누를 때마다 홈 디렉터리에 새 floating Finder 창을 만들고 활성화 (기존 창을 재사용하지 않음)
 - `Option+S`: 시스템 설정 열기 (이미 실행 중이면 활성화)
 - `Option+C`: 현재 창 닫기 (마지막 창이면 앱 종료)
 - `Option+H/J/K/L`: 왼쪽/아래/위/오른쪽 창 포커스

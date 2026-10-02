@@ -77,11 +77,15 @@ gaps.outer.bottom =       12
 gaps.outer.top =          60
 gaps.outer.right =        12
 
-# System Settings uses many compact utility-style windows that are easier to
-# use floating. Applications not listed here, including terminals, stay tiled.
+# Finder and System Settings open floating. Other applications, including
+# terminals, stay tiled.
 on-window-detected = [
     {
         if = 'test %{app-bundle-id} = com.apple.systempreferences',
+        run = 'layout floating',
+    },
+    {
+        if = 'test %{app-bundle-id} = com.apple.finder',
         run = 'layout floating',
     },
 ]
@@ -112,7 +116,9 @@ alt-enter = '''exec-and-forget
 '''
 alt-b = 'exec-and-forget open -n /Applications/Safari.app'
 alt-c = 'close --quit-if-last-window'
-alt-e = 'exec-and-forget open .'
+alt-e = '''exec-and-forget
+/usr/bin/osascript -e 'tell application "Finder"' -e 'make new Finder window to (path to home folder)' -e 'activate' -e 'end tell'
+'''
 alt-s = 'exec-and-forget open -b com.apple.systempreferences'
 
 
