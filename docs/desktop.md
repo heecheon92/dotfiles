@@ -10,9 +10,9 @@
 데스크톱 동작은 유지합니다. 개인 Mac인 `MacBook-Pro`는 기존 Hammerspoon과
 macOS 메뉴 막대를 유지합니다.
 
-`Mac-mini`의 창 관리는 `heecheon92/AeroSpace`의 `centered-zoom` 브랜치를
-사용합니다. 이 브랜치는 upstream `v0.21.3-Beta`를 바탕으로 하며, Nix가
-`v0.21.3-centered-zoom.2` 릴리스의 미리 빌드된 zip을 고정합니다. 로컬에서
+`Mac-mini`의 창 관리는 `heecheon92/AeroSpace`의 `main` 브랜치를
+사용합니다. 이 브랜치는 centered-zoom 변경과 upstream `main`을 병합하며, Nix가
+`packages/aerospace.nix`에 지정한 릴리스의 미리 빌드된 zip을 고정합니다. 로컬에서
 Swift 소스를 빌드하는 순수 Nix 패키지는 아닙니다. 앱은
 `/Applications/Nix Apps/AeroSpace.app`, CLI는
 `/run/current-system/sw/bin/aerospace`에 설치됩니다. Home Manager는
@@ -119,11 +119,13 @@ Spaces 설정을 적용합니다. 실행 중인 앱이 이전 전체 화면 설�
 
 ### AeroSpace fork 업그레이드
 
-upstream `main`은 수정하지 않습니다. 새 버전은 `centered-zoom` 브랜치를 선택한
-upstream 릴리스 태그 위로 rebase하고 테스트한 뒤, upstream 빌드 스크립트로
-릴리스 zip을 만듭니다. 새 태그와 asset을 fork에 게시하고
-`packages/aerospace.nix`의 version과 hash를 갱신한 다음 `./rebuild.sh`를
-실행합니다. Nix가 고정한 릴리스만 설치되므로 자동 업데이트를 보장하지 않습니다.
+fork의 `main`에 사용자 변경을 먼저 병합한 뒤 `upstream/main`을 병합하고
+빌드와 테스트를 확인합니다. upstream 저장소에는 push하지 않습니다.
+upstream 빌드 스크립트로 릴리스 zip을 만든 뒤 fork의 `main`과 새 태그 및
+asset을 게시하고 `packages/aerospace.nix`의 version과 hash를 갱신한 다음
+`./rebuild.sh`를 실행합니다. Nix가 고정한 릴리스만 설치되므로 자동 업데이트를
+보장하지 않습니다. 적용 후 AeroSpace를 다시 실행하고 CLI와 서버의 버전 및
+커밋이 새 릴리스와 일치하는지 `aerospace --version`으로 확인합니다.
 릴리스 빌드는 upstream의 `build-release.sh --build-version VERSION --codesign-identity -`를
 사용하며 Xcode와 upstream 개발 문서의 빌드 의존성이 필요합니다.
 `hash`는 zip 파일 자체의 SHA-256이 아니라 `nix-prefetch-url --unpack` 결과를
