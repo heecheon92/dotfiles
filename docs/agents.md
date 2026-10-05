@@ -57,6 +57,25 @@ OMP 18.4.9부터 bash·Python·JavaScript 실행의 저장 출력 artifact는 �
 명시적으로 저장하세요. `tools.artifactMaxBytes: 0`은 무제한 보관이므로
 기본 설정에 추가하지 않습니다.
 
+## OMP 기록 조회와 작업 완료 추정
+
+`home/.omp/agent/config.yml`은 OMP 18.6.1의 다음 기본값을 명시적으로 유지합니다.
+
+- `archive.enabled: true`: Eval의 읽기 전용 `archive` helper로 이전 프롬프트,
+  세션 정보와 recap을 명시적으로 조회할 수 있습니다. 기본 범위는 현재 프로젝트이며,
+  요청이 여러 프로젝트에 걸칠 때 `project: "*"`로 넓힐 수 있습니다. 기록을 자동으로
+  모두 읽거나 업로드하지는 않지만, 조회한 내용은 모델 문맥에 포함될 수 있습니다.
+- `task.completionProbe: true`: 대화형 세션의 주 에이전트가 직접 실행한
+  장시간 작업 중인 하위 에이전트에 완료 정도를 추정하는 추가 모델 요청을 보냅니다.
+  추정 요청은 별도 사용량을 소비하며 print/RPC/ACP/SDK 실행과 중첩 하위 에이전트는
+  제외됩니다.
+
+설정 변경은 기존 YAML 연결을 통해 다음 OMP 실행에 반영되므로 Nix 재빌드는
+필요하지 않습니다. core 업데이트는 `omp update`로 수행하며,
+`omp update --plugins`는 별도 승인 없이 함께 실행하지 않습니다.
+설치된 바이너리를 업데이트해도 이미 실행 중인 OMP는 이전 런타임을 사용하므로
+OMP를 다시 실행해야 합니다.
+
 ## OMP 저비용 모델 오버레이
 
 사용 비용을 줄이고 싶을 때는 `ob` Zsh alias로 OMP를 실행합니다. 이 설정은

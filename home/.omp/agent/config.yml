@@ -96,20 +96,23 @@ retry:
 dev:
   autoqaConsent: granted
 display:
-  hideToolActivity: false
+  hideToolActivity: true
 memory:
   backend: local
+archive:
+  enabled: true
 autolearn:
   enabled: true
   autoContinue: false
 task:
-  # Wait for the complete task call before launching agents; set true to opt in.
+  completionProbe: true
   speculativeLaunch: false
   agentModelOverrides:
     security-reviewer: "@daybreak-blue, @advisor"
     sonic: "@spark"
   eager: preferred
   enableEffort: false
+  showResolvedModelBadge: true
 terminal:
   showImages: true
 images:
