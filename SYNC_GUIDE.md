@@ -373,8 +373,11 @@ collision and keeps the first one in the configured order. User and shared
 skills take precedence over plugin copies.
 
 The repository also tracks the Rose Pine Moon theme and reviewed shared skills,
-including GPT, Lantern, Documentation Lifecycle, OMP Update, and the curated
-`create-readme` skill from GitHub's `awesome-copilot` repository.
+including GPT, Lantern, Documentation Lifecycle, OMP Update, the curated
+`create-readme` skill from GitHub's `awesome-copilot` repository, and the pinned
+interface/design collections from `jakubkrehel/skills` and `emilkowalski/skills`.
+Their files, references, and licenses travel with the checkout; Home Manager
+creates the individual shared-skill links during the normal rebuild.
 Documentation Lifecycle is a shared, model-discoverable skill for installing or
 auditing project-local documentation maintenance and task-aware reading
 policies. The portable catalog, upstream maintenance commands, and standalone

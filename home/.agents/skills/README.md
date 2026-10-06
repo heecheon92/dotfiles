@@ -167,6 +167,100 @@ This is an independently authored, harness-neutral skill maintained separately f
 also read this repository's `home/.agents/skills/mermaid/SKILL.md` directly before activation.
 Other harnesses can install/copy the entire directory through their own skill mechanism.
 
+### Jakub Krehel's interface skills
+
+Vendored from [`jakubkrehel/skills`](https://github.com/jakubkrehel/skills) at
+[`d574cc8a576dc24256ad38268b8d03d86724a1b3`](https://github.com/jakubkrehel/skills/tree/d574cc8a576dc24256ad38268b8d03d86724a1b3).
+The collection includes:
+
+- `better-interface`: combined interface review using the focused `better-*` skills.
+- `better-accessibility`: keyboard, focus, semantics, forms, and screen readers.
+- `better-colors`: palettes, semantic tokens, color formats, and contrast.
+- `better-layout`: grouping, alignment, spacing, and responsive structure.
+- `better-typography`: font choices, sizing, wrapping, and OpenType features.
+- `better-ui`: surfaces, icons, transitions, and UI polish.
+- `better-writing`: interface labels, errors, confirmations, and other product copy.
+- `break`: stress-test a component with reachable scenarios on a temporary page.
+- `build-design`: implement a Figma design or reference image.
+- `explain-interface`: explain how a website or visual effect was built.
+- `interface-review`: review interface changes in a branch, PR, or working tree.
+- `state-machine`: render component states on a temporary development page.
+- `variant`: explore component alternatives with a visual picker.
+
+### Emil Kowalski's design and animation skills
+
+The [public skill page](https://emilkowal.ski/skill) points to a repository now
+named [`emilkowalski/skills`](https://github.com/emilkowalski/skills).
+This copy is pinned to
+[`e8a175de22ae1e49370fc144c1f3bb9aeedf988d`](https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d)
+and contains all 14 public skills at that revision:
+
+- `emil-design-eng`: design-engineering and animation guidance.
+- `animate`: implement web animations with deliberate timing and easing.
+- `animate-expo`: React Native and Expo motion, gestures, and haptics.
+- `animation-vocabulary`: describe motion precisely when directing an agent.
+- `apple-design`: Apple interface and motion principles adapted for the web.
+- `ask-sonner`: Sonner toast setup, styling, and troubleshooting.
+- `break-ui`: stress-test interfaces with difficult content and data.
+- `find-animation-opportunities`: identify useful motion without over-animating.
+- `improve-animations`: audit motion and produce prioritized implementation plans.
+- `mobile-native`: improve the native feel of mobile web interfaces.
+- `pick-ui-library`: choose appropriate UI libraries instead of unnecessary custom implementations.
+- `prototype`: compare distinct UI implementations through a visual picker.
+- `review-animations`: review existing motion against explicit standards.
+- `write-swift`: modern Swift types, concurrency, performance, and testing.
+
+### Activating the upstream collections
+
+Both collections are committed sources, not downloads performed at agent startup.
+Home Manager declares individual links from `~/.agents/skills/<name>` to this
+checkout. On a configured machine, apply `./rebuild.sh` from the repository root
+to create the new links, then restart a skill-aware agent to refresh discovery.
+On a new machine, first follow the repository's normal Nix/Home Manager bootstrap;
+the skill files themselves require no separate `npx skills add` step.
+
+The standalone installation commands above also accept any of these skill names.
+Install related skills together when an upstream skill refers to its siblings;
+in particular, `better-interface` delegates to the focused `better-*` skills.
+Keep bundled reference files and each skill's MIT `LICENSE` with the skill.
+The skill text does not install its suggested UI libraries, browser tools, or
+language toolchains; those remain prerequisites of the project being worked on.
+
+Upstream explicit-invocation metadata is preserved. Some skills intentionally
+create temporary preview routes, write implementation plans, or suggest project
+dependency installation when invoked; importing them does none of those things.
+Harnesses differ in how they enforce invocation metadata. In particular,
+`animate` suggests calling `pick-ui-library`, but the latter is explicit-only:
+do not treat a cross-skill suggestion as permission to bypass that restriction.
+
+### Updating the pinned collections
+
+The initial imports used Skills CLI 1.7.0 from the repository's `home/` directory:
+
+```bash
+cd home
+npx --yes skills@1.7.0 add \
+  https://github.com/jakubkrehel/skills/tree/d574cc8a576dc24256ad38268b8d03d86724a1b3 \
+  --skill '*' --agent codex --yes
+npx --yes skills@1.7.0 add \
+  https://github.com/emilkowalski/skills/tree/e8a175de22ae1e49370fc144c1f3bb9aeedf988d \
+  --skill '*' --agent codex --yes
+```
+
+For an update, inspect the new upstream revision first, replace the corresponding
+SHA in the command, and review both the imported files and generated
+`home/skills-lock.json`. Do not hand-edit the lock's hashes. Each entry records
+the upstream skill contents; the additional redistribution `LICENSE` is not part
+of that upstream hash. The installer may replace entire directories, so restore
+the repository-root MIT `LICENSE` from the same upstream revision into **every**
+imported skill directory afterward.
+
+Reconcile added or removed skill names with `home.nix` and this catalog; do not
+silently remove a skill that still has callers. Update the recorded revisions,
+check local resource links, run `npx --yes skills@1.7.0 list --agent codex --json`
+from `home/`, and evaluate both Home Manager host configurations before the normal
+rebuild. Do not use a global install/update command to replace these managed links.
+
 ## Other agent harnesses
 
 If a harness does not support the Codex installer, copy the selected skill
