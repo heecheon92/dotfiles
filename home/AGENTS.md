@@ -91,6 +91,11 @@ they conflict with these defaults.
   logs. Redact sensitive command output and audit the intended publish scope.
 - Keep portable configuration separate from machine-local mutable state,
   credentials, caches, histories, and generated runtime files.
+- For desktop automation, prefer window-specific screenshots and accessibility
+  or background actions that do not deliberately take focus or move my pointer.
+  Before foreground takeover or real-pointer input, ask unless I have already
+  explicitly authorized that interaction. A general request to automate an app
+  is not permission to interrupt my work in other windows.
 
 ## Editing and Implementation
 

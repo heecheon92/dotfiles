@@ -127,6 +127,7 @@ browser:
   headless: true
 computer:
   enabled: true
+  display: active
 power:
   sleepPrevention: system
 tui:
