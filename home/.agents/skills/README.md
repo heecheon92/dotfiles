@@ -5,6 +5,53 @@ skill is self-contained under `home/.agents/skills/<name>/` and can be installed
 without adopting the rest of the dotfiles configuration. Curated upstream
 skills retain their source metadata in `home/skills-lock.json`.
 
+## Skill ownership and sources
+
+This is the human-maintained source registry for the skills checked into this
+repository, not an inventory of every skill installed on a machine. The lists
+below cover all 34 managed skills: 6 handmade and 28 externally installed.
+
+### Handmade skills
+
+These skills are authored and maintained here. Edit their checked-in directories;
+do not replace them through a marketplace update. References to external tools
+or documentation inside a handmade skill are not its installation source.
+
+- [`gpt`](./gpt/SKILL.md)
+- [`lantern`](./lantern/SKILL.md)
+- [`mermaid`](./mermaid/SKILL.md)
+- [`omp-update`](./omp-update/SKILL.md)
+- [`termaid`](./termaid/SKILL.md)
+- [`documentation-lifecycle`](./documentation-lifecycle/SKILL.md)
+
+### Externally installed skills
+
+| Skills | Upstream source | Import record | Update procedure |
+| --- | --- | --- | --- |
+| [Jakub Krehel's 13 skills](#jakub-krehels-interface-skills) | [`jakubkrehel/skills`](https://github.com/jakubkrehel/skills), `skills/<name>/` | Commit-pinned entries in `home/skills-lock.json` | [Update the pinned collection](#updating-the-pinned-collections) |
+| [Emil Kowalski's 14 skills](#emil-kowalskis-design-and-animation-skills) | [`emilkowalski/skills`](https://github.com/emilkowalski/skills), `skills/<name>/`; linked from [the author's skill page](https://emilkowal.ski/skill) | Commit-pinned entries in `home/skills-lock.json` | [Update the pinned collection](#updating-the-pinned-collections) |
+| [`create-readme`](#create-readme) | [`github/awesome-copilot`](https://github.com/github/awesome-copilot) | Source, path, and content hash in `home/skills-lock.json`; no commit recorded | [Update this skill only](#create-readme) |
+
+The collection sections enumerate their individual skills and installed commits.
+[`home/skills-lock.json`](../../skills-lock.json) is installer-managed provenance
+for external imports, not a list of handmade skills. Preserve the recorded
+repository, skill path, revision when present, and content hash; let the supported
+installer update it rather than editing generated hashes by hand.
+
+### Update rules
+
+- Read the upstream changes and installation guidance before updating. A pinned
+  revision is the installed baseline, not a command to track the latest version.
+- Update only the intended external skill or collection from the repository's
+  `home/` directory. Do not run a blanket or global update against Home Manager
+  links, and never include handmade skills in an external update.
+- Keep upstream skill files, companion resources, and invocation metadata
+  together. Preserve redistribution licenses as described below. If a local
+  adaptation becomes necessary, document it here before a later update replaces it.
+- When adding or removing a managed skill, reconcile this registry, the detailed
+  catalog, generated lockfile where applicable, and `home.nix`. Inspect the diff
+  and verify discovery before activating changed links.
+
 ## Install with an agent
 
 Ask a skill-aware coding agent to install the selected directory from GitHub.
@@ -117,11 +164,12 @@ Creates a concise, well-structured project README after reviewing the complete
 workspace. This curated copy comes from GitHub's
 [`awesome-copilot`](https://github.com/github/awesome-copilot) repository.
 
-Update the vendored copy and its source lock from the repository root with:
+After reviewing upstream changes, update only this vendored skill and its source
+lock. Run from the repository root:
 
 ```bash
 cd home
-npx skills update create-readme --yes
+npx --yes skills@1.7.0 update create-readme --project --yes
 ```
 
 ### termaid
