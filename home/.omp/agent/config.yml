@@ -96,7 +96,7 @@ retry:
 dev:
   autoqaConsent: granted
 display:
-  hideToolActivity: true
+  hideToolActivity: false
 memory:
   backend: local
 archive:
@@ -131,3 +131,5 @@ power:
   sleepPrevention: system
 tui:
   codexResetFireworks: true
+codexResets:
+  autoRedeem: "unset"
