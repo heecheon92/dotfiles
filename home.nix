@@ -2,6 +2,16 @@
 
 let
   dotfiles = "${config.home.homeDirectory}/.dotfiles";
+  # Installation policy, not the full registry. Unselected sources stay in dotfiles.
+  selectedAgentSkills = {
+    chatgpt-review = "handmade/chatgpt-review";
+    lantern = "handmade/lantern";
+    documentation-lifecycle = "handmade/documentation-lifecycle";
+    omp-update = "handmade/omp-update";
+    mermaid = "handmade/mermaid";
+    termaid = "handmade/termaid";
+    create-readme = "external/github-awesome-copilot/create-readme";
+  };
   lavishAxi = pkgs.callPackage ./packages/lavish-axi.nix { };
   aerospaceEnabled = desktopProfile == "aerospace";
   herdrPython = pkgs.python3.withPackages (ps: [ ps.tomlkit ]);
@@ -20,6 +30,16 @@ let
   '';
 in
 {
+  imports = [
+    {
+      home.file = lib.mapAttrs' (name: source:
+        lib.nameValuePair ".agents/skills/${name}" {
+          source = config.lib.file.mkOutOfStoreSymlink
+            "${dotfiles}/home/.agents/skills/${source}";
+        }) selectedAgentSkills;
+    }
+  ];
+
   home.username = user;
   home.homeDirectory = "/Users/${user}";
   home.stateVersion = "26.05";
@@ -352,83 +372,11 @@ in
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   home.file.".config/opencode/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
-  # Keep reviewed cross-agent skills in this repository; unlisted third-party
-  # skills under ~/.agents/skills remain machine-local. Lavish stays CLI-only
-  # so neither skill discovery nor session hooks promote it automatically.
+  # The registry catalog remains available alongside the selected flat skill links.
+  # Unlisted machine-local skills remain untouched. Lavish stays CLI-only.
   home.file.".agents/skills/README.md".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.agents/skills/README.md";
-  home.file.".agents/skills/gpt".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/gpt";
-  home.file.".agents/skills/lantern".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/lantern";
-  home.file.".agents/skills/documentation-lifecycle".source =
-    config.lib.file.mkOutOfStoreSymlink
-      "${dotfiles}/home/.agents/skills/documentation-lifecycle";
-  home.file.".agents/skills/omp-update".source =
-    config.lib.file.mkOutOfStoreSymlink
-      "${dotfiles}/home/.agents/skills/omp-update";
-  home.file.".agents/skills/create-readme".source =
-    config.lib.file.mkOutOfStoreSymlink
-      "${dotfiles}/home/.agents/skills/create-readme";
-  home.file.".agents/skills/termaid".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/termaid";
-  home.file.".agents/skills/mermaid".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/mermaid";
-  home.file.".agents/skills/better-accessibility".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/better-accessibility";
-  home.file.".agents/skills/better-colors".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/better-colors";
-  home.file.".agents/skills/better-interface".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/better-interface";
-  home.file.".agents/skills/better-layout".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/better-layout";
-  home.file.".agents/skills/better-typography".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/better-typography";
-  home.file.".agents/skills/better-ui".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/better-ui";
-  home.file.".agents/skills/better-writing".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/better-writing";
-  home.file.".agents/skills/break".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/break";
-  home.file.".agents/skills/build-design".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/build-design";
-  home.file.".agents/skills/explain-interface".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/explain-interface";
-  home.file.".agents/skills/interface-review".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/interface-review";
-  home.file.".agents/skills/state-machine".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/state-machine";
-  home.file.".agents/skills/variant".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/variant";
-  home.file.".agents/skills/emil-design-eng".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/emil-design-eng";
-  home.file.".agents/skills/animate".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/animate";
-  home.file.".agents/skills/animate-expo".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/animate-expo";
-  home.file.".agents/skills/review-animations".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/review-animations";
-  home.file.".agents/skills/improve-animations".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/improve-animations";
-  home.file.".agents/skills/find-animation-opportunities".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/find-animation-opportunities";
-  home.file.".agents/skills/animation-vocabulary".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/animation-vocabulary";
-  home.file.".agents/skills/apple-design".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/apple-design";
-  home.file.".agents/skills/write-swift".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/write-swift";
-  home.file.".agents/skills/pick-ui-library".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/pick-ui-library";
-  home.file.".agents/skills/prototype".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/prototype";
-  home.file.".agents/skills/mobile-native".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/mobile-native";
-  home.file.".agents/skills/break-ui".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/break-ui";
-  home.file.".agents/skills/ask-sonner".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.agents/skills/ask-sonner";
   # Keep OMP credentials, databases, sessions, logs, and Herdr's generated
   # integration local. Link only portable authored configuration and the
   # sibling runtime-context extension.

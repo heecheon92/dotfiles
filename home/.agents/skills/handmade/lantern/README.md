@@ -160,7 +160,7 @@ Use the skill installer included with Codex:
 ```bash
 python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
   --repo heecheon92/dotfiles \
-  --path home/.agents/skills/lantern
+  --path home/.agents/skills/handmade/lantern
 ```
 
 The skill will be available from your next Codex turn:
@@ -176,7 +176,7 @@ Copy the skill directory into your personal skills directory:
 ```bash
 git clone --depth 1 https://github.com/heecheon92/dotfiles.git /tmp/dotfiles
 mkdir -p ~/.claude/skills
-cp -R /tmp/dotfiles/home/.agents/skills/lantern ~/.claude/skills/lantern
+cp -R /tmp/dotfiles/home/.agents/skills/handmade/lantern ~/.claude/skills/lantern
 ```
 
 Use `.claude/skills/` inside a repository instead if you want the skill scoped

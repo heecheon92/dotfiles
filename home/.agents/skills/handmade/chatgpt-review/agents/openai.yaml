@@ -1,0 +1,7 @@
+interface:
+  display_name: "ChatGPT Web Review"
+  short_description: "Browser-based second opinion with repository verification"
+  default_prompt: "Use $chatgpt-review to ask ChatGPT web for a second opinion on the human's intent, problems, and possible solutions. Identify Codex as the sender unless I explicitly request otherwise, and verify material findings against repository evidence."
+
+policy:
+  allow_implicit_invocation: false

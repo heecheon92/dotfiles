@@ -156,7 +156,7 @@ Codex에 포함된 스킬 설치 도구를 사용합니다.
 ```bash
 python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
   --repo heecheon92/dotfiles \
-  --path home/.agents/skills/lantern
+  --path home/.agents/skills/handmade/lantern
 ```
 
 설치 후 다음 Codex 턴부터 사용할 수 있습니다.
@@ -172,7 +172,7 @@ $lantern --standard <주제>
 ```bash
 git clone --depth 1 https://github.com/heecheon92/dotfiles.git /tmp/dotfiles
 mkdir -p ~/.claude/skills
-cp -R /tmp/dotfiles/home/.agents/skills/lantern ~/.claude/skills/lantern
+cp -R /tmp/dotfiles/home/.agents/skills/handmade/lantern ~/.claude/skills/lantern
 ```
 
 특정 저장소에서만 사용하려면 그 저장소의 `.claude/skills/` 경로에

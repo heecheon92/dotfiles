@@ -372,12 +372,40 @@ If two Codex plugins provide the same frontmatter `name`, Pi reports a
 collision and keeps the first one in the configured order. User and shared
 skills take precedence over plugin copies.
 
-The repository also tracks the Rose Pine Moon theme and reviewed shared skills,
-including GPT, Lantern, Documentation Lifecycle, OMP Update, the curated
-`create-readme` skill from GitHub's `awesome-copilot` repository, and the pinned
-interface/design collections from `jakubkrehel/skills` and `emilkowalski/skills`.
-Their files, references, and licenses travel with the checkout; Home Manager
-creates the individual shared-skill links during the normal rebuild.
+The repository also tracks the Rose Pine Moon theme and a reviewed skill registry
+of 36 sources: 8 handmade and 28 externally imported. Dotfiles owns the registry;
+the explicit `selectedAgentSkills` name-to-relative-source-path map in `home.nix`
+owns the default Home Manager installation policy. Its seven defaults are `chatgpt-review`,
+`lantern`, `documentation-lifecycle`, `omp-update`, `mermaid`, `termaid`, and
+`create-readme`. The remaining 29 skills are available for deliberate standalone
+or project installation, but are not globally linked.
+
+The registry includes the curated `create-readme` skill from GitHub's
+`awesome-copilot` repository and the pinned interface/design collections from
+`jakubkrehel/skills` and `emilkowalski/skills`. The personal `frontend-patterns`
+and `react-ui-ux` skills live together under
+`home/.agents/skills/handmade/nextjs-react/`; they are authored sources maintained
+in dotfiles, not external lockfile entries. Neither the collections nor this pair
+is installed globally by a rebuild unless explicitly selected in the allowlist.
+All registry files, references, and licenses travel with the checkout. Sources are
+grouped under `home/.agents/skills/handmade/` and `external/<source>/`, while Home
+Manager creates individual flat links only for selected skills at
+`~/.agents/skills/<name>`.
+
+Adding a registry source does not install it automatically. To change the default
+set, add or remove entries in `selectedAgentSkills`, then run the normal
+`./rebuild.sh` and restart skill-aware agents if needed to refresh discovery.
+Deselection removes only previously Home Manager-managed runtime links during
+activation, not source directories. Machine-local, project-local, and
+plugin-provided skills remain unaffected. After moving a selected source
+directory, update its allowlist path and rebuild to retarget its link; before
+activation the old link can be broken.
+
+Upstream updates use a temporary flat Skills CLI staging directory and are
+reviewed before replacing grouped sources, not installed directly into the
+checkout or the live Home Manager links. Registry updates and changes to the
+default installation set are separate decisions.
+
 Documentation Lifecycle is a shared, model-discoverable skill for installing or
 auditing project-local documentation maintenance and task-aware reading
 policies. The portable catalog, upstream maintenance commands, and standalone
