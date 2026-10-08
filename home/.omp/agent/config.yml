@@ -13,6 +13,9 @@ modelRoles:
   tiny: local/lfm2.5-230m
   memory: openai-codex/gpt-6-luna
   judge: openrouter/~typesafe/jev-latest
+title:
+  generator: tiny
+  icons: nf+emoji
 cycleOrder:
   - spark
   - smol

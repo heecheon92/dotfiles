@@ -138,6 +138,22 @@ The two tiny groups describe intended workloads; all eight entries have catalog 
 
 Use **`omp tiny-models list`**, not bare `omp tiny-models`, for inspection: the bare command defaults to downloading the default title model. Actual local inference can also trigger weight download when a selected local model is first used.
 
+### Local title policy (OMP 18.8.3)
+
+The baseline explicitly sets `title.generator: tiny` and `title.icons: nf+emoji`.
+Together with `modelRoles.tiny: local/lfm2.5-230m`, this keeps title generation on
+the local lightweight route while adopting the new icon/short-code presentation.
+The budget, experimental, and ultra overlays inherit this policy unless they
+explicitly override it.
+
+OMP 18.8.0 introduced `title.generator: fork` as its default, using the session
+model when possible and the lightweight title route as a fallback. Keeping the
+explicit `tiny` setting avoids that session-model title request. An explicitly
+local title model does not fall back online if local generation fails; the
+session may remain untitled instead. These settings affect newly generated
+titles, not an automatic rewrite of existing titles.
+
+
 ### Built-in priority defaults
 
 The shipped priority file has chains for only seven roles:

@@ -237,10 +237,13 @@ $chatgpt-review review this implementation before I commit
 
 ### omp-update
 
-Audits and applies OMP core updates as brownfield migrations. It compares the
-release range against active configuration, asks only about material behavior
-changes, updates the declarative source of truth, and verifies the resulting
-runtime.
+Audits and applies OMP core updates through equally important feature/workflow
+briefing and safe brownfield migration. It explains every command, hotkey, keyword,
+and composer-trigger change in the reviewed range plus other substantial features,
+even without enabled config, using verified usage examples and clear limitations.
+It separately compares active configuration, asks only material decisions, updates
+the declarative source of truth, and verifies runtime within the authorized scope;
+notification-only means no approval or edit, not an omitted explanation.
 
 ```text
 $omp-update

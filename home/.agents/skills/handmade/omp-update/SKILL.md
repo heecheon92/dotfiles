@@ -1,11 +1,11 @@
 ---
 name: omp-update
-description: "Use when checking or installing OMP updates to compare release changes against effective settings, agents, skills, hooks, and declarative config, then guide a convenient, reversible update that asks only for material decisions."
+description: "Use when checking or installing OMP updates to explain new features and changed user workflows alongside a safe migration of effective settings, agents, skills, hooks, and declarative config, asking only for material decisions."
 ---
 
 # Purpose
 
-Guide an OMP update as a brownfield migration rather than a blind binary replacement. Compare the exact release range with the user's active configuration, explain only relevant impact, collect one decision at a time, apply the approved migration to the real source of truth, update OMP, and verify effective behavior.
+Guide an OMP update through two equally important tracks: **feature/workflow briefing** and **safe configuration migration**, not a blind binary replacement. Review the exact release range, teach the user what changed and how to use it even when no local edit is needed, compare it with active configuration, collect material decisions one at a time, apply approved migration to the real source of truth, update OMP, and verify effective behavior. Success requires both a useful briefing and a safe migration.
 
 This skill borrows Lantern's interaction qualities—evidence before questions, one focused decision per round, bounded options with consequences, pressure-testing, and explicit acceptance criteria—but it does not invoke or chain into Lantern. This is an implementation workflow, not a general requirements interview.
 
@@ -14,8 +14,9 @@ This skill borrows Lantern's interaction qualities—evidence before questions, 
 Optimize for convenience without suppressing decisions that can materially change behavior. The default flow is:
 
 ```text
-Discover → Triage → Notify auto-resolved items → Ask only material decisions
-         → Plan preview → Apply → Reconcile → Impact-sorted report
+Discover → Release ledger → Feature/workflow briefing + Local-impact triage
+         → Ask only material decisions → Plan preview → Apply → Reconcile
+         → Features and workflow changes + Impact-sorted configuration outcomes
 ```
 
 Keep the user-facing status compact:
@@ -26,7 +27,7 @@ Needs decision: 1 · Auto-resolved: 2 · Notify only: 14
 Highest impact: Removed designer role
 ```
 
-Do not make the user read the full changelog, approve routine facts, or answer questions that local inspection can resolve.
+Do not make the user read the full changelog, approve routine facts, or answer questions that local inspection can resolve. Give concise, actionable feature explanations instead; lack of an enabled setting is not a reason to omit a feature.
 
 Invocation determines execution authority:
 
@@ -35,15 +36,15 @@ Invocation determines execution authority:
 - If intent is genuinely ambiguous between audit and execution, ask one intent question before mutation.
 - Plugin updates, canary switches, destructive removal of user-authored extensions, and unrelated Home Manager activation are not implied by core-update authorization.
 
-Minor changes skip interaction but remain visible:
+Deterministic changes skip interaction but remain visible:
 
-- fixes or internal changes with no active local intersection,
+- internal or nonactionable fixes,
 - additive optional features the user has not enabled,
 - release-documented automatic migrations with unchanged semantics,
 - removal of an exact stale config entry that has no active caller or workflow and only one supported outcome,
 - mechanical schema normalization with no behavior change.
 
-Show these once under `Handled automatically` or `Notification only`, then include them again in the final impact-sorted report. Never turn them into confirmation questions.
+Show automatic edits under `Handled automatically` and no-edit items under `Notification only`. Notification-only means no approval or configuration edit is required, not that explanation is optional. Explain user-facing changes in the feature briefing and report their migration outcomes separately; only internal/nonactionable fixes may be grouped as counts. Never turn notification into a confirmation question.
 
 There is no unattended destructive mode: material decisions and actions outside the explicit update authority still require the user.
 
@@ -88,7 +89,7 @@ Read every official release in `(current, target]`:
 
 - `https://github.com/can1357/oh-my-pi/releases`
 - `https://api.github.com/repos/can1357/oh-my-pi/releases/tags/v<VERSION>`
-- each release's `Full Changelog` link when migration-critical detail is missing.
+- each release's `Full Changelog` link and target-version docs/source when behavior, syntax, or migration detail is missing.
 
 Normalize changes into:
 
@@ -100,9 +101,14 @@ Normalize changes into:
 6. task runtime, skills, hooks, extensions, MCP, LSP, browser, and tool changes,
 7. session, storage, memory, and database changes,
 8. plugin compatibility,
-9. fixes with no local migration impact.
+9. internal/nonactionable fixes,
+10. introduced, changed, renamed, or removed user-facing commands, hotkeys, keywords, and composer triggers.
 
-Label every material statement as an explicit release fact or an inference.
+Maintain a coverage row for every item in category 10 across `(current, target]`, regardless of enabled configuration, plus every other substantial user-facing feature. Record version/change status, evidence link, user-visible behavior, usage example, prerequisites/restrictions, local impact, decision status, and verification state. No-local-impact does not remove a row from briefing coverage.
+
+Label every material statement as an explicit release/documentation/source fact, local observation, or inference. Verify exact syntax, gestures, defaults, and limitations against docs/source for the offered target version, not an unversioned latest page or older installed runtime. Keep documented behavior distinct from observed local behavior.
+
+For changed or removed workflows, record before/after behavior, what remains supported, and supported user-driven alternatives with their semantic differences. Do not invent removal rationale or equivalent replacements. When a relevant alternative predates the reviewed range, label it `Pre-existing — introduced in <verified version>` or `Pre-existing — introduction unverified`; inspect only enough earlier evidence to explain the alternative, not an exhaustive historical audit.
 
 # Phase 3: inspect active local state
 
@@ -126,7 +132,8 @@ Inspect only active customization surfaces:
 - managed and user-authored skills,
 - hooks and extensions,
 - MCP configuration,
-- active `AGENTS.md` instructions naming changed runtime concepts.
+- active `AGENTS.md` instructions naming changed runtime concepts,
+- active keybindings/keymap and terminal/platform bindings for affected gestures; record the actual local binding, or explicitly state it could not be observed.
 
 Exclude session transcripts, memories, caches, blobs, logs, databases, backups, and archived artifacts. Historical text is not active configuration and must not be deleted as migration cleanup.
 
@@ -156,12 +163,27 @@ When the effective file is a symlink into `/nix/store`, locate the corresponding
 
 # Phase 5: produce the impact summary
 
-Before asking migration questions, show only locally relevant rows:
+Before asking migration questions, present both tracks:
+
+## Feature/workflow briefing
+
+Cover every ledger command, hotkey, keyword, and composer trigger introduced, changed, renamed, or removed in the reviewed range, including optional/disabled features, and explain other substantial user-facing features. For each, give a concise:
+
+- **Version/status + what/why/when:** what it does or changes, its user benefit, and when to use it.
+- **Usage:** target-verified syntax or gesture and a concrete example; for a removal, show the old workflow as removed and a supported after-path, or explicitly state no supported alternative was found.
+- **Boundaries:** defaults, prerequisites, and supported surfaces (CLI, composer, tool/API, platform); for hotkeys, distinguish the documented default from the actual local keymap.
+- **Tradeoffs/evidence:** important cost, permission, context/session, and model-selection differences; source links and observed versus untested status. State unknowns instead of guessing.
+
+For changed/removed workflows, explicitly say what remains supported and whether an alternative requires the user, rather than the assistant/tool, to initiate it. Do not activate features, download dependencies, or issue model requests merely to demonstrate them.
+
+## Local migration impact
+
+Show locally relevant configuration rows separately:
 
 | Release change | Active local reference | Writable source | Severity | Proposed action |
 |---|---|---|---|---|
 
-Score two independent axes for every relevant item.
+Score two independent axes for every ledger item; local intersection controls migration work, not briefing inclusion.
 
 Impact, sorted high to low:
 
@@ -175,10 +197,10 @@ Decision status:
 
 - `Needs decision`: multiple supported outcomes have meaningful tradeoffs or authority is missing.
 - `Auto-resolved`: one safe supported action exists inside the authorized update scope.
-- `Notify only`: no local change is needed, but the user should know.
+- `Notify only`: no approval or local change is needed; user-facing explanation is still required.
 - `Verify after update`: target-runtime evidence is required.
 
-A high-impact fact does not automatically require a question when it has no local intersection. A low-impact edit must not be hidden merely because it was automatic. Summarize informational items by count, show all automatic local edits in the plan, and lead with the highest-impact unresolved decision.
+A high-impact fact does not automatically require a question when it has no local intersection. A low-impact edit must not be hidden merely because it was automatic. Only internal/nonactionable fixes may be summarized by count, never user-facing features, commands, hotkeys, keywords, or composer triggers. Show all automatic local edits in the plan and lead the decision queue with the highest-impact unresolved decision.
 
 # Phase 6: run the interactive decision queue
 
@@ -192,7 +214,7 @@ First apply this decision gate. Ask only when at least one condition holds:
 - the action is outside explicit core-update authority, including plugins or canary,
 - the user must choose to defer an update with known risk.
 
-Skip interaction for minor and deterministic items classified as `Auto-resolved` or `Notify only`. Notification is mandatory; consent theater is not.
+Skip interaction for deterministic items classified as `Auto-resolved` or `Notify only`, including optional features needing no local edit. Notification and feature explanation are mandatory; consent theater is not. A feature's availability or hypothetical cost alone does not require a question unless choosing or enabling it is a material decision within the requested scope.
 
 For actual decisions, use OMP's `ask` tool when callable. Otherwise use a plain-chat fallback. Ask exactly one primary decision per round even though `ask` accepts multiple questions.
 
@@ -289,10 +311,12 @@ Verify every affected surface:
 - referenced agent types actually exist,
 - automatic migrations produced documented new keys,
 - affected hooks, extensions, MCP servers, or tools load,
-- a short non-destructive smoke path exercises changed behavior,
-- declarative source and effective runtime agree.
+- a short non-destructive smoke path exercises changed behavior where authorized and practical,
+- declarative source and effective runtime agree,
+- every required user-facing ledger item has its briefing, verified target-version syntax/example, and prerequisites/restrictions covered,
+- affected gestures are reconciled with the actual local keymap, distinguishing documented defaults from locally observed bindings.
 
-Do not search historical sessions or memories to prove a migration. Verify active sources and resolved output only.
+Do not search historical sessions or memories to prove a migration. Verify active sources and resolved output only. For feature explanations, use target-version docs/source even when runtime exercise is unnecessary or unavailable; label those cases `Documented, not exercised` and unresolved details `Unverified`. Do not enable optional features, download dependencies, grant permissions, or make model requests solely to complete a demonstration. Read-only audits do not mutate or claim post-update runtime verification.
 
 If post-update verification fails, stop additional changes, preserve evidence, and offer the documented rollback or source revert. Never improvise destructive recovery.
 
@@ -323,9 +347,26 @@ Do not automatically replace `designer` with `task` or `reviewer`:
 
 Explain the semantic difference and let the user decide how active UI work should be expressed. Do not delete memories or session transcripts that merely mention `designer`.
 
+# Workflow coverage example
+
+Use this bounded checklist when the reviewed range removes a per-call model override and mentions a user-facing command such as `/tan`:
+
+- **Removed per-call argument:** explain the old tool-call surface versus the target schema, which model-selection mechanisms remain supported, and who can select them. Verify before/after facts; do not infer why the argument was removed.
+- **Related `^` composer model tag:** verify the user-driven picker/tagging gesture and give a concrete prompt/delegation example; distinguish user-tagged model selection from assistant-selected tool arguments and explain scope/model resolution. Label its original introduction version only when verified, otherwise `Pre-existing — introduction unverified`. It is not new merely because it is discussed in this update.
+- **`/tan`:** independently verify version/status and the actual workflow; test the explanation against a concrete example such as `/tan inspect the latest diff for regressions`, not by running it. Check defaults/prerequisites/surface, parent-model inheritance versus explicit selection, copied transcript versus assignment-only context, background completion, and cost/permissions against target evidence. Do not assume it replaces per-call overrides or `^` because all mention models.
+- Include all reviewed command/gesture changes even with no config intersection; mark documentation-only examples as unexercised. This is a coverage method, not a fixed catalog of current commands or an instruction to expand the historical range.
+
 # Final report
 
-Always sort changes from highest to lowest impact, regardless of the order they were discovered or applied:
+Include two distinct sections; a successful no-edit update or read-only audit still needs the feature section:
+
+## Features and workflow changes
+
+Give the concise Phase 5 briefing for every required ledger feature/workflow item, with version/status, what/why/when, verified syntax/gesture and example, boundaries/tradeoffs, and evidence/verification state. Clearly label related pre-existing alternatives rather than counting them as additions in the reviewed range. If already fully briefed in this conversation, use a compact recap with exact references instead of repeating the full content; do not collapse user-facing items into counts.
+
+## Configuration and migration outcomes
+
+Sort local configuration changes and outcomes from highest to lowest impact, regardless of discovery or execution order:
 
 1. `Critical`
 2. `High`
@@ -333,17 +374,17 @@ Always sort changes from highest to lowest impact, regardless of the order they 
 4. `Low`
 5. `Informational`
 
-Within each impact level, label each item as `User-decided`, `Auto-resolved`, `Deferred`, `Notification only`, or `No action`. Omit empty impact sections. Minor automatic changes must be reported, not buried.
+Within each impact level, label each item as `User-decided`, `Auto-resolved`, `Deferred`, `Notification only`, or `No action`. Omit empty impact sections. Minor automatic edits must be reported, not buried. Cross-reference feature entries for workflow details instead of duplicating their full explanations.
 
 Then report concisely:
 
 - version before and after,
 - release range reviewed,
-- high-to-low impact changes and outcomes,
+- high-to-low configuration impact and outcomes,
 - decisions made and why interaction was required,
 - automatic changes performed without interaction,
 - exact source-of-truth files changed,
-- effective-state and smoke verification,
+- effective-state and smoke verification, separating observed results from documented but unexercised features and unverified details,
 - plugin status,
 - rollback artifact if created,
 - remaining warnings.
