@@ -27,7 +27,7 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
   Lazy Extras 진입점도 기본 dashboard 동작을 사용합니다.
   배너는 `lua/plugins/appearance.lua`의 파란색 Codex pet 블록 아트로 바꿉니다.
   줄 너비를 맞춰 그림의 정렬을 유지하며, `SnacksDashboardHeader`의 전경색만
-  `#7199ff`로 지정해 배경 투명도와 기존 dashboard 메뉴·시작 통계는 유지합니다.
+  `#7199ff`로 지정해 배경과 기존 dashboard 메뉴·시작 통계는 유지합니다.
 - 키맵은 LazyVim 기본값을 기준으로 하되, 명시적으로 선택한 Oil 탐색기, 완성, hlslens
   검색 동작을 조정합니다. `<leader>`는 Space이며 `which-key`로 현재 문맥의 키를 확인합니다.
 - 완성은 `blink.cmp`가 담당합니다. `default` 키 preset과
@@ -42,18 +42,18 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
   키와 실제 동작을 맞추기 위해 `n`/`N`은 기존 Vim 검색 방향을 따릅니다. `/` 검색 뒤
   `n`은 앞으로, `?` 검색 뒤 `n`은 뒤로 이동하며 `N`은 그 반대입니다.
   `<Esc>`로 검색 강조와 lens를 지우고, `<leader>l`은 Lazy plugin manager로 유지합니다.
-- Sonokai Atlantis를 투명 배경 모드로 사용합니다. Snacks picker의 hidden, ignored,
-  untracked 경로는 투명 배경에서도 읽히도록 `Grey`에 연결합니다. 설정 위치는
+- Sonokai Atlantis를 불투명 배경 모드(`sonokai_transparent_background = 0`)로 사용합니다.
+  Snacks picker의 hidden, ignored, untracked 경로는 읽기 쉽도록 `Grey`에 연결합니다. 설정 위치는
   `home/.config/nvim/lua/plugins/appearance.lua`입니다.
   같은 `ColorScheme` callback에서 `Comment`/`SpecialComment`는 `#b0b6c2`,
   `LineNr`는 `#9299a8`, `LspInlayHint`는 `#a0a7b4`로 밝힙니다. foreground만 바꾸므로
-  기존 italic 속성, 배경 투명도와 다른 syntax 색은 유지하며 theme을 다시 적용해도 보존됩니다.
+  기존 italic 속성, 배경과 다른 syntax 색은 유지하며 theme을 다시 적용해도 보존됩니다.
   일반 들여쓰기 guide의 `SnacksIndent`는 `#9299a8`로 유지하고, 활성 scope의
   `SnacksIndentScope`는 더 밝은 lavender `#d6bdff`로 구분해 애니메이션을 드러냅니다.
   애니메이션 속도와 공백·기타 `NonText` 표시는 변경하지 않습니다.
   Visual 선택 영역은 `Visual`/`VisualNOS`의 배경만 `#526b8a`로 지정해 더 뚜렷하게
   구분합니다. 문자·줄·블록 선택에 공통 적용하며, 기존 전경색·밑줄 속성과
-  선택 밖의 배경 투명도는 유지합니다. `appearance.lua` 변경 후에는 Neovim을
+  선택 밖의 배경은 유지합니다. `appearance.lua` 변경 후에는 Neovim을
   다시 시작해야 callback이 갱신되며, Nix rebuild는 필요하지 않습니다.
   비슷한 문제가 다시 발생하면 [가독성 문제 대응 지침](../AGENTS.md#neovim-foreground-visibility)에
   따라 표시의 생성 주체와 highlight group을 먼저 확인하고 좁은 범위로 조정합니다.
