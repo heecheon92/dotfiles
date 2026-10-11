@@ -14,6 +14,7 @@ home/.agents/skills/
 │       ├── frontend-patterns/
 │       └── react-ui-ux/
 └── external/
+    ├── cathrynlavery/diagram-design/
     ├── jakubkrehel/<skill>/
     ├── emilkowalski/<skill>/
     └── github-awesome-copilot/create-readme/
@@ -42,7 +43,7 @@ The seven defaults are:
 - `termaid` → `handmade/termaid`
 - `create-readme` → `external/github-awesome-copilot/create-readme`
 
-The remaining 29 skills stay available in this registry for deliberate standalone
+The remaining 30 skills stay available in this registry for deliberate standalone
 or project installation, but are not globally linked by Home Manager. Adding a
 source to the registry does not install it automatically, even after a rebuild.
 To change the default set, add or remove entries in `selectedAgentSkills`, then
@@ -58,7 +59,7 @@ unaffected.
 
 This is the human-maintained source registry for the skills checked into this
 repository, not an inventory of every skill installed on a machine. The lists
-below cover all 36 registered skills: 8 handmade and 28 externally imported.
+below cover all 37 registered skills: 8 handmade and 29 externally imported.
 
 ### Handmade skills
 
@@ -86,6 +87,7 @@ adopt changes into individual projects deliberately.
 | --- | --- | --- | --- |
 | [Jakub Krehel's 13 skills](#jakub-krehels-interface-skills) | [`jakubkrehel/skills`](https://github.com/jakubkrehel/skills), `skills/<name>/` | Commit-pinned entries in `home/skills-lock.json` | [Stage the collection](#jakub-krehel), then [review and apply](#review-and-apply-the-staged-import) |
 | [Emil Kowalski's 14 skills](#emil-kowalskis-design-and-animation-skills) | [`emilkowalski/skills`](https://github.com/emilkowalski/skills), `skills/<name>/`; linked from [the author's skill page](https://emilkowal.ski/skill) | Commit-pinned entries in `home/skills-lock.json` | [Stage the collection](#emil-kowalski), then [review and apply](#review-and-apply-the-staged-import) |
+| [`diagram-design`](#diagram-design) | [`cathrynlavery/diagram-design`](https://github.com/cathrynlavery/diagram-design), `skills/diagram-design/` | Commit-pinned entry in `home/skills-lock.json` | [Stage this skill only](#cathryn-lavery), then [review and apply](#review-and-apply-the-staged-import) |
 | [`create-readme`](#create-readme) | [`github/awesome-copilot`](https://github.com/github/awesome-copilot) | Source, path, and content hash in `home/skills-lock.json`; no commit recorded | [Update this skill only](#create-readme) |
 
 The collection sections enumerate their individual skills and imported commits.
@@ -302,6 +304,20 @@ This is an independently authored, harness-neutral skill maintained separately f
 also read `home/.agents/skills/handmade/mermaid/SKILL.md` directly before activation.
 Other harnesses can install/copy the entire directory through their own skill mechanism.
 
+### diagram-design
+
+Vendored from [`cathrynlavery/diagram-design`](https://github.com/cathrynlavery/diagram-design)
+at [`7a2e22170ee838e859d8142ba825d83f8b6375e6`](https://github.com/cathrynlavery/diagram-design/tree/7a2e22170ee838e859d8142ba825d83f8b6375e6).
+Creates self-contained HTML/SVG diagrams with editorial styling, including
+architecture, flowcharts, sequence diagrams, and data visualizations.
+
+The complete source is `external/cathrynlavery/diagram-design/`, including its
+references, HTML assets, Python helpers, and an additional copy of the upstream
+MIT `LICENSE`. No local adaptations are applied. It is registered for deliberate
+standalone or project installation, not selected for Home Manager installation.
+The skill's onboarding, import/export, and optional network guidance apply when
+invoked; registering this source does not execute those workflows.
+
 ### Jakub Krehel's interface skills
 
 Vendored from [`jakubkrehel/skills`](https://github.com/jakubkrehel/skills) at
@@ -409,6 +425,19 @@ Destination: `home/.agents/skills/external/jakubkrehel/<name>/`.
 ```
 
 Destination: `home/.agents/skills/external/emilkowalski/<name>/`.
+
+#### Cathryn Lavery
+
+```bash
+(cd "$stage" && npx --yes skills@1.7.0 add \
+  https://github.com/cathrynlavery/diagram-design/tree/7a2e22170ee838e859d8142ba825d83f8b6375e6 \
+  --skill diagram-design --agent codex --yes)
+```
+
+Destination: `home/.agents/skills/external/cathrynlavery/diagram-design/`.
+Restore the upstream repository-root MIT `LICENSE` from the same revision into
+this staged skill directory before applying it. The command reimports the
+recorded revision; replace the SHA only after reviewing the intended update.
 
 #### GitHub awesome-copilot
 
