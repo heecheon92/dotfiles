@@ -37,6 +37,12 @@ OMP 18.3.5에서 `auto`는 로컬 N-gram 엔진을 사용하며, 입력 문맥�
 YAML 변경은 기존 연결을 통해 다음 OMP 실행에 반영되므로 Nix 재빌드는
 필요하지 않습니다.
 
+`composer.predictions: true`는 OMP 18.9의 다음 메시지 예측을 활성화합니다.
+응답이 끝나면 현재 모델이 대화 문맥으로 다음 사용자 메시지를 예측하여
+희미하게 표시합니다. `Tab` 또는 오른쪽 화살표로 초안에 수락하며 자동 전송하지
+않습니다. 위 단어 자동완성과는 별개이며 추가 모델 요청과 사용량이 발생합니다.
+끄려면 `home/.omp/agent/config.yml`의 `composer.predictions`를 `false`로 바꿉니다.
+
 ## OMP 데스크톱 제어
 
 `home/.omp/agent/config.yml`은 `computer.enabled: true`로 데스크톱 제어를

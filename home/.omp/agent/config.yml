@@ -124,6 +124,7 @@ images:
 hideThinkingBlock: true
 composer:
   shape: box
+  predictions: true
 spelling:
   autocomplete: auto
 browser:
