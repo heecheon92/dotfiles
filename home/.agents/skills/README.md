@@ -33,12 +33,13 @@ activation.
 Dotfiles is the source registry; the `selectedAgentSkills` map in
 [`home.nix`](../../../home.nix) is the explicit default installation allowlist.
 Each entry maps a flat runtime skill name to its relative grouped source path.
-The seven defaults are:
+The eight defaults are:
 
 - `chatgpt-review` → `handmade/chatgpt-review`
 - `lantern` → `handmade/lantern`
 - `documentation-lifecycle` → `handmade/documentation-lifecycle`
 - `omp-update` → `handmade/omp-update`
+- `herdr-update` → `handmade/herdr-update`
 - `mermaid` → `handmade/mermaid`
 - `termaid` → `handmade/termaid`
 - `create-readme` → `external/github-awesome-copilot/create-readme`
@@ -59,7 +60,7 @@ unaffected.
 
 This is the human-maintained source registry for the skills checked into this
 repository, not an inventory of every skill installed on a machine. The lists
-below cover all 37 registered skills: 8 handmade and 29 externally imported.
+below cover all 38 registered skills: 9 handmade and 29 externally imported.
 
 ### Handmade skills
 
@@ -71,6 +72,7 @@ or documentation inside a handmade skill are not its installation source.
 - [`lantern`](./handmade/lantern/SKILL.md)
 - [`mermaid`](./handmade/mermaid/SKILL.md)
 - [`omp-update`](./handmade/omp-update/SKILL.md)
+- [`herdr-update`](./handmade/herdr-update/SKILL.md)
 - [`termaid`](./handmade/termaid/SKILL.md)
 - [`documentation-lifecycle`](./handmade/documentation-lifecycle/SKILL.md)
 - [`frontend-patterns`](./handmade/nextjs-react/frontend-patterns/SKILL.md)
@@ -154,6 +156,12 @@ python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/inst
 python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
   --repo heecheon92/dotfiles \
   --path home/.agents/skills/handmade/omp-update
+```
+
+```bash
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
+  --repo heecheon92/dotfiles \
+  --path home/.agents/skills/handmade/herdr-update
 ```
 
 ```bash
@@ -250,6 +258,35 @@ notification-only means no approval or edit, not an omitted explanation.
 ```text
 $omp-update
 ```
+
+### herdr-update
+
+Audits and applies Herdr core **and existing installed managed-plugin** updates
+with equally important feature/workflow briefing and safe configuration migration.
+It covers every command, subcommand, hotkey, prefix-binding, and plugin-owned skill
+change, including disabled features/plugins, using release/commit-pinned evidence
+and concrete examples. It discovers the actual owners, latest appropriate targets
+and exact SHAs, preserves explicit pins, plugin identity/config/enabled state and
+user-authored skills, and respects the writable-local/shared-baseline merge.
+Execution proceeds after an exact reviewed plan without redundant update consent;
+audit is read-only, explicit core-only scope is respected, and skill authoring
+does not authorize execution. Core-current results still check plugin updates.
+Ordered live/target compatibility gates protect panes and processes, deferring
+unsafe checkout/runtime replacements, linked/dirty code, and deprecated or
+removed-manifest plugins. Installation and live client/server/plugin activation
+are reported separately. New/source-list-only plugins, removed-plugin reinstalls,
+removal/replacement, new permissions/dependencies or data migrations, integrations,
+server restarts, handoff, remote updates, and channel changes need separate choices;
+ordinary reviewed builds required for an eligible plugin update are in scope.
+
+```text
+$herdr-update
+$herdr-update audit
+$herdr-update core-only
+```
+
+This handmade update workflow complements, but does not replace or overwrite,
+the official `herdr` runtime-control skill.
 
 ### create-readme
 

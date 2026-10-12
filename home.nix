@@ -8,6 +8,7 @@ let
     lantern = "handmade/lantern";
     documentation-lifecycle = "handmade/documentation-lifecycle";
     omp-update = "handmade/omp-update";
+    herdr-update = "handmade/herdr-update";
     mermaid = "handmade/mermaid";
     termaid = "handmade/termaid";
     create-readme = "external/github-awesome-copilot/create-readme";
