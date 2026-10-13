@@ -42,6 +42,11 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
   키와 실제 동작을 맞추기 위해 `n`/`N`은 기존 Vim 검색 방향을 따릅니다. `/` 검색 뒤
   `n`은 앞으로, `?` 검색 뒤 `n`은 뒤로 이동하며 `N`은 그 반대입니다.
   `<Esc>`로 검색 강조와 lens를 지우고, `<leader>l`은 Lazy plugin manager로 유지합니다.
+- Flash는 `/`와 `?`의 일반 검색에서 기본으로 jump label을 표시합니다.
+  검색 중 `Ctrl+s`로 Flash를 토글할 수 있습니다. `s` jump는 기본 `exact` 모드를
+  사용하며, 일치 후보가 없어지면 취소됩니다. `f`/`t`와 Treesitter 동작도 기본값을
+  유지합니다. 일반 검색 활성화 설정은 `lua/plugins/workflows.lua`의
+  `modes.search.enabled = true`입니다.
 - Sonokai Atlantis를 불투명 배경 모드(`sonokai_transparent_background = 0`)로 사용합니다.
   Snacks picker의 hidden, ignored, untracked 경로는 읽기 쉽도록 `Grey`에 연결합니다. 설정 위치는
   `home/.config/nvim/lua/plugins/appearance.lua`입니다.

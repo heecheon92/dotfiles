@@ -37,6 +37,10 @@ return {
     },
   },
   {
+    "folke/flash.nvim",
+    opts = { modes = { search = { enabled = true } } },
+  },
+  {
     "lewis6991/gitsigns.nvim",
     opts = { current_line_blame = true },
   },
