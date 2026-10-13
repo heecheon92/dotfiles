@@ -3,12 +3,16 @@
 -- Add any additional keymaps here
 
 vim.keymap.set("n", "<leader>e", function()
-  require("oil").open(LazyVim.root())
-end, { desc = "Explorer Oil (root dir)" })
+  require("oil").open()
+end, { desc = "Explorer Oil (file dir)" })
 
 vim.keymap.set("n", "<leader>E", function()
   require("oil").open(vim.fn.getcwd())
 end, { desc = "Explorer Oil (cwd)" })
+
+vim.keymap.set("n", "<leader>o", function()
+  require("oil").open(LazyVim.root())
+end, { desc = "Explorer Oil (root dir)" })
 
 vim.keymap.set("n", "<leader>fh", function()
   local view_options = require("oil.config").view_options

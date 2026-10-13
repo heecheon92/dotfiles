@@ -58,6 +58,7 @@ in
     # Neovim language servers, formatters, and linters are provisioned by Mason.
     tree-sitter # parser compiler used by nvim-treesitter
     chafa       # notebook image fallback for terminals without Kitty placeholders
+    imagemagick # Snacks image conversion and resizing
     # the font everything renders in
     nerd-fonts.hack
   ];

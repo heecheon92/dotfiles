@@ -15,7 +15,7 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
 - Mason이 언어 서버와 editor formatter를 전담합니다. 선택한 언어 extra와
   `ensure_installed` 목록은 dotfiles로 동기화되지만, Mason이 설치한 바이너리의 정확한
   버전은 `lazy-lock.json`에 고정되지 않습니다.
-- Nix는 Neovim, tree-sitter, ripgrep, fd, fzf, lazygit, chafa와 일반 CLI를 제공합니다.
+- Nix는 Neovim, tree-sitter, ripgrep, fd, fzf, lazygit, chafa, ImageMagick과 일반 CLI를 제공합니다.
   LSP와 formatter를 Nix와 Mason에 중복 선언하지 않습니다.
 - 새 머신의 첫 실행 전에는 Node.js/npm과 Python/venv 등 Mason 설치에 필요한 runtime을
   준비합니다. Mason의 editor 도구 경로는 Neovim 안에서 우선 적용되며, 셸 전역 도구
@@ -60,7 +60,9 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
 - `gitsigns.nvim`은 현재 줄 blame을 표시합니다. LazyVim의 Git picker와 lazygit을
   그대로 사용하며, `<leader>gg`는 저장소 root, `<leader>gG`는 현재 작업 디렉터리에서
   lazygit을 엽니다. Neogit과 Diffview는 추가하지 않습니다.
-- `<leader>e`는 프로젝트 root의 Oil, `<leader>E`는 현재 작업 디렉터리의 Oil을 엽니다.
+- `<leader>e`는 현재 파일이 있는 디렉터리의 Oil을 열며, 이름 없는 buffer에서는
+  현재 작업 디렉터리로 fallback합니다. `<leader>E`는 항상 현재 작업 디렉터리,
+  `<leader>o`는 프로젝트 root의 Oil을 엽니다.
   Snacks 탐색기는 기존 `<leader>fe`/`<leader>fE`에 각각 root/cwd 동작으로 유지합니다.
   키 설정은 `lua/config/keymaps.lua`, Oil/Snacks plugin 설정은 `lua/plugins/workflows.lua`에 둡니다.
   Snacks의 파일 검색, grep(단어 검색 포함), 탐색기는 `hidden = true`로 숨김 파일과
@@ -122,6 +124,26 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
 현재 buffer의 formatter와 실행 경로는 `:ConformInfo`, LSP 연결은 `:LspInfo`, Mason
 설치 상태는 `:Mason`에서 확인합니다. formatter가 없을 때의 LSP fallback을 formatter
 실행 실패 재시도와 혼동하지 않습니다.
+
+## 이미지 미리보기
+
+`lua/plugins/workflows.lua`에서 Snacks image를 활성화합니다. `nvim image.png` 또는
+`:edit image.png`처럼 이미지 파일을 열면 해당 buffer에 이미지를 표시하며, Markdown의
+이미지 구문에 커서를 두면 미리보기를 표시합니다. 별도 이미지 키맵은 추가하지 않습니다.
+
+표시 방식은 Snacks가 감지한 terminal capability에 따릅니다. Kitty/Ghostty처럼 Unicode
+placeholder를 지원하는 terminal에서는 Markdown 이미지를 본문에 inline으로 표시합니다.
+WezTerm은 이 placeholder를 지원하지 않으므로 Markdown 이미지 위에 커서를 두었을 때의
+floating preview를 기본 fallback으로 사용합니다. terminal identity나 `SNACKS_` 환경 변수를
+강제로 지정하지 않습니다. 직접 실행한 WezTerm에서는 PNG 이미지 buffer 표시를 확인했지만,
+이미지 buffer에서 Markdown 미리보기로 전환할 때 이전 이미지가 남는 현상도 관찰했습니다.
+따라서 WezTerm의 미리보기 정리까지 완전하게 지원된다고 보장하지 않습니다. Herdr 안에서의
+실제 이미지 transport는 아직 검증하지 않았으므로 직접 실행한 결과와 구분합니다.
+
+이미지 변환·크기 조절에 필요한 ImageMagick은 `home.nix`의 `home.packages`로 관리합니다.
+처음 추가한 의존성을 설치하려면 Nix rebuild가 필요하며, 적용 후 Neovim을 다시 시작합니다.
+지원 terminal과 변환 도구의 상태는 `:checkhealth snacks`로 확인합니다. 이 설정은 아래의
+Jupyter 노트북 renderer와 별개이며, 기존 `chafa` 선택은 유지합니다.
 
 ## Jupyter 노트북
 
