@@ -122,6 +122,15 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
   사용하지 않은 import도 제거될 수 있습니다. 의도적인 재수출·부수 효과 import는 명시적인
   export 또는 필요한 예외로 표현합니다. Ruff LSP 연결과 별도로 `:ConformInfo`에서
   두 외부 formatter의 가용성을 확인합니다.
+- Markdown의 구조·링크 지원은 Marksman, lint 진단은 `markdownlint-cli2`를 유지합니다.
+  `languages.lua`의 nvim-lint parser는 긴 줄 경고인 `MD013`만 표시에서 제외하며,
+  나머지 규칙과 프로젝트의 markdownlint 설정은 그대로 적용합니다. 설치된 cli2에는
+  `--disable` 옵션이 없으므로 별도 lint 설정 파일이나 CLI 인자로 프로젝트 설정을 대체하지
+  않습니다. 저장 시 포맷 동작은 변경하지 않습니다.
+- Markdown buffer는 `lua/config/autocmds.lua`에서 자동 맞춤법 검사를 끕니다.
+  영어 사전에 없는 한국어 등에 생기는 밑줄을 기본으로 숨기며, 다른 filetype의 맞춤법
+  설정과 Markdown의 줄바꿈 표시는 유지합니다. 필요하면 해당 buffer에서
+  `:setlocal spell`로 맞춤법 검사를 켜고 `:setlocal nospell`로 다시 끕니다.
 
 저장 포맷의 소유자는 LazyVim의 `LazyVim.format`과 Conform입니다. LazyVim이 등록한
 `BufWritePre` 흐름이 저장 전에 선택된 formatter를 호출하며, 별도
