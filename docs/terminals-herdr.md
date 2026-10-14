@@ -185,24 +185,6 @@ herdr config check
 herdr server reload-config
 ```
 
-### Terminal Browser 제거
-
-이 환경에서는 WezTerm과의 호환성 문제로 Terminal Browser를 사용하지 않으며,
-`plugin-sources.txt`에서도 설치 항목을 제거했습니다.
-`herdr plugin uninstall zenbu-labs.terminal-browser`는 Herdr 등록과 관리 체크아웃만
-제거합니다. 플러그인의 설치 스크립트가 별도로 설치한 다음 항목은 남을 수 있습니다.
-
-- 런타임: `~/.local/share/terminal-browser/app`
-- 실행 래퍼: `~/.local/bin/terminal-browser`
-- 에이전트 연결: `~/{.agents,.claude,.codex,.cursor,.gemini}/skills/terminal-browser`
-
-실행 중인 브라우저가 없는지 확인한 뒤 설치 소유권이 확인된 항목만 제거합니다.
-스킬 경로는 위 런타임의 `skills/`를 가리키는 심볼릭 링크인지 먼저 확인하며,
-다른 스킬이나 부모 디렉터리는 삭제하지 않습니다. XDG 경로를 변경했다면 실제
-설치 경로를 사용합니다. 브라우저 프로필·기록·설정과 기존 업데이트 백업은
-별도 데이터 삭제 요청 없이 지우지 않습니다. 제거를 위해 Herdr 서버를 재시작하거나
-WezTerm 설정을 바꿀 필요는 없습니다.
-
 ## Herdr 스크래치 셸
 
 Herdr에서 `prefix+t`를 누르면 기본 `~/.zprofile`과 `~/.zshrc` 대신

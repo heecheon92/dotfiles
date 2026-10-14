@@ -114,6 +114,13 @@ alt-enter = '''exec-and-forget
 /usr/bin/env -i HOME="$HOME" USER="$USER" LOGNAME="$LOGNAME" PATH=/usr/bin:/bin:/usr/sbin:/sbin \
   /usr/bin/open -na WezTerm --args start --always-new-process --cwd "$HOME"
 '''
+# Mark only this new GUI process; resolve AeroSpace before clearing its PATH.
+alt-shift-enter = '''exec-and-forget
+aerospace_bin="$(command -v aerospace)" || exit 1
+/usr/bin/env -i HOME="$HOME" USER="$USER" LOGNAME="$LOGNAME" PATH=/usr/bin:/bin:/usr/sbin:/sbin \
+  /usr/bin/open -na WezTerm --env DOTFILES_WEZTERM_FLOAT=1 --env "DOTFILES_AEROSPACE_BIN=$aerospace_bin" \
+  --args start --always-new-process --cwd "$HOME"
+'''
 alt-b = 'exec-and-forget open -n /Applications/Safari.app'
 alt-c = 'close --quit-if-last-window'
 alt-e = '''exec-and-forget
