@@ -30,8 +30,9 @@ AeroSpace를 종료하고 `brew uninstall --cask aerospace`를 실행합니다.
 자동 삭제되지 않습니다. 새 앱을 실행하기 전에는 Homebrew와 Nix 버전을
 동시에 실행하지 않습니다.
 
-로그인 시 자동 실행하며 새 Finder와 시스템 설정 창을 floating으로 둡니다. 일반 창은 AeroSpace가
-tiling으로 관리하고, 창 안쪽과 화면 가장자리에 12pt 간격을 둡니다. 상단은
+AeroSpace는 로그인 시 자동 실행됩니다. Finder, 시스템 설정과 전용 Neovide 메모 창이
+열리면 floating으로 배치하며, 이 규칙이 앱이나 창을 자동 실행하지는 않습니다.
+그 외 일반 창은 tiling으로 관리하고, 창 안쪽과 화면 가장자리에 12pt 간격을 둡니다. 상단은
 SketchyBar의 39pt 막대와 8pt 오프셋을 고려해 60pt를 예약합니다. 포커스가 다른 모니터로 이동하면
 포인터를 옮기며, 마우스가 가리키는 창에도 포커스를 맞춥니다.
 숫자·문자 persistent workspace를 유지하되 모니터별 이름이나 앱별 고정
@@ -44,6 +45,9 @@ SketchyBar의 39pt 막대와 8pt 오프셋을 고려해 60pt를 예약합니다.
   새 GUI 프로세스의 PID로 그 창만 floating으로 전환해 활성 화면 중앙에 배치합니다.
   시작 중 크기 변경이 끝나면 중앙 배치를 해제하므로 이후에는 자유롭게 이동·조정할 수 있습니다.
   기존 WezTerm 창과 일반 실행의 tiling 규칙은 변경하지 않습니다.
+- `Option+N`: 전용 Neovide 메모 창이 없으면 활성 모니터 중앙에 새 floating 창을
+  열고, 있으면 그 창에 포커스만 맞춥니다. 숨기기·닫기·토글이 아니므로 저장하지 않은
+  텍스트와 사용자가 옮긴 위치를 유지합니다. 좌우 Option 키 모두 이 단축키로 동작합니다.
 - `Option+B`: 새 Safari 창 열기
 - `Option+E`: 누를 때마다 홈 디렉터리에 새 floating Finder 창을 만들고 활성화 (기존 창을 재사용하지 않음)
 - `Option+S`: 시스템 설정 열기 (이미 실행 중이면 활성화)
@@ -110,6 +114,63 @@ AeroSpace에 우선권을 줍니다. 반면 OMP의 `Option+P`, `Option+M`, `Ctrl
 AeroSpace에 할당하지 않아 그대로 사용할 수 있습니다. OMP 키맵 자체는 변경하지
 않습니다. 크기 조정 모드에서는 일반 `H/J/K/L` 입력도 AeroSpace가 처리하므로
 작업 후 Enter/Escape로 빠져나옵니다.
+
+### Floating 창 배치 원칙
+
+앱 실행, floating 전환과 초기 위치 지정은 가능하면 AeroSpace의 네이티브 기능으로
+처리합니다. 중앙 배치만을 위한 앱별 코드나 별도 helper는 장기적으로 유지할 기능이
+아니라, 현재 동작을 제공하기 위한 임시 보완책입니다. 이 원칙은 Neovide뿐 아니라
+WezTerm과 앞으로 추가할 모든 floating 창 실행 경로에 적용합니다.
+
+현재 중앙 배치 구현은 유지합니다. 향후 사용하는 AeroSpace 버전이 새 창을 floating으로
+열고 활성 모니터 중앙 등 원하는 초기 위치를 지정하는 동작을 네이티브로 지원하면,
+해당 동작을 확인한 뒤 네이티브 설정으로 전환하고 불필요해진 중앙 배치 코드·helper·
+패키지 선언을 제거합니다. 기존 창이나 저장하지 않은 내용을 건드리지 않는 동작은
+유지해야 합니다. 단순 floating 전환이나 centered zoom만으로는 이 대체 조건을
+충족하지 않습니다.
+
+### Neovide 메모 창
+
+AeroSpace 프로필에서만 Homebrew의 `neovide-app` cask를 선언합니다.
+이 앱은 일반 Neovide 편집용과 공유하지 않는 전용 메모 창으로 사용합니다.
+Homebrew cask가 요구하는 Neovim formula와 그 의존성은 설치하지만,
+`homebrew.brews`의 `neovim.link = false`로 셸의 Nix Neovim을 가리지 않게 합니다.
+메모 창도 Home Manager가 생성한 `~/.local/bin/neovide-scratch` 래퍼를 통해
+`${pkgs.neovim}/bin/nvim`의 실제 Nix store 경로를 명시적으로 사용합니다.
+셸의 `PATH`나 Homebrew Neovim 버전에 따라 실행 파일이 바뀌지 않습니다.
+
+실행 흐름은 `home/bin/neovide-scratch`가 소유합니다. 기존 창은 bundle ID
+`com.neovide.neovide`로 찾아 AeroSpace window ID로 포커스하며, 제목은 사용하지
+않습니다. 새 창은 Nix가 빌드하는 `packages/neovide-scratch-center.nix`의 작은
+Objective-C 실행 파일이 NSWorkspace로 열고, 새 프로세스에 단 하나의 창만 있는지
+확인합니다. AeroSpace가 그 창을 floating으로 관리한 뒤, AppKit/ApplicationServices로
+실행 직전 AeroSpace가 포커스한 모니터의 사용 가능한 영역 중앙에 한 번만 배치합니다.
+포인터 위치, 전체 화면이나 centered zoom은 사용하지 않습니다. 이후 이동·크기 변경과
+기존 창 재호출에는 중앙 배치를 다시 적용하지 않습니다. 여러 Neovide 창/프로세스는
+임의로 선택하지 않고 오류로 처리합니다.
+
+런타임 컴파일러, 추가 창 관리자나 상주 프로세스는 없습니다. 첫 창을 만들 때는
+손쉬운 사용 권한이 필요하며, 권한이 없으면 자동 요청/승인 없이 실행 전에 오류로
+종료합니다. **시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용**에서 해당 실행
+주체를 직접 허용한 뒤 다시 실행합니다. Nix 실행 파일 경로가 바뀌면 권한을 다시
+확인해야 할 수 있습니다. 연속 실행의 새 앱 시작은 사용자 임시 디렉터리의 advisory
+lock으로 직렬화하며, 창 시작 대기는 10초로 제한합니다. 실패해도 기존 창이나
+저장하지 않은 버퍼를 닫지 않습니다.
+
+이 경로가 필요한 이유는 확인한 [Neovide 0.16.2 소스](https://github.com/neovide/neovide/tree/0.16.2)에
+있습니다. [`src/main.rs`의 `maybe_handoff`](https://github.com/neovide/neovide/blob/0.16.2/src/main.rs#L311-L338)는
+파일 인자가 없는 `--reuse-instance`를 전달하지 않고 새 시작 경로로 보냅니다.
+[`src/settings/window_size.rs`](https://github.com/neovide/neovide/blob/0.16.2/src/settings/window_size.rs#L86-L101)는
+위치 기억을 꺼도 `(0, 0)`을 저장하고,
+[`src/window/mod.rs`](https://github.com/neovide/neovide/blob/0.16.2/src/window/mod.rs#L249-L255)는
+저장된 위치를 다시 사용하므로 네이티브 기본 중앙 배치만으로는 반복 실행을 보장하지
+못합니다. 전용 Neovim 설정과 메모 버퍼 동작은 [편집 환경](editor.md#neovide-메모-창)을 참고합니다.
+
+새 머신에서는 `./rebuild.sh`로 cask·래퍼·설정 링크를 적용하고,
+`aerospace reload-config`로 단축키와 floating 규칙을 읽습니다.
+권한 오류는 터미널에서 `~/.local/bin/neovide-scratch`를 실행하면 확인할 수 있습니다.
+
+### 설정 적용과 메뉴 막대
 
 설정 파일 저장 시 자동으로 다시 읽습니다. `auto-reload-config`를 처음 켠 뒤에는
 `aerospace reload-config`를 한 번 실행해야 하며, 변경 전 검사는

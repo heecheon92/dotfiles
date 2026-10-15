@@ -77,8 +77,8 @@ gaps.outer.bottom =       12
 gaps.outer.top =          60
 gaps.outer.right =        12
 
-# Finder and System Settings open floating. Other applications, including
-# terminals, stay tiled.
+# Finder, System Settings, and the dedicated Neovide scratchpad open floating.
+# Other applications, including terminals, stay tiled.
 on-window-detected = [
     {
         if = 'test %{app-bundle-id} = com.apple.systempreferences',
@@ -86,6 +86,10 @@ on-window-detected = [
     },
     {
         if = 'test %{app-bundle-id} = com.apple.finder',
+        run = 'layout floating',
+    },
+    {
+        if = 'test %{app-bundle-id} = com.neovide.neovide',
         run = 'layout floating',
     },
 ]
@@ -127,6 +131,8 @@ alt-e = '''exec-and-forget
 /usr/bin/osascript -e 'tell application "Finder"' -e 'make new Finder window to (path to home folder)' -e 'activate' -e 'end tell'
 '''
 alt-s = 'exec-and-forget open -b com.apple.systempreferences'
+# Open the dedicated scratchpad, or focus it without hiding/closing/recentering.
+alt-n = 'exec-and-forget "$HOME/.local/bin/neovide-scratch"'
 
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#layout

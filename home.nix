@@ -15,6 +15,7 @@ let
   };
   lavishAxi = pkgs.callPackage ./packages/lavish-axi.nix { };
   aerospaceEnabled = desktopProfile == "aerospace";
+  neovideScratchCenter = pkgs.callPackage ./packages/neovide-scratch-center.nix { };
   herdrPython = pkgs.python3.withPackages (ps: [ ps.tomlkit ]);
   # These existing Herdr integrations are now owned by Home Manager. The local
   # marker lets a later rebuild uninstall an integration only after it has been
@@ -334,6 +335,10 @@ in
   };
   home.file.".config/nvim".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.config/nvim";
+  home.file.".config/nvim-scratch" = lib.mkIf aerospaceEnabled {
+    source = config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.config/nvim-scratch";
+  };
   # Keep iTerm's dedicated Hotkey Window profile version-controlled without
   # committing the application's mutable preferences database.
   home.file."Library/Application Support/iTerm2/DynamicProfiles/hotkey-window.json".source =
@@ -365,6 +370,14 @@ in
   home.file.".local/bin/aerospace-cycle-layout" = lib.mkIf aerospaceEnabled {
     source = config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/bin/aerospace-cycle-layout";
+  };
+  home.file.".local/bin/neovide-scratch" = lib.mkIf aerospaceEnabled {
+    executable = true;
+    text = ''
+      #!/bin/bash
+      exec /bin/bash "${dotfiles}/home/bin/neovide-scratch" \
+        "${neovideScratchCenter}/bin/neovide-scratch-center" "${pkgs.neovim}/bin/nvim"
+    '';
   };
   home.file.".codex/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";

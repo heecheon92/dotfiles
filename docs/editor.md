@@ -21,6 +21,26 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
   준비합니다. Mason의 editor 도구 경로는 Neovim 안에서 우선 적용되며, 셸 전역 도구
   설치를 대신하지 않습니다.
 
+## Neovide 메모 창
+
+AeroSpace 프로필에는 일반 LazyVim과 분리된 `NVIM_APPNAME=nvim-scratch` 설정을 둡니다.
+Home Manager가 `home/.config/nvim-scratch`를 `~/.config/nvim-scratch`로 링크하며,
+Homebrew Neovide 앱의 실행 파일 선택은 Nix의 `pkgs.neovim` 경로로 고정합니다.
+앱 설치·중앙 배치·`Option+N` 재호출 동작은 [데스크톱 문서](desktop.md#neovide-메모-창)를 따릅니다.
+
+- 홈 디렉터리에서 100열 × 30행의 빈 일반 버퍼로 시작하며 Hack Nerd Font Mono 14pt를 사용합니다.
+  LazyVim, 플러그인 로더, dashboard, LSP, 자동 완성이나 세션 복원은 실행하지 않습니다.
+- 시스템 클립보드를 `unnamedplus`로 연결합니다. Vim의 yank/paste와 함께 Visual 모드
+  `Cmd+C`, Normal/Insert/명령행 모드 `Cmd+V`를 사용할 수 있습니다.
+- Neovide의 커서·스크롤·창 위치 애니메이션과 커서 효과는 끄며,
+  이전 창 위치/크기를 기억하지 않도록 명시합니다. 새 창 중앙 배치는 네이티브 기본값이
+  아니라 전용 실행 경로가 담당합니다.
+- 단축키를 다시 누르면 기존 프로세스와 버퍼에 포커스만 맞춥니다. 버퍼를 지우거나
+  앱을 종료하지 않으며 `hidden`과 종료 확인을 유지합니다. 종료 후 복원이나 자동 저장은
+  추가하지 않으므로, 메모를 영구 보관하려면 일반 `:write 경로`를 사용합니다.
+- 일반 `~/.config/nvim` 설정과 `lazy-lock.json`, 터미널 Neovim 동작은 변경하지 않습니다.
+
+
 ## 기본 편집 경험
 
 - 인자 없이 열면 LazyVim의 Snacks dashboard가 표시됩니다. 검색, 세션, Lazy와

@@ -1,0 +1,30 @@
+#!/bin/bash
+set -eu
+
+center=$1
+nvim=$2
+aerospace=/run/current-system/sw/bin/aerospace
+
+focus_window() {
+    case "$1" in
+        '') return 1 ;;
+        *[!0-9]*) printf '%s\n' 'neovide-scratch: expected exactly one scratch window; refusing an ambiguous target.' >&2; exit 1 ;;
+    esac
+    exec "$aerospace" focus --window-id "$1"
+}
+
+# Neovide is dedicated to this scratchpad. Reuse by bundle ID, never by title.
+window=$("$aerospace" list-windows --monitor all --app-bundle-id com.neovide.neovide --format '%{window-id}')
+focus_window "$window" || true
+
+# AeroSpace's focused monitor need not be the monitor containing the pointer.
+screen=$("$aerospace" list-monitors --focused --format '%{monitor-appkit-nsscreen-screens-id}')
+pid=$("$center" "$screen" "$nvim" "$aerospace")
+# A concurrent invocation can return the same app before AeroSpace detects it.
+for ((attempt = 0; attempt < 100; attempt++)); do
+    window=$("$aerospace" list-windows --monitor all --pid "$pid" --format '%{window-id}')
+    focus_window "$window" || true
+    /bin/sleep 0.1
+done
+printf '%s\n' 'neovide-scratch: timed out waiting for AeroSpace to detect the scratch window; no window was closed.' >&2
+exit 1

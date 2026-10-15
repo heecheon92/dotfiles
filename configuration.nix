@@ -73,6 +73,8 @@ lib.mkMerge [
     ] ++ lib.optionals isAerospace [
       "felixkratz/formulae/borders"
       "felixkratz/formulae/sketchybar"
+      # Required by neovide-app, but the Nix-managed Neovim remains primary.
+      { name = "neovim"; link = false; }
     ];
     taps = lib.optional isAerospace "felixkratz/formulae";
     casks = [
@@ -80,7 +82,7 @@ lib.mkMerge [
       "claude-code@latest"
       "codex"
     ]
-    ++ lib.optional isAerospace "font-sf-pro"
+    ++ lib.optionals isAerospace [ "font-sf-pro" "neovide-app" ]
     ++ lib.optional isHammerspoon "hammerspoon";
   };
 }
