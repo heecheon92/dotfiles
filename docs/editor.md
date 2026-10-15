@@ -23,27 +23,38 @@ Blink 완성, Conform 포맷과 lazygit 동작은 LazyVim 기본값을 따르고
 
 ## Neovide 메모 창
 
-AeroSpace 프로필에는 일반 LazyVim과 분리된 `NVIM_APPNAME=nvim-scratch` 설정을 둡니다.
-Home Manager가 `home/.config/nvim-scratch`를 `~/.config/nvim-scratch`로 링크하며,
+AeroSpace 프로필의 Neovide도 터미널 Neovim과 같은 `~/.config/nvim` LazyVim 설정을
+사용합니다. 별도 앱 이름이나 격리된 설정 디렉터리를 지정하지 않으며,
 Homebrew Neovide 앱의 실행 파일 선택은 Nix의 `pkgs.neovim` 경로로 고정합니다.
 앱 설치·중앙 배치·`Option+N` 재호출 동작은 [데스크톱 문서](desktop.md#neovide-메모-창)를 따릅니다.
 
-- 홈 디렉터리에서 100열 × 30행의 빈 일반 버퍼로 시작하며 Hack Nerd Font Mono 14pt를 사용합니다.
-  LazyVim, 플러그인 로더, dashboard, LSP, 자동 완성이나 세션 복원은 실행하지 않습니다.
-- 시스템 클립보드를 `unnamedplus`로 연결합니다. Vim의 yank/paste와 함께 Visual 모드
-  `Cmd+C`, Normal/Insert/명령행 모드 `Cmd+V`를 사용할 수 있습니다.
-- Neovide의 커서·스크롤·창 위치 애니메이션과 커서 효과는 끄며,
-  이전 창 위치/크기를 기억하지 않도록 명시합니다. 새 창 중앙 배치는 네이티브 기본값이
+- 홈 디렉터리에서 100열 × 30행으로 시작하며, Neovide에서는 인자 없이 실행할 때
+  dashboard 대신 빈 버퍼를 엽니다. `lua/plugins/appearance.lua`에서 Neovide일 때만
+  Snacks dashboard를 비활성화합니다. 플러그인, LSP, 자동 완성, 세션 동작은 공유 설정을 따릅니다.
+- GUI 전용 설정과 Cmd 키맵은 기존 `lua/config/options.lua`의 `if vim.g.neovide then`
+  블록에 모읍니다. Hack Nerd Font Mono 14pt를 사용하며 터미널 Neovim에는 적용하지 않습니다.
+- Neovide에서는 시스템 클립보드를 `unnamedplus`로 연결하며, Visual 모드 `Cmd+C`로
+  복사하고 Normal/Insert/Visual/명령행/터미널 모드 `Cmd+V`로 붙여넣습니다.
+  Normal/Insert/Visual 모드 `Cmd+S`는 현재 파일을 저장합니다. 이름 없는 버퍼는
+  먼저 `:write 경로`로 저장할 파일을 지정해야 합니다.
+- Neovide의 커서 애니메이션은 0.18초, 짧은 커서 이동은 0.15초, 창 위치 애니메이션은
+  0.20초로 설정합니다. 커서 trail 크기는 7이며 효과는 `railgun`을 사용합니다.
+  Neovide 스크롤 애니메이션은 끄고 Snacks 애니메이션 설정은 변경하지 않습니다.
+  refresh rate는 120으로 설정하되 vsync가 꺼진 경우에만 적용되며, 이 설정에서 vsync를
+  끄지는 않습니다. Neovide 내부에서는 오른쪽 Option을 Meta로 사용합니다.
+  AeroSpace 전역 단축키가 우선합니다.
+- 이전 창 위치/크기는 기억하지 않습니다. 새 창 중앙 배치는 네이티브 기본값이
   아니라 전용 실행 경로가 담당합니다.
 - 단축키를 다시 누르면 기존 프로세스와 버퍼에 포커스만 맞춥니다. 버퍼를 지우거나
-  앱을 종료하지 않으며 `hidden`과 종료 확인을 유지합니다. 종료 후 복원이나 자동 저장은
-  추가하지 않으므로, 메모를 영구 보관하려면 일반 `:write 경로`를 사용합니다.
-- 일반 `~/.config/nvim` 설정과 `lazy-lock.json`, 터미널 Neovim 동작은 변경하지 않습니다.
+  앱을 종료하지 않으며, Neovide 종료 확인을 유지합니다. 메모를 영구 보관하려면
+  일반 `:write 경로`를 사용합니다.
+- `lazy-lock.json`을 포함한 일반 플러그인 구성은 공유합니다. Neovide의 dashboard 외에
+  다른 플러그인 비활성화나 별도 세션 정책은 추가하지 않습니다.
 
 
 ## 기본 편집 경험
 
-- 인자 없이 열면 LazyVim의 Snacks dashboard가 표시됩니다. 검색, 세션, Lazy와
+- 터미널에서 인자 없이 열면 LazyVim의 Snacks dashboard가 표시됩니다. 검색, 세션, Lazy와
   Lazy Extras 진입점도 기본 dashboard 동작을 사용합니다.
   배너는 `lua/plugins/appearance.lua`의 파란색 Codex pet 블록 아트로 바꿉니다.
   줄 너비를 맞춰 그림의 정렬을 유지하며, `SnacksDashboardHeader`의 전경색만

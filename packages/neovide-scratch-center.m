@@ -75,7 +75,7 @@ int main(int argc, const char *argv[]) {
         configuration.arguments = @[@"--neovim-bin", nvim, @"--chdir", NSHomeDirectory(), @"--grid", @"100x30"];
         configuration.environment = @{
             @"HOME": NSHomeDirectory(), @"USER": NSUserName(), @"LOGNAME": NSUserName(),
-            @"PATH": @"/usr/bin:/bin:/usr/sbin:/sbin", @"NVIM_APPNAME": @"nvim-scratch"
+            @"PATH": @"/usr/bin:/bin:/usr/sbin:/sbin"
         };
         __block NSRunningApplication *application = nil;
         __block NSError *launchError = nil;

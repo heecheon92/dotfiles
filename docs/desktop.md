@@ -132,7 +132,7 @@ WezTerm과 앞으로 추가할 모든 floating 창 실행 경로에 적용합니
 ### Neovide 메모 창
 
 AeroSpace 프로필에서만 Homebrew의 `neovide-app` cask를 선언합니다.
-이 앱은 일반 Neovide 편집용과 공유하지 않는 전용 메모 창으로 사용합니다.
+`Option+N`으로 열거나 재호출하는 메모 창도 일반 Neovim과 같은 LazyVim 설정을 사용합니다.
 Homebrew cask가 요구하는 Neovim formula와 그 의존성은 설치하지만,
 `homebrew.brews`의 `neovim.link = false`로 셸의 Nix Neovim을 가리지 않게 합니다.
 메모 창도 Home Manager가 생성한 `~/.local/bin/neovide-scratch` 래퍼를 통해
@@ -164,11 +164,14 @@ lock으로 직렬화하며, 창 시작 대기는 10초로 제한합니다. 실�
 위치 기억을 꺼도 `(0, 0)`을 저장하고,
 [`src/window/mod.rs`](https://github.com/neovide/neovide/blob/0.16.2/src/window/mod.rs#L249-L255)는
 저장된 위치를 다시 사용하므로 네이티브 기본 중앙 배치만으로는 반복 실행을 보장하지
-못합니다. 전용 Neovim 설정과 메모 버퍼 동작은 [편집 환경](editor.md#neovide-메모-창)을 참고합니다.
+못합니다. 공유 Neovim 설정과 GUI 전용 옵션은 [편집 환경](editor.md#neovide-메모-창)을 참고합니다.
 
 새 머신에서는 `./rebuild.sh`로 cask·래퍼·설정 링크를 적용하고,
 `aerospace reload-config`로 단축키와 floating 규칙을 읽습니다.
 권한 오류는 터미널에서 `~/.local/bin/neovide-scratch`를 실행하면 확인할 수 있습니다.
+공유 설정으로 전환할 때는 Home Manager 세대도 적용해 네이티브 helper·래퍼를 갱신하고
+이전 전용 설정 링크를 제거합니다. 이미 열린 Neovide는 재호출로 설정이 바뀌지 않으므로,
+저장할 버퍼를 보관한 뒤 앱을 종료하고 새로 열어야 합니다.
 
 ### 설정 적용과 메뉴 막대
 

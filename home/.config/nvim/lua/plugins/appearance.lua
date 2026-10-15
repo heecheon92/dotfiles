@@ -50,6 +50,10 @@ return {
   {
     "folke/snacks.nvim",
     opts = function(_, opts)
+      if vim.g.neovide then
+        opts.dashboard.enabled = false
+      end
+
       local header = [[
         ▄██████▄ ▄████▄
       ▄██████████████████▄
