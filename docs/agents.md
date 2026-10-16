@@ -120,10 +120,26 @@ alias와 파일 연결을 처음 추가한 뒤에는 `./rebuild.sh`로 적용해
 
 ## OMP Ultra 오버레이
 
-`home/.omp/agent/config-ultra.yml`은 구독 기반 사용량을 적극적으로
-사용하도록 구성한 overlay입니다.
+`home/.omp/agent/config-ultra.yml`은 Codex OAuth 구독 사용량을 적극적으로
+사용하도록 구성한 overlay입니다. `modelRoles`와 `retry.fallbackChains`만 덮어쓰며,
+나머지 설정(재시도 횟수·정책, 도구, UI, security-reviewer의 `@advisor` 연결)은
+기본 `config.yml`을 그대로 상속합니다.
 
-모델 역할과 task fallback만 덮어쓰며, 나머지 설정은 기본 설정을 상속합니다.
+- `slow`·`plan`·`advisor`: `openai-codex/gpt-6-astra:max`
+- `smol`·`vision`·`task`: `openai-codex/gpt-6-astra:xhigh`
+- `default`: `openai-codex/gpt-6-astra:high`
+- `spark`: `openai-codex/gpt-6-astra:low`
+- `memory`: `openai-codex/gpt-6-astra:medium`
+- `commit`: `openai-codex/gpt-6.1-sol:medium`
+- `tiny`는 기본 local 모델을 상속하므로 제목 생성은 로컬에 유지합니다.
+  `judge`도 기본 `openrouter/~typesafe/jev-latest` 모델과 전용 chain을 상속하는 예외입니다.
+- Astra 역할의 fallback은 `gpt-6.1-sol` → `gpt-6-luna`이며, Sol을 주 모델로
+  사용하는 `commit`은 `gpt-6-astra` → `gpt-6-luna`를 사용합니다.
+  각 fallback의 effort는 해당 주 역할과 동일합니다. 이 역할들은 Claude·OpenRouter로
+  fallback하지 않으며, JEV는 judge 전용으로 유지합니다.
+- 높은 effort는 응답 시간과 구독 사용량을 늘릴 수 있습니다. Codex 역할은
+  같은 제공자 경로이므로 Codex 전체 장애나 계정 사용량 소진을 우회하지 못합니다.
+  이 제한은 모델 역할·fallback 라우팅에 대한 것이며, 별도 도구·통합 설정은 바꾸지 않습니다.
 
 저장소 루트에서는 새 링크를 적용하기 전에도 실행할 수 있습니다.
 
