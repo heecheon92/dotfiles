@@ -73,27 +73,38 @@ retry:
   maxDelayMs: 30000
   modelFallback: true
   fallbackRevertPolicy: cooldown-expiry
+  # Codex alternates stay first; the Claude subscription is the last resort
+  # for Codex-wide outages. Overlays that define a chain replace it wholesale.
   fallbackChains:
     default:
       - openai-codex/gpt-6.1-sol:high
       - openai-codex/gpt-6-luna:high
+      - anthropic/claude-opus-5-5:medium
     smol:
       - openai-codex/gpt-6.1-sol:medium
+      - anthropic/claude-sonnet-5-5:medium
     slow:
       - openai-codex/gpt-6.1-sol:xhigh
+      - anthropic/claude-opus-5-5:xhigh
     vision:
       - openai-codex/gpt-6.1-sol:high
+      - anthropic/claude-opus-5-5:medium
     plan:
       - openai-codex/gpt-6.1-sol:xhigh
+      - anthropic/claude-opus-5-5:xhigh
     commit:
       - openai-codex/gpt-6-sol:low
+      - anthropic/claude-haiku-4-5:low
     task:
       - openai-codex/gpt-6.1-sol:medium
       - openai-codex/gpt-6-sol:medium
+      - anthropic/claude-sonnet-5-5:high
     advisor:
       - openai-codex/gpt-6.1-sol:high
+      - anthropic/claude-sonnet-5-5:high
     spark:
       - openai-codex/gpt-6-luna:medium
+      - anthropic/claude-sonnet-5-5:low
     openrouter/~typesafe/jev-latest:
       - openrouter/~typesafe/jev-latest
 dev:

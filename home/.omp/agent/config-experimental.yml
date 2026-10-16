@@ -69,28 +69,38 @@ retry:
   maxDelayMs: 30000
   modelFallback: true
   fallbackRevertPolicy: cooldown-expiry
+  # Claude stays the last resort after the Codex alternates (see config.yml).
   fallbackChains:
     default:
       - openai-codex/gpt-6-sol:high
       - openai-codex/gpt-6-luna:high
+      - anthropic/claude-opus-5-5:medium
     smol:
       - openai-codex/gpt-6-sol:low
       - openai-codex/gpt-6-luna:high
+      - anthropic/claude-sonnet-5-5:medium
     slow:
       - openai-codex/gpt-6-sol:xhigh
       - openai-codex/gpt-6-luna:max
+      - anthropic/claude-opus-5-5:xhigh
     vision:
       - openai-codex/gpt-6-sol:high
+      - anthropic/claude-opus-5-5:medium
     plan:
       - openai-codex/gpt-6-sol:xhigh
+      - anthropic/claude-opus-5-5:xhigh
     commit:
       - openai-codex/gpt-6-luna:low
+      - anthropic/claude-haiku-4-5:low
     task:
       - openai-codex/gpt-6-luna:max
+      - anthropic/claude-sonnet-5-5:high
     advisor:
       - openai-codex/gpt-6-sol:xhigh
+      - anthropic/claude-sonnet-5-5:high
     spark:
       - openai-codex/gpt-6-luna:medium
+      - anthropic/claude-sonnet-5-5:low
 dev:
   autoqaConsent: granted
 display:
