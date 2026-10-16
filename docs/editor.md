@@ -104,6 +104,12 @@ Homebrew Neovide 앱의 실행 파일 선택은 Nix의 `pkgs.neovim` 경로로 �
   `<leader>o`는 프로젝트 root의 Oil을 엽니다.
   Snacks 탐색기는 기존 `<leader>fe`/`<leader>fE`에 각각 root/cwd 동작으로 유지합니다.
   키 설정은 `lua/config/keymaps.lua`, Oil/Snacks plugin 설정은 `lua/plugins/workflows.lua`에 둡니다.
+  `oil-git-status.nvim`은 파일명 왼쪽 두 sign 열에 Git 상태를 비동기로 표시합니다.
+  왼쪽은 staged(index), 오른쪽은 unstaged(working tree)이며 `M`은 수정,
+  `A`는 추가, `?`는 untracked, `!`는 ignored 항목입니다.
+  두 상태가 모두 보이도록 Oil 창에서만 기본 sign 열(`signcolumn = "yes:2"`,
+  `statuscolumn = ""`)을 사용합니다. 파일명 색상과 일반 편집 창의 statuscolumn은
+  유지하며, 아직 저장하지 않은 buffer 변경을 나타내는 기능은 아닙니다.
   Snacks의 파일 검색, grep(단어 검색 포함), 탐색기는 `hidden = true`로 숨김 파일과
   디렉터리를 기본 표시하되, Git ignore 규칙은 계속 적용합니다.
   Oil도 `view_options.show_hidden = true`로 숨김 항목을 기본 표시하며,

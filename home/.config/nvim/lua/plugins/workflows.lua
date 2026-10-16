@@ -5,6 +5,8 @@ return {
     opts = {
       default_file_explorer = false,
       view_options = { show_hidden = true },
+      -- Use native sign columns so LazyVim's statuscolumn does not hide a Git status.
+      win_options = { signcolumn = "yes:2", statuscolumn = "" },
       keymaps = {
         ["g."] = false,
         ["<C-h>"] = false,
@@ -14,6 +16,11 @@ return {
         ["gR"] = { "actions.refresh", mode = "n" },
       },
     },
+  },
+  {
+    "refractalize/oil-git-status.nvim",
+    dependencies = { "stevearc/oil.nvim" },
+    opts = {},
   },
   {
     "folke/snacks.nvim",
