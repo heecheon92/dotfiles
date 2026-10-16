@@ -101,14 +101,13 @@ These roles are capability-filtered. Assigning an ordinary chat model to `speech
 
 ### Custom roles
 
-Names such as `spark`, `daybreak-blue`, or `research` can be custom roles. They are **not additional built-in agent types**. Define their selectors in `modelRoles`, then reference them as quoted aliases such as `"@research"` in agent routing.
+Names such as `spark` or `research` can be custom roles. They are **not additional built-in agent types**. Define their selectors in `modelRoles`, then reference them as quoted aliases such as `"@research"` in agent routing.
 
 Adding a custom role does not create a new automatic workload, start an agent, or cause the main agent to use it. A consumer must reference it. `cycleOrder` determines the chat-role cycling sequence; it does not define worker routing.
 
-The baseline and experimental configurations map `daybreak-blue` to
-`openai-codex/gpt-6-sol:max`, replacing the retiring `gpt-daybreak-blue-latest`
-alias while preserving the security reviewer's `"@daybreak-blue, @advisor"`
-selection order. The role name does not enable Daybreak: OMP 18.11.0's
+The baseline and experimental configurations select `"@advisor"` as the security
+reviewer's primary model; this does not attach a separate advisor worker.
+No dedicated Daybreak role is required: OMP 18.11.0's
 [Codex provider](https://github.com/can1357/oh-my-pi/blob/v18.11.0/packages/ai/src/providers/openai-codex/access-programs.ts)
 automatically requests `access_programs.cyber: daybreak_blue` when discovery
 advertises eligibility for the selected account/model, regardless of role.
@@ -248,7 +247,7 @@ This is not supported two-part syntax:
 # Incorrect: this is one selector containing an internal space.
 task:
   agentModelOverrides:
-    security-reviewer: "@daybreak-blue @advisor"
+    security-reviewer: "@slow @advisor"
 ```
 
 If the intent is one primary model **plus** an advisor, use separate controls:
@@ -257,12 +256,12 @@ If the intent is one primary model **plus** an advisor, use separate controls:
 # Requires both referenced roles to be defined/available.
 task:
   agentModelOverrides:
-    security-reviewer: "@daybreak-blue"
+    security-reviewer: "@slow"
   agentAdvisor:
     security-reviewer: "@advisor"
 ```
 
-If the intent is instead a primary-model alternative, `"@daybreak-blue, @advisor"` is an ordered selection list. It does **not** enable an advisor. These examples explain the syntax; they do not modify your current configuration.
+If the intent is instead a primary-model alternative, `"@slow, @advisor"` is an ordered selection list. It does **not** enable an advisor. These examples explain the syntax; they do not modify your current configuration.
 
 ## Thinking, prewalk, and advisors
 

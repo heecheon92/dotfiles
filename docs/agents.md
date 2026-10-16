@@ -93,25 +93,6 @@ OMP 18.4.9부터 bash·Python·JavaScript 실행의 저장 출력 artifact는 �
 설치된 바이너리를 업데이트해도 이미 실행 중인 OMP는 이전 런타임을 사용하므로
 OMP를 다시 실행해야 합니다.
 
-## OMP Claude fallback
-
-기본 설정, `oe`, Ultra overlay의 `retry.fallbackChains`는 Codex 대체 모델을
-먼저 시도한 뒤 마지막에 Anthropic Claude 구독 계정으로 넘어갑니다. Codex 전체
-장애에서도 작업이 이어지도록 하기 위한 설정이며, 단일 Codex 모델의 일시적 오류는
-다른 Codex 모델이 먼저 처리합니다.
-
-- 주 세션·`slow`·`plan`·`vision`: `claude-opus-5-5`
-- `task`·`advisor`·`smol`·`spark`: `claude-sonnet-5-5`
-- `commit`: `claude-haiku-4-5`
-- `daybreak-blue`는 자체 chain이 없어 `default` chain을 따릅니다.
-
-fallback은 Claude 구독의 5시간·주간 사용량을 소비합니다. overlay의 fallback 배열은
-기본 설정 배열을 덧붙이지 않고 대체하므로, chain을 정의하는 overlay를 추가할 때는
-Claude 항목도 함께 넣어야 합니다. `ob`(`config-budget.yml`)는 OpenRouter 중심
-저비용 설정이라 의도적으로 Claude fallback을 넣지 않았습니다.
-`retry.fallbackRevertPolicy: cooldown-expiry`에 따라 Codex 냉각 시간이 끝나면 원래
-모델로 돌아갑니다.
-
 ## OMP 저비용 모델 오버레이
 
 사용 비용을 줄이고 싶을 때는 `ob` Zsh alias로 OMP를 실행합니다. 이 설정은

@@ -9,14 +9,12 @@ modelRoles:
   commit: openai-codex/gpt-6-luna:medium
   task: openai-codex/gpt-6-sol:high
   advisor: openai-codex/gpt-6-astra:high
-  daybreak-blue: openai-codex/gpt-6-sol:max
   judge: openrouter/~typesafe/jev-latest
 cycleOrder:
   - spark
   - smol
   - default
   - slow
-  - daybreak-blue
 theme:
   dark: monokai-custom
   light: monokai-custom
@@ -112,7 +110,7 @@ autolearn:
   autoContinue: false
 task:
   agentModelOverrides:
-    security-reviewer: "@daybreak-blue, @advisor"
+    security-reviewer: "@advisor"
     sonic: "@spark"
   eager: preferred
   enableEffort: false

@@ -9,7 +9,6 @@ modelRoles:
   commit: openai-codex/gpt-6-luna:medium
   task: openai-codex/gpt-6.1-sol:high
   advisor: openai-codex/gpt-6-astra:high
-  daybreak-blue: openai-codex/gpt-6-sol:max
   tiny: local/lfm2.5-230m
   memory: openai-codex/gpt-6-luna
   judge: openrouter/~typesafe/jev-latest
@@ -21,7 +20,6 @@ cycleOrder:
   - smol
   - default
   - slow
-  - daybreak-blue
 theme:
   dark: monokai-custom
   light: monokai-custom
@@ -73,38 +71,54 @@ retry:
   maxDelayMs: 30000
   modelFallback: true
   fallbackRevertPolicy: cooldown-expiry
-  # Codex alternates stay first; the Claude subscription is the last resort
-  # for Codex-wide outages. Overlays that define a chain replace it wholesale.
+  # Try Codex, then Claude, then budget OpenRouter models (GLM followed by DeepSeek).
+  # OpenRouter requests use API credits. Overlays replace chains wholesale.
+  # All GLM fallbacks use max effort; other model families retain role-specific levels.
   fallbackChains:
     default:
       - openai-codex/gpt-6.1-sol:high
-      - openai-codex/gpt-6-luna:high
       - anthropic/claude-opus-5-5:medium
+      - openrouter/z-ai/glm-5.3:max
+      - openrouter/deepseek/deepseek-v4.1-flash:high
     smol:
       - openai-codex/gpt-6.1-sol:medium
       - anthropic/claude-sonnet-5-5:medium
+      - openrouter/z-ai/glm-5.3-flash:max
+      - openrouter/deepseek/deepseek-v4.1-flash:high
     slow:
       - openai-codex/gpt-6.1-sol:xhigh
       - anthropic/claude-opus-5-5:xhigh
+      - openrouter/z-ai/glm-5.3:max
+      - openrouter/deepseek/deepseek-v4.1-flash:max
     vision:
       - openai-codex/gpt-6.1-sol:high
       - anthropic/claude-opus-5-5:medium
+      - openrouter/z-ai/glm-5.3-flash:max
+      - openrouter/deepseek/deepseek-v4.1-flash:high
     plan:
       - openai-codex/gpt-6.1-sol:xhigh
       - anthropic/claude-opus-5-5:xhigh
+      - openrouter/z-ai/glm-5.3-flash:max
+      - openrouter/deepseek/deepseek-v4.1-flash:high
     commit:
       - openai-codex/gpt-6-sol:low
       - anthropic/claude-haiku-4-5:low
+      - openrouter/z-ai/glm-5.3-flash:max
+      - openrouter/deepseek/deepseek-v4.1-flash:low
     task:
       - openai-codex/gpt-6.1-sol:medium
-      - openai-codex/gpt-6-sol:medium
       - anthropic/claude-sonnet-5-5:high
+      - openrouter/z-ai/glm-5.3-flash:max
+      - openrouter/deepseek/deepseek-v4.1-flash:high
     advisor:
       - openai-codex/gpt-6.1-sol:high
       - anthropic/claude-sonnet-5-5:high
+      - openrouter/z-ai/glm-5.3-flash:max
+      - openrouter/deepseek/deepseek-v4.1-flash:max
     spark:
-      - openai-codex/gpt-6-luna:medium
       - anthropic/claude-sonnet-5-5:low
+      - openrouter/z-ai/glm-5.3-flash:max
+      - openrouter/deepseek/deepseek-v4.1-flash:high
     openrouter/~typesafe/jev-latest:
       - openrouter/~typesafe/jev-latest
 dev:
@@ -122,7 +136,7 @@ task:
   completionProbe: true
   speculativeLaunch: false
   agentModelOverrides:
-    security-reviewer: "@daybreak-blue, @advisor"
+    security-reviewer: "@advisor"
     sonic: "@spark"
   eager: preferred
   enableEffort: false
