@@ -105,6 +105,18 @@ Names such as `spark`, `daybreak-blue`, or `research` can be custom roles. They 
 
 Adding a custom role does not create a new automatic workload, start an agent, or cause the main agent to use it. A consumer must reference it. `cycleOrder` determines the chat-role cycling sequence; it does not define worker routing.
 
+The baseline and experimental configurations map `daybreak-blue` to
+`openai-codex/gpt-6-sol:max`, replacing the retiring `gpt-daybreak-blue-latest`
+alias while preserving the security reviewer's `"@daybreak-blue, @advisor"`
+selection order. The role name does not enable Daybreak: OMP 18.11.0's
+[Codex provider](https://github.com/can1357/oh-my-pi/blob/v18.11.0/packages/ai/src/providers/openai-codex/access-programs.ts)
+automatically requests `access_programs.cyber: daybreak_blue` when discovery
+advertises eligibility for the selected account/model, regardless of role.
+It can retry without that field after a program rejection, so this is not
+strict Daybreak enforcement. See OpenAI's
+[Daybreak guide](https://developers.openai.com/api/docs/guides/daybreak)
+for model/program distinctions.
+
 ## Built-in models versus the live catalog
 
 OMP ships a provider/model catalog, role priority patterns, and local-inference model definitions. It does **not** ship all hosted model weights or grant access to every listed provider.

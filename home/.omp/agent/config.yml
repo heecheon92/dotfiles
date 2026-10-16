@@ -9,7 +9,7 @@ modelRoles:
   commit: openai-codex/gpt-6-luna:medium
   task: openai-codex/gpt-6.1-sol:high
   advisor: openai-codex/gpt-6-astra:high
-  daybreak-blue: openai-codex/gpt-daybreak-blue-latest:max
+  daybreak-blue: openai-codex/gpt-6-sol:max
   tiny: local/lfm2.5-230m
   memory: openai-codex/gpt-6-luna
   judge: openrouter/~typesafe/jev-latest
