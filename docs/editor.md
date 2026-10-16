@@ -65,6 +65,9 @@ Homebrew Neovide 앱의 실행 파일 선택은 Nix의 `pkgs.neovim` 경로로 �
   `preselect = false`, `auto_insert = false`로 메뉴가 열려도 후보를 자동 선택·삽입하지
   않습니다. `<C-y>`는 선택한 후보를 수락하며 선택이 없으면 첫 후보를 수락합니다.
   `<Enter>`는 완성을 수락하지 않고 일반 줄바꿈과 `mini.pairs` 들여쓰기를 유지합니다.
+  Ghost text는 선택한 후보를 현재 줄에 미리 보여주며, 선택이 없으면 첫 후보를
+  보여줍니다. 이 흐린 미리보기는 실제 버퍼에 삽입되지 않으며 자동 선택·삽입 설정은
+  계속 꺼 둡니다.
   자동 signature popup은 유지하며, 설정은 `lua/plugins/completion.lua`에 둡니다.
 - 괄호와 따옴표 짝은 LazyVim의 `mini.pairs` 기본 동작을 사용합니다. 자동 짝은 LSP
   capability가 아니며, snippet 수락과의 상호작용은 실제 filetype에서 따로 확인합니다.
