@@ -25,6 +25,28 @@ iTerm의 기존 Hotkey Window 프로필은
 `DynamicProfiles` 디렉터리를 링크하며, 변경은 `./rebuild.sh`로 적용합니다.
 왼쪽 Option은 `Esc+`, 오른쪽 Option은 `Normal`로 유지합니다.
 
+## Tern 설정
+
+`home/.config/tern/settings.json`은 Tern의 공유 환경설정입니다. Home Manager는
+`~/Library/Application Support/Tern/settings.json`만 쓰기 가능한
+out-of-store symlink로 연결합니다. Tern 설치 자체는 관리하지 않으며,
+같은 디렉터리의 daemon 상태, 계정 정보, 잠금 파일과 agent runtime은 로컬에
+남깁니다. 다른 Mac에서도 `./rebuild.sh`로 링크를 적용합니다. 기존 일반
+`settings.json`이 있으면 먼저 비교하고 백업해 두세요.
+
+설정은 저장소 파일에서 직접 편집하는 방식을 권장합니다. Tern Preferences의
+저장 방식은 확인되지 않았습니다. 링크를 따라 저장하면 변경이 바로 Git에
+나타나지만, 파일을 원자적으로 교체하면 링크가 일반 파일로 바뀔 수 있습니다.
+Preferences에서 변경한 뒤에는 다음 명령으로 링크 유지 여부를 확인하세요.
+
+```sh
+readlink "$HOME/Library/Application Support/Tern/settings.json"
+git diff -- home/.config/tern/settings.json
+```
+
+링크가 사라졌으면 rebuild 전에 활성 파일의 변경을 저장소에 반영하고 백업하세요.
+`TERN_CONFIG_DIR`로 전체 상태 디렉터리를 저장소에 옮기지는 않습니다.
+
 ## Herdr 설정과 Radar
 
 `home/.config/herdr/config.toml`은 호스트 사이에 공유할 `[keys]` mode와

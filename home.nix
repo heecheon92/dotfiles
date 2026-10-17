@@ -340,6 +340,10 @@ in
   home.file."Library/Application Support/iTerm2/DynamicProfiles/hotkey-window.json".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.config/iterm2/hotkey-window.json";
+  # Share only Tern preferences; daemon, account, and agent state stay local.
+  home.file."Library/Application Support/Tern/settings.json".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.config/tern/settings.json";
   # Use FNM for the normal shell while retaining NVM for the scratch reference.
   home.file.".config/zsh/fnm-lazy.zsh".source =
     config.lib.file.mkOutOfStoreSymlink

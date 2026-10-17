@@ -1,0 +1,12 @@
+{
+  "theme_dark": "dark-rose-pine",
+  "copy_on_select": true,
+  "cursor": {
+    "shape": "block",
+    "smooth_blink": true,
+    "glide": 240,
+    "trail": "blaze",
+    "pulse": "ripple"
+  },
+  "ui_font_size": 14
+}
