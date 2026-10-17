@@ -186,7 +186,7 @@
       "Normal Font" : "HackNFM-Regular 13",
       "Use Non-ASCII Font" : true,
       "Non Ascii Font" : "HackNFM-Regular 13",
-      "Special Font Config" : "{\"entries\":[{\"start\":57760,\"count\":24,\"fontName\":\"Herdr Agent Icons Max\"},{\"start\":57792,\"count\":6,\"fontName\":\"Herdr Agent Icons Max\"}],\"version\":1}",
+      "Special Font Config" : "{\"entries\":[{\"start\":57760,\"count\":27,\"fontName\":\"Herdr Agent Icons Max\"},{\"start\":57792,\"count\":6,\"fontName\":\"Herdr Agent Icons Max\"}],\"version\":1}",
       "Ansi 13 Color" : {
         "Red Component" : 0.94586181640625,
         "Color Space" : "sRGB",
