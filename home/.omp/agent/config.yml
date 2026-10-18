@@ -71,52 +71,58 @@ retry:
   maxDelayMs: 30000
   modelFallback: true
   fallbackRevertPolicy: cooldown-expiry
-  # Try Codex, then Claude, then budget OpenRouter models (GLM followed by DeepSeek).
-  # OpenRouter requests use API credits. Overlays replace chains wholesale.
-  # All GLM fallbacks use max effort; other model families retain role-specific levels.
   fallbackChains:
     default:
       - openai-codex/gpt-6.1-sol:high
+      - hive/deepseek-ai/deepseek-v4.1-flash-1017:high
       - anthropic/claude-opus-5-5:medium
       - openrouter/z-ai/glm-5.3:max
       - openrouter/deepseek/deepseek-v4.1-flash:high
     smol:
       - openai-codex/gpt-6.1-sol:medium
+      - hive/deepseek-ai/deepseek-v4.1-flash-1017:low
       - anthropic/claude-sonnet-5-5:medium
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash:high
     slow:
       - openai-codex/gpt-6.1-sol:xhigh
+      - hive/deepseek-ai/deepseek-v4.1-flash-1017:max
       - anthropic/claude-opus-5-5:xhigh
       - openrouter/z-ai/glm-5.3:max
       - openrouter/deepseek/deepseek-v4.1-flash:max
     vision:
       - openai-codex/gpt-6.1-sol:high
+      - hive/deepseek-ai/deepseek-v4.1-flash-1017:max
       - anthropic/claude-opus-5-5:medium
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash:high
     plan:
       - openai-codex/gpt-6.1-sol:xhigh
+      - hive/deepseek-ai/deepseek-v4.1-flash-1017:max
       - anthropic/claude-opus-5-5:xhigh
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash:high
     commit:
       - openai-codex/gpt-6-sol:low
+      - hive/deepseek-ai/deepseek-v4.1-flash-1017:low
       - anthropic/claude-haiku-4-5:low
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash:low
     task:
       - openai-codex/gpt-6.1-sol:medium
+      - hive/deepseek-ai/deepseek-v4.1-flash-1017:max
       - anthropic/claude-sonnet-5-5:high
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash:high
     advisor:
       - openai-codex/gpt-6.1-sol:high
+      - hive/deepseek-ai/deepseek-v4.1-flash-1017:max
       - anthropic/claude-sonnet-5-5:high
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash:max
     spark:
       - anthropic/claude-sonnet-5-5:low
+      - hive/deepseek-ai/deepseek-v4.1-flash-1017:high
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash:high
     openrouter/~typesafe/jev-latest:
@@ -125,6 +131,9 @@ dev:
   autoqaConsent: granted
 display:
   hideToolActivity: false
+  subagentLivePreview: true
+  showTokenUsage: true
+  cacheMissMarker: true
 memory:
   backend: local
 archive:
@@ -150,6 +159,7 @@ hideThinkingBlock: true
 composer:
   shape: box
   predictions: true
+  tokenRate: true
 spelling:
   autocomplete: auto
 browser:
@@ -162,4 +172,4 @@ power:
 tui:
   codexResetFireworks: true
 codexResets:
-  autoRedeem: "unset"
+  autoRedeem: unset
