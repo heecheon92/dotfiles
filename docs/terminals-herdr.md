@@ -36,6 +36,11 @@ out-of-store symlink로 연결합니다. Tern 설치 자체는 관리하지 않�
 남깁니다. 다른 Mac에서도 `./rebuild.sh`로 링크를 적용합니다. 기존 일반
 `settings.json`이 있으면 먼저 비교하고 백업해 두세요.
 
+터미널 글꼴은 `Berkeley Mono, Herdr Agent Icons Max` 순서로 지정합니다.
+Tern의 기본 Berkeley Mono를 일반 텍스트에 유지하고, Herdr sidebar의 전용
+아이콘은 `Herdr Agent Icons Max` fallback으로 표시합니다. 이 아이콘 글꼴은
+각 Mac에 별도로 설치되어 있어야 합니다.
+
 설정은 저장소 파일에서 직접 편집하는 방식을 권장합니다. Tern Preferences의
 저장 방식은 확인되지 않았습니다. 링크를 따라 저장하면 변경이 바로 Git에
 나타나지만, 파일을 원자적으로 교체하면 링크가 일반 파일로 바뀔 수 있습니다.
