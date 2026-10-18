@@ -12,6 +12,7 @@ modelRoles:
   tiny: local/lfm2.5-230m
   memory: openai-codex/gpt-6-luna
   judge: openrouter/~typesafe/jev-latest
+  daybreak: openai-codex/gpt-6-sol:auto
 title:
   generator: tiny
   icons: nf+emoji
@@ -20,6 +21,7 @@ cycleOrder:
   - smol
   - default
   - slow
+  - daybreak
 theme:
   dark: monokai-custom
   light: monokai-custom
@@ -150,6 +152,7 @@ task:
   eager: preferred
   enableEffort: false
   showResolvedModelBadge: true
+  maxRecursionDepth: 2
 terminal:
   showImages: true
 images:
