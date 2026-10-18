@@ -8,9 +8,11 @@
 
 `MacBook-Pro`에서는 Home Manager가 `home/.hammerspoon/init.lua`를 연결하고
 Hammerspoon이 로그인할 때 자동 실행됩니다. 물리 키 코드 기반 `Ctrl+\``는 실행
-중인 WezTerm이 앞에 있으면 숨깁니다. 뒤에 있으면 WezTerm을 활성화한 뒤 주 창을
-마우스 포인터가 있는 화면 중앙으로 옮깁니다. 종료된 WezTerm을 새로 실행하지는
-않습니다. 새 Mac에서는 Hammerspoon에 macOS 손쉬운 사용 권한을 한 번 허용해야
+중인 Tern이 앞에 있으면 숨깁니다. 뒤에 있으면 Tern을 활성화한 뒤 주 창을
+마우스 포인터가 있는 화면 중앙으로 옮깁니다. 종료된 Tern을 새로 실행하지는
+않습니다. 단축키 변경 후 Hammerspoon 메뉴에서 Reload Config를 선택합니다.
+WezTerm은 비교·복귀용으로 설치와 설정을 유지합니다.
+새 Mac에서는 Hammerspoon에 macOS 손쉬운 사용 권한을 한 번 허용해야
 합니다. 이 프로필은 AeroSpace, SketchyBar, Borders와 그에 딸린 탭·폰트·Spaces
 설정을 적용하지 않으며 macOS 메뉴 막대를 전체 화면에서도 표시합니다.
 
