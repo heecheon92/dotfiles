@@ -1,13 +1,19 @@
 {
-  "theme_dark": "dark-rose-pine",
+  "theme_dark": "dark-celestial",
   "copy_on_select": true,
   "cursor": {
     "shape": "block",
     "smooth_blink": true,
-    "glide": 240,
+    "glide": 120,
     "trail": "blaze",
     "pulse": "ripple"
   },
+  "font_size": 14,
   "font_family": "Berkeley Mono, Herdr Agent Icons Max",
-  "ui_font_size": 14
+  "ui_font_size": 14,
+  "pane_headers": "Always",
+  "status_bar": true,
+  "surface_tab_width": 4,
+  "surface_chat": "Spine",
+  "prefs_width": 1042
 }
