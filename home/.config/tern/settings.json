@@ -3,6 +3,7 @@
   "copy_on_select": true,
   "cursor": {
     "shape": "block",
+    "programs": true,
     "smooth_blink": true,
     "glide": 120,
     "trail": "blaze",
