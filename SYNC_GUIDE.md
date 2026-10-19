@@ -597,6 +597,27 @@ falls back to:
 /run/current-system/sw/bin/darwin-rebuild
 ```
 
+### `cache.nixos.org` cannot be resolved
+
+After resolving the tracked flake snapshot as its owner, `rebuild.sh` runs a
+build-only preflight as root with `nix build --no-link`. If that build fails with
+`Could not resolve host: cache.nixos.org`, the wrapper runs:
+
+```bash
+dscacheutil -q host -a name cache.nixos.org
+```
+
+If the lookup succeeds, it retries the build exactly once. A failed lookup keeps
+the original build's exit status; a failed retry returns the retry's status.
+Other build failures, output-capture failures, and failures while resolving the
+initial flake snapshot are not retried. Build output is streamed and temporarily
+captured in a private file that is removed before switching or exiting.
+
+Only after the preflight succeeds does the normal `darwin-rebuild switch` run,
+reusing the built system output. The preflight does not create a `result` link,
+update the system profile, or activate anything. The wrapper never retries
+`switch` or activation, restarts a daemon, or changes network settings.
+
 ### Host profile is missing
 
 An error mentioning a missing `darwinConfigurations.<name>` means the Mac's
