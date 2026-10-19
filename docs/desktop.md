@@ -38,9 +38,9 @@ SketchyBar의 39pt 막대와 8pt 오프셋을 고려해 60pt를 예약합니다.
 숫자·문자 persistent workspace를 유지하되 모니터별 이름이나 앱별 고정
 워크스페이스는 지정하지 않습니다.
 
-- `Option+Enter`: 홈 디렉터리에 독립된 tiled WezTerm 인스턴스 열기.
-  최소 사용자 환경으로 macOS 앱 런처를 호출하고 `--always-new-process`를 사용해,
-  기존 터미널·Herdr 환경을 상속하거나 실행 중인 WezTerm 프로세스를 재사용하지 않습니다.
+- `Option+Enter`: 홈 디렉터리의 새 탭을 가진 tiled Tern 창 열기.
+  최소 사용자 환경으로 `open -na Tern --args --dir "$HOME"`를 실행합니다.
+  창 배치는 AeroSpace가 담당하며, 기존 Tern 창과 daemon 세션은 유지합니다.
 - `Option+Shift+Enter`: 같은 최소 환경으로 독립된 WezTerm 창 하나를 열고,
   새 GUI 프로세스의 PID로 그 창만 floating으로 전환해 활성 화면 중앙에 배치합니다.
   시작 중 크기 변경이 끝나면 중앙 배치를 해제하므로 이후에는 자유롭게 이동·조정할 수 있습니다.
@@ -100,10 +100,10 @@ AeroSpace가 반환하는 목록을 따릅니다. 각 전환은 기존 수동 �
 grid가 앱의 최소 크기를 무시하지는 못합니다. 이 경우 디스플레이의 “공간 더 보기”
 배율을 사용하거나, 더 작은 창을 지원하는 앱/브라우저 버전을 사용해야 합니다.
 
-`Mac-mini`의 WezTerm에서도 tiling과 전체 화면은 AeroSpace가 담당합니다.
+`Mac-mini`의 Tern과 WezTerm 모두 tiling과 전체 화면은 AeroSpace가 담당합니다.
 공유 `home/.config/wezterm/wezterm.lua`는 개별 파일로 링크되고, rebuild가 만든
 로컬 `~/.config/wezterm/host.lua`의 `aerospace` 값을 읽습니다. 이 값이 true인
-호스트에서만 AeroSpace가 새 창 열기에 사용하는 `Option+Enter`의 WezTerm 기본
+호스트에서만 AeroSpace의 Tern 새 창 단축키인 `Option+Enter`와 충돌하는 WezTerm 기본
 할당을 해제하며, 나머지 기본 단축키는 유지합니다. `host.lua`는 생성 파일이므로
 직접 편집하지 않습니다. WezTerm의 simple fullscreen은 메뉴 막대를 자동 숨기므로
 `Mac-mini`에서는 함께 사용하지 않습니다.

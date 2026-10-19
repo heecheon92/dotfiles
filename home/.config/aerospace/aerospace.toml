@@ -113,10 +113,10 @@ on-window-detected = [
 # All possible commands: https://nikitabobko.github.io/AeroSpace/commands
 
 # See: https://nikitabobko.github.io/AeroSpace/commands#exec-and-forget
-# Launch a separate WezTerm instance without inheriting terminal or agent context.
+# Launch a new Tern window without inheriting terminal or agent context.
 alt-enter = '''exec-and-forget
 /usr/bin/env -i HOME="$HOME" USER="$USER" LOGNAME="$LOGNAME" PATH=/usr/bin:/bin:/usr/sbin:/sbin \
-  /usr/bin/open -na WezTerm --args start --always-new-process --cwd "$HOME"
+  /usr/bin/open -na Tern --args --dir "$HOME"
 '''
 # Mark only this new GUI process; resolve AeroSpace before clearing its PATH.
 alt-shift-enter = '''exec-and-forget
