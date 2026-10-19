@@ -88,10 +88,20 @@ OMP 18.4.9부터 bash·Python·JavaScript 실행의 저장 출력 artifact는 �
   제외됩니다.
 
 설정 변경은 기존 YAML 연결을 통해 다음 OMP 실행에 반영되므로 Nix 재빌드는
-필요하지 않습니다. core 업데이트는 `omp update`로 수행하며,
+필요하지 않습니다. 자체 관리 설치는 `omp update`, Tern 관리 설치는 Tern의
+지원되는 업데이트 경로를 사용하며 관리 바이너리를 직접 덮어쓰지 않습니다.
 `omp update --plugins`는 별도 승인 없이 함께 실행하지 않습니다.
 설치된 바이너리를 업데이트해도 이미 실행 중인 OMP는 이전 런타임을 사용하므로
 OMP를 다시 실행해야 합니다.
+
+`omp-update` skill은 설치 버전과 마지막 검토 버전을 구분합니다. Tern이 먼저
+업데이트했어도 로컬 checkpoint 이후의 릴리스를 검토하고 필요한 설정을 이관합니다.
+checkpoint가 없으면 검토 시작 범위를 사용자와 정하며 현재 버전을 자동으로
+검토 완료 처리하지 않습니다. 검토·필수 이관·검증이 끝난 실행에서만 갱신하고,
+읽기 전용 audit이나 미해결 작업이 있는 실행에서는 이전 checkpoint를 유지합니다.
+상태는 `${XDG_STATE_HOME:-$HOME/.local/state}/omp-update/`에 두며 Git에는 넣지 않습니다.
+helper와 독립 installer는 skill 디렉터리에 함께 들어 있습니다.
+[독립 설치·checkpoint 사용법](../home/.agents/skills/handmade/omp-update/README.md)을 참고합니다.
 
 ## OMP 저비용 모델 오버레이
 

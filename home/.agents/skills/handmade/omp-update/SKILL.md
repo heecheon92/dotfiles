@@ -31,7 +31,7 @@ Do not make the user read the full changelog, approve routine facts, or answer q
 
 Invocation determines execution authority:
 
-- `$omp-update`, `update OMP`, or equivalent explicit update wording authorizes the stable core update plus safe auto-resolved configuration maintenance. Do not ask for a redundant final confirmation.
+- `$omp-update`, `update OMP`, or equivalent explicit wording authorizes the stable core update through its verified owner, safe configuration maintenance, catch-up review of already-installed releases, and recording a successfully completed review. Do not ask for redundant final confirmation. Skill authoring/installation alone never authorizes an OMP update or initializes a checkpoint.
 - `audit`, `check`, or `review the update` is read-only. Report impact without editing or updating.
 - If intent is genuinely ambiguous between audit and execution, ask one intent question before mutation.
 - Plugin updates, canary switches, destructive removal of user-authored extensions, and unrelated Home Manager activation are not implied by core-update authorization.
@@ -50,7 +50,7 @@ There is no unattended destructive mode: material decisions and actions outside 
 
 # Safety contract
 
-- Treat `omp update --check` as authoritative for the target offered on the current channel. GitHub `latest` may be ahead of the updater.
+- For self-managed installs, treat `omp update --check` as authoritative for the offered target. For Tern or another external owner, use that owner's supported metadata and lifecycle; never replace its executable or remove its ownership marker. GitHub `latest` is not an installation target.
 - Default to `stable`. Never switch to canary unless explicitly requested.
 - Never run `omp update`, `omp update --plugins`, overwrite agent exports, or mutate configuration before an exact plan preview. An explicit core-update invocation supplies execution authority for the stable core update and safe auto-resolved maintenance; material decisions and out-of-scope actions still require explicit choices.
 - Keep core and plugin updates separate.
@@ -62,30 +62,44 @@ There is no unattended destructive mode: material decisions and actions outside 
 
 # Phase 1: establish the exact update boundary
 
-Inspect the installed CLI because update syntax and configuration evolve:
+Resolve this skill's installed directory as `SKILL_DIR`; all helper paths below are relative to that directory. Requires Python 3.9+ on macOS/Linux. The helper uses only the standard library and never installs OMP or calls a model.
 
 ```bash
-omp --version
+python3 "$SKILL_DIR/scripts/review_state.py" status
 omp update --help
 omp update --check
-omp config get update.channel
 omp config path
 ```
 
-Record:
+The helper probes the active executable, real path, version, configured channel, external-manager marker, and local review checkpoint. `status` is read-only and creates no files. Keep its exact `revision` token for completion. Record the active profile, working directory, and presence of project-local `.omp` overlays separately.
 
-- current version,
-- updater-offered target version,
-- active update channel,
-- active profile when applicable,
-- current working directory,
-- presence of project-local `.omp` configuration.
+The checkpoint defaults to `${XDG_STATE_HOME:-$HOME/.local/state}/omp-update/review-state.json`. Named `OMP_PROFILE`/`PI_PROFILE` environments have separate checkpoints. Run the helper and OMP with the same profile environment; for a CLI `--profile`, set `OMP_PROFILE` explicitly when calling the helper. An explicit `--state-dir` can isolate another scope; use the same directory for every command in that review. It is machine-local bookkeeping, not configuration, session history, or a credential store. Never commit it.
 
-If no update is offered, stop after reporting that fact unless the user explicitly requests a current-version audit.
+Keep three versions separate: **installed**, **last reviewed**, and **offered** (if obtainable).
+
+- **`catch-up`:** review every release in `(last reviewed, installed]`, even if the binary is already current or `omp update --check` refuses because Tern owns it.
+- **`current`:** no outstanding installed-release review. If the verified owner offers an update, review through that target; otherwise stop unless a current-version audit was requested. A current checkpoint does not prove that later manual configuration edits are valid.
+- **`uninitialized`:** the initial review boundary is unknown. Ask one focused question: confirm a known previously reviewed version, or perform a current-version audit to establish a baseline without claiming earlier releases were reviewed. Never infer completion from the installed version, memories, or old transcripts. A confirmed historical baseline must not be newer than the installed version.
+- **`channel-mismatch` / `version-regression`:** do not reset or move the checkpoint backward. Explain the mismatch and resolve scope before mutation; a deliberately different channel can use a separately approved `--state-dir`.
+- **Malformed/unsupported checkpoint or discovery failure:** fail closed, preserve the file, and report the exact prerequisite. Never replace it with an empty state.
+
+For a user-confirmed historical baseline, preview then run:
+
+```bash
+python3 "$SKILL_DIR/scripts/review_state.py" baseline \
+  --version CONFIRMED_PREVIOUS_VERSION --channel stable \
+  --expected-revision missing --confirm-reviewed
+```
+
+Then run `status` again and retain its new token. Audit/check/plan-only mode never writes even a baseline; retain the user-selected boundary in the report instead. A first-use current-version audit may be recorded only in execution mode after all verification is complete and the user has explicitly accepted that scope.
+
+For Tern-managed installs, its `manager.json` marker and updater refusal establish ownership, not an offered target or proof that releases were reviewed. Do not update a shadowed standalone binary as a substitute, change PATH, restart Tern, or invent a Tern command. If no supported owner update action/target can be established, defer binary installation but still finish independent catch-up review against the actual installed version. Discover Tern controls read-only; UI interaction follows the host's confirmation policy.
+
+If an independently managed update is offered, extend the review endpoint to that exact target only after ownership and install scope are verified. Recheck before installation and before checkpoint completion; target drift requires reviewing the added range first.
 
 # Phase 2: build the release ledger
 
-Read every official release in `(current, target]`:
+Read every official release in `(last reviewed, review endpoint]`. The endpoint is the installed version for catch-up, or the verified offered target for an authorized install. First-use current-version audits cover only the explicitly agreed current-version scope, not an invented historical range:
 
 - `https://github.com/can1357/oh-my-pi/releases`
 - `https://api.github.com/repos/can1357/oh-my-pi/releases/tags/v<VERSION>`
@@ -104,7 +118,7 @@ Normalize changes into:
 9. internal/nonactionable fixes,
 10. introduced, changed, renamed, or removed user-facing commands, hotkeys, keywords, and composer triggers.
 
-Maintain a coverage row for every item in category 10 across `(current, target]`, regardless of enabled configuration, plus every other substantial user-facing feature. Record version/change status, evidence link, user-visible behavior, usage example, prerequisites/restrictions, local impact, decision status, and verification state. No-local-impact does not remove a row from briefing coverage.
+Maintain a coverage row for every item in category 10 across the selected review range, regardless of enabled configuration, plus every other substantial user-facing feature. Record version/change status, evidence link, user-visible behavior, usage example, prerequisites/restrictions, local impact, decision status, and verification state. No-local-impact does not remove a row from briefing coverage.
 
 Label every material statement as an explicit release/documentation/source fact, local observation, or inference. Verify exact syntax, gestures, defaults, and limitations against docs/source for the offered target version, not an unversioned latest page or older installed runtime. Keep documented behavior distinct from observed local behavior.
 
@@ -264,6 +278,8 @@ List exact files, keys, commands, and expected effective values. Separate:
 
 Define observable acceptance criteria and show all automatic local edits under `Handled automatically`.
 
+Include the checkpoint path, starting revision token, reviewed range, installation owner/action (or explicitly no installation), and completion command. No checkpoint advancement is permitted while required migration work, evidence, or decisions remain unresolved. Optional features deliberately left disabled are not unresolved migrations.
+
 Execution behavior:
 
 - If the user explicitly invoked a core update and every material decision is resolved, proceed after the plan preview without a redundant final approval.
@@ -283,12 +299,14 @@ Execution behavior:
 
 ## Update and reconcile
 
-When stable core update execution is authorized and all material decisions are resolved:
+For a verified self-managed installation, when stable core update execution is authorized and all material decisions are resolved:
 
 ```bash
 omp update
 omp --version
 ```
+
+For externally managed installations, use only the verified owner-supported update path from the plan. If Tern already installed the review endpoint, skip installation entirely. Do not run a self-updater, overwrite managed files, or update a second executable. Continue reconciliation against the installed target. A blocked newer installation does not block completion of a separately finished installed-version review.
 
 Then re-read the new CLI help, config schema, installed docs, supported model roles, task-tool agent list, and model catalog. Apply only approved post-update changes. If Home Manager/Nix owns the config, activate through its documented source workflow rather than editing generated links.
 
@@ -319,6 +337,20 @@ Verify every affected surface:
 Do not search historical sessions or memories to prove a migration. Verify active sources and resolved output only. For feature explanations, use target-version docs/source even when runtime exercise is unnecessary or unavailable; label those cases `Documented, not exercised` and unresolved details `Unverified`. Do not enable optional features, download dependencies, grant permissions, or make model requests solely to complete a demonstration. Read-only audits do not mutate or claim post-update runtime verification.
 
 If post-update verification fails, stop additional changes, preserve evidence, and offer the documented rollback or source revert. Never improvise destructive recovery.
+
+## Record completed review
+
+After the feature briefing, all required migrations, and verification have succeeded, re-run helper `status` to check for installed-version/channel drift. Retain the **original** checkpoint revision token from the start of the review; never replace it with a newer token merely to bypass a concurrent-change rejection.
+
+```bash
+python3 "$SKILL_DIR/scripts/review_state.py" complete \
+  --version VERIFIED_REVIEW_ENDPOINT --channel stable \
+  --expected-revision ORIGINAL_REVISION_TOKEN --confirm-reviewed
+```
+
+Use `missing` only for an explicitly accepted first-use current-version audit with no checkpoint. The helper re-probes OMP under a process lock, requires exact installed version/channel agreement, rejects stale tokens/regressions, and atomically replaces a private JSON file. It cannot judge the quality of a review: `--confirm-reviewed` is an attestation by the caller, not an automated proof.
+
+Re-read `status` and confirm the checkpoint now matches the reviewed installed version. If completion fails, preserve evidence and report the unchanged checkpoint; do not force-write it or claim success. Audit/check/plan-only runs never advance it. If required work is deferred, leave the earlier checkpoint intact so the next invocation sees the outstanding range.
 
 # Removed role and agent checklist
 
@@ -387,13 +419,14 @@ Then report concisely:
 - effective-state and smoke verification, separating observed results from documented but unexercised features and unverified details,
 - plugin status,
 - rollback artifact if created,
+- checkpoint path, prior/new last-reviewed version, and whether it advanced (or why it stayed unchanged),
 - remaining warnings.
 
 # Stop conditions
 
 Stop before mutation when:
 
-- the updater target cannot be determined,
+- the selected review endpoint cannot be determined (an unavailable offered target blocks installation, not independently safe catch-up review of a known installed version),
 - migration-critical official notes are unavailable,
 - writable ownership cannot be resolved,
 - a proposed replacement is unsupported by the target,

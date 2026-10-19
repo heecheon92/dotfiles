@@ -52,6 +52,7 @@ in
     fzf       # fuzzy finder
     jq        # json on the command line
     bun       # runtime and package manager for OMP plugins
+    python3   # bundled omp-update review checkpoint helper and standalone installer
     lavishAxi # pinned CLI for explicitly requested HTML reviews; no ambient hooks
     fnm       # fast Node version manager, initialized lazily by Zsh
     lazygit
