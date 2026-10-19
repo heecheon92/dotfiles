@@ -1,8 +1,7 @@
 # 에이전트와 보조 도구
 
-공유 에이전트 스킬, OMP 저비용 모델 오버레이와 명시적 Lavish 사용 정책을
-설명합니다. 이 문서의 저장소 경로와 `./rebuild.sh` 명령은 모두 저장소 루트를
-기준으로 합니다.
+공유 에이전트 스킬과 OMP 저비용 모델 오버레이를 설명합니다.
+이 문서의 저장소 경로와 `./rebuild.sh` 명령은 모두 저장소 루트를 기준으로 합니다.
 
 OMP의 모델 역할, 내장 에이전트, 위임 시 모델 선택 우선순위와 백그라운드 동작은
 [모델 라우팅 가이드](../home/.omp/agent/MODEL-ROUTING.md)를 참고하세요.
@@ -172,19 +171,3 @@ advisor 모델을 지정하는 것만으로 검토가 켜지지는 않습니다.
 기본 advisor는 주 에이전트의 새 진행 내용을 검토하고 읽기 도구로 조사한 뒤
 조언을 전달합니다. 심각한 문제는 진행을 중단하거나 방향을 바꿀 수 있지만,
 작업 전 승인을 보장하는 장치는 아니며 별도 모델 사용량을 소비합니다.
-
-## 명시적 Lavish 사용
-
-Lavish CLI는 `packages/lavish-axi.nix`에서 version을 pin하며 `./rebuild.sh`로
-설치합니다. 사용자가 HTML review를 명시적으로 요청했을 때만
-`lavish-axi <html-file>`로 실행합니다.
-
-Lavish bundled skill은 전역 skill 목록에 연결하지 않고, Claude Code, Codex,
-OpenCode 및 GitHub Copilot CLI의 `SessionStart` hook이나 OMP ambient-context
-extension도 등록하지 않습니다. `lavish-axi setup hooks`를 실행하면 자동 주입이
-다시 설치되므로 실행하지 않습니다. 기존 hook을 제거한 뒤에는 실행 중인 harness를
-재시작하고 새 대화를 시작해야 이미 로드된 지침이 남지 않습니다.
-
-Lavish를 올릴 때는 Nix expression의 version과 npm tarball hash, 그리고
-`packages/lavish-axi/package.json` 및 `package-lock.json`의 dependency lock을
-함께 갱신합니다.

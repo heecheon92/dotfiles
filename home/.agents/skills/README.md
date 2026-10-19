@@ -33,10 +33,11 @@ activation.
 Dotfiles is the source registry; the `selectedAgentSkills` map in
 [`home.nix`](../../../home.nix) is the explicit default installation allowlist.
 Each entry maps a flat runtime skill name to its relative grouped source path.
-The eight defaults are:
+The nine defaults are:
 
 - `chatgpt-review` → `handmade/chatgpt-review`
 - `lantern` → `handmade/lantern`
+- `lavish-shared-review` → `handmade/lavish-shared-review`
 - `documentation-lifecycle` → `handmade/documentation-lifecycle`
 - `omp-update` → `handmade/omp-update`
 - `herdr-update` → `handmade/herdr-update`
@@ -60,7 +61,7 @@ unaffected.
 
 This is the human-maintained source registry for the skills checked into this
 repository, not an inventory of every skill installed on a machine. The lists
-below cover all 38 registered skills: 9 handmade and 29 externally imported.
+below cover all 39 registered skills: 10 handmade and 29 externally imported.
 
 ### Handmade skills
 
@@ -70,6 +71,7 @@ or documentation inside a handmade skill are not its installation source.
 
 - [`chatgpt-review`](./handmade/chatgpt-review/SKILL.md)
 - [`lantern`](./handmade/lantern/SKILL.md)
+- [`lavish-shared-review`](./handmade/lavish-shared-review/SKILL.md)
 - [`mermaid`](./handmade/mermaid/SKILL.md)
 - [`omp-update`](./handmade/omp-update/SKILL.md)
 - [`herdr-update`](./handmade/herdr-update/SKILL.md)
@@ -176,6 +178,12 @@ python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/inst
   --path home/.agents/skills/handmade/termaid
 ```
 
+```bash
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
+  --repo heecheon92/dotfiles \
+  --path home/.agents/skills/handmade/lavish-shared-review
+```
+
 ## Available skills
 
 ### Personal Next.js and React patterns
@@ -226,6 +234,28 @@ $lantern --standard <topic>
 
 See the [English](./handmade/lantern/README.md) and
 [Korean](./handmade/lantern/README.ko.md) guides.
+
+### lavish-shared-review
+
+Agent-client-neutral live questionnaire review with PMs or other reviewers:
+HTML → isolated session → authenticated HTTPS access → tracked polling →
+agent replies → user end → scoped cleanup. It requires a **preinstalled system
+`lavish-axi`**; it never auto-installs through `npx` or takes ownership of the CLI.
+It complements the installed upstream `lavish` skill without modifying it.
+
+The skill distinguishes standalone `lavish-axi share` publishing from live
+feedback, chooses an authorized access provider rather than mandating one, and
+requires real access/transport evidence before claiming remote review works.
+Reviewers use one active tab sequentially, not simultaneous form coediting.
+Runtime artifacts, answers, URLs, credentials, and state stay outside tracked
+dotfiles. No OMP, Claude, or Herdr integration is required.
+
+```text
+$lavish-shared-review Collect the PM's scope decisions through a live review form.
+```
+
+See the [skill](./handmade/lavish-shared-review/SKILL.md) and its
+[security/verification reference](./handmade/lavish-shared-review/references/security-verification.md).
 
 ### chatgpt-review
 

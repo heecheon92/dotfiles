@@ -6,6 +6,7 @@ let
   selectedAgentSkills = {
     chatgpt-review = "handmade/chatgpt-review";
     lantern = "handmade/lantern";
+    lavish-shared-review = "handmade/lavish-shared-review";
     documentation-lifecycle = "handmade/documentation-lifecycle";
     omp-update = "handmade/omp-update";
     herdr-update = "handmade/herdr-update";
@@ -13,7 +14,6 @@ let
     termaid = "handmade/termaid";
     create-readme = "external/github-awesome-copilot/create-readme";
   };
-  lavishAxi = pkgs.callPackage ./packages/lavish-axi.nix { };
   aerospaceEnabled = desktopProfile == "aerospace";
   neovideScratchCenter = pkgs.callPackage ./packages/neovide-scratch-center.nix { };
   herdrPython = pkgs.python3.withPackages (ps: [ ps.tomlkit ]);
@@ -53,7 +53,6 @@ in
     jq        # json on the command line
     bun       # runtime and package manager for OMP plugins
     python3   # bundled omp-update review checkpoint helper and standalone installer
-    lavishAxi # pinned CLI for explicitly requested HTML reviews; no ambient hooks
     fnm       # fast Node version manager, initialized lazily by Zsh
     lazygit
     neovim
@@ -389,7 +388,7 @@ in
   home.file.".config/opencode/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
   # The registry catalog remains available alongside the selected flat skill links.
-  # Unlisted machine-local skills remain untouched. Lavish stays CLI-only.
+  # Unlisted machine-local skills remain untouched.
   home.file.".agents/skills/README.md".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.agents/skills/README.md";

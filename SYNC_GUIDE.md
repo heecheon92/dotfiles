@@ -373,12 +373,13 @@ collision and keeps the first one in the configured order. User and shared
 skills take precedence over plugin copies.
 
 The repository also tracks the Rose Pine Moon theme and a reviewed skill registry
-of 38 sources: 9 handmade and 29 externally imported. Dotfiles owns the registry;
+of 39 sources: 10 handmade and 29 externally imported. Dotfiles owns the registry;
 the explicit `selectedAgentSkills` name-to-relative-source-path map in `home.nix`
-owns the default Home Manager installation policy. Its eight defaults are `chatgpt-review`,
-`lantern`, `documentation-lifecycle`, `omp-update`, `herdr-update`, `mermaid`,
-`termaid`, and `create-readme`. The remaining 30 skills are available for deliberate
-standalone or project installation, but are not globally linked.
+owns the default Home Manager installation policy. Its nine defaults are `chatgpt-review`,
+`lantern`, `lavish-shared-review`, `documentation-lifecycle`, `omp-update`,
+`herdr-update`, `mermaid`, `termaid`, and `create-readme`. The remaining 30 skills
+are available for deliberate standalone or project installation, but are not
+globally linked.
 
 The registry includes the curated `create-readme` skill from GitHub's
 `awesome-copilot` repository and the pinned interface/design collections from
@@ -391,6 +392,15 @@ All registry files, references, and licenses travel with the checkout. Sources a
 grouped under `home/.agents/skills/handmade/` and `external/<source>/`, while Home
 Manager creates individual flat links only for selected skills at
 `~/.agents/skills/<name>`.
+
+The handmade `lavish-shared-review` skill provides agent-client-neutral live
+questionnaire review with isolated serving, authenticated HTTPS access, tracked
+polling/replies, user-controlled ending, and scoped cleanup. It requires an
+independently preinstalled system `lavish-axi`; Home Manager installs only this
+skill, not the CLI. It does not modify the upstream `lavish` skill or require
+OMP, Claude, or Herdr. Runtime artifacts, URLs, credentials, and answers stay
+outside tracked dotfiles; standalone third-party HTML publishing is not a live
+feedback session.
 
 Adding a registry source does not install it automatically. To change the default
 set, add or remove entries in `selectedAgentSkills`, then run the normal
