@@ -33,7 +33,35 @@ return {
           grep_word = { hidden = true },
           explorer = {
             hidden = true,
-            win = { list = { keys = { ["H"] = false } } },
+            layout = { preset = "sidebar", preview = "main" },
+            actions = {
+              toggle_preview_placement = function(picker)
+                local layout = vim.deepcopy(picker.resolved_layout)
+                if layout.preview == "main" then
+                  layout.preview = nil
+                else
+                  layout.preview = "main"
+                end
+                layout.hidden = vim.tbl_filter(function(win)
+                  return win ~= "preview"
+                end, layout.hidden or {})
+                picker:set_layout(layout)
+                picker:focus("list")
+              end,
+            },
+            win = {
+              input = {
+                keys = {
+                  ["<a-p>"] = { "toggle_preview_placement", mode = { "i", "n" }, desc = "Switch preview placement" },
+                },
+              },
+              list = {
+                keys = {
+                  ["H"] = false,
+                  ["<a-p>"] = { "toggle_preview_placement", desc = "Switch preview placement" },
+                },
+              },
+            },
           },
         },
         win = {
