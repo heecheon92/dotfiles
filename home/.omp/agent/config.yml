@@ -136,6 +136,7 @@ display:
   subagentLivePreview: true
   showTokenUsage: true
   cacheMissMarker: true
+  pinnedAgents: full
 memory:
   backend: local
 archive:
@@ -174,5 +175,6 @@ power:
   sleepPrevention: system
 tui:
   codexResetFireworks: true
+  completeScrollback: true
 codexResets:
   autoRedeem: unset

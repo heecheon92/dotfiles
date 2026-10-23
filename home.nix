@@ -6,6 +6,7 @@ let
   selectedAgentSkills = {
     chatgpt-review = "handmade/chatgpt-review";
     lantern = "handmade/lantern";
+    integration-review = "handmade/integration-review";
     lavish-shared-review = "handmade/lavish-shared-review";
     documentation-lifecycle = "handmade/documentation-lifecycle";
     omp-update = "handmade/omp-update";

@@ -54,6 +54,13 @@ git diff -- home/.config/tern/settings.json
 링크가 사라졌으면 rebuild 전에 활성 파일의 변경을 저장소에 반영하고 백업하세요.
 `TERN_CONFIG_DIR`로 전체 상태 디렉터리를 저장소에 옮기지는 않습니다.
 
+Home Manager가 `settings.json.before-home-manager`를 덮어쓸 수 없다는 오류로
+중단되면 기존 백업을 날짜가 붙은 별도 이름으로 보존한 뒤 다시 rebuild하세요.
+기존 백업을 삭제하거나 강제 덮어쓰기를 켜지 않습니다. 이 충돌 검사는 파일 링크를
+만들기 전에 실행되므로, Tern과 무관한 새 skill 링크도 설치되지 않을 수 있습니다.
+빌드 성공이나 새 system profile 선택만으로 activation 성공을 판단하지 말고,
+rebuild 종료 상태와 실제 `~/.agents/skills/<name>` 링크를 확인하세요.
+
 ## Herdr 설정과 Radar
 
 `home/.config/herdr/config.toml`은 호스트 사이에 공유할 `[keys]` mode와

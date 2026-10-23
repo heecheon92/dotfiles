@@ -373,10 +373,10 @@ collision and keeps the first one in the configured order. User and shared
 skills take precedence over plugin copies.
 
 The repository also tracks the Rose Pine Moon theme and a reviewed skill registry
-of 39 sources: 10 handmade and 29 externally imported. Dotfiles owns the registry;
+of 40 sources: 11 handmade and 29 externally imported. Dotfiles owns the registry;
 the explicit `selectedAgentSkills` name-to-relative-source-path map in `home.nix`
-owns the default Home Manager installation policy. Its nine defaults are `chatgpt-review`,
-`lantern`, `lavish-shared-review`, `documentation-lifecycle`, `omp-update`,
+owns the default Home Manager installation policy. Its ten defaults are `chatgpt-review`,
+`lantern`, `integration-review`, `lavish-shared-review`, `documentation-lifecycle`, `omp-update`,
 `herdr-update`, `mermaid`, `termaid`, and `create-readme`. The remaining 30 skills
 are available for deliberate standalone or project installation, but are not
 globally linked.

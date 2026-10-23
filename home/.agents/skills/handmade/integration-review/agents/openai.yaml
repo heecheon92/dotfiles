@@ -1,0 +1,7 @@
+interface:
+  display_name: "Integration Review"
+  short_description: "Evidence-led review of integration decisions"
+  default_prompt: "Use $integration-review to reconcile the existing requirements, API contract, implementation evidence, and prior decisions for this integration issue. Revalidate whether it is a real blocker, then give me one concise decision brief with precise source links and the right question for its decision owner. Stay read-only unless I authorize review-record maintenance; do not implement the feature."
+
+policy:
+  allow_implicit_invocation: false

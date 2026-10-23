@@ -33,10 +33,11 @@ activation.
 Dotfiles is the source registry; the `selectedAgentSkills` map in
 [`home.nix`](../../../home.nix) is the explicit default installation allowlist.
 Each entry maps a flat runtime skill name to its relative grouped source path.
-The nine defaults are:
+The ten defaults are:
 
 - `chatgpt-review` → `handmade/chatgpt-review`
 - `lantern` → `handmade/lantern`
+- `integration-review` → `handmade/integration-review`
 - `lavish-shared-review` → `handmade/lavish-shared-review`
 - `documentation-lifecycle` → `handmade/documentation-lifecycle`
 - `omp-update` → `handmade/omp-update`
@@ -61,7 +62,7 @@ unaffected.
 
 This is the human-maintained source registry for the skills checked into this
 repository, not an inventory of every skill installed on a machine. The lists
-below cover all 39 registered skills: 10 handmade and 29 externally imported.
+below cover all 40 registered skills: 11 handmade and 29 externally imported.
 
 ### Handmade skills
 
@@ -71,6 +72,7 @@ or documentation inside a handmade skill are not its installation source.
 
 - [`chatgpt-review`](./handmade/chatgpt-review/SKILL.md)
 - [`lantern`](./handmade/lantern/SKILL.md)
+- [`integration-review`](./handmade/integration-review/SKILL.md)
 - [`lavish-shared-review`](./handmade/lavish-shared-review/SKILL.md)
 - [`mermaid`](./handmade/mermaid/SKILL.md)
 - [`omp-update`](./handmade/omp-update/SKILL.md)
@@ -234,6 +236,33 @@ $lantern --standard <topic>
 
 See the [English](./handmade/lantern/README.md) and
 [Korean](./handmade/lantern/README.ko.md) guides.
+
+### integration-review
+
+Reconciles existing product requirements, API contracts, implementation, and
+prior decisions before treating a gap as a blocker. Unlike Lantern's
+requirements discovery, it reviews an existing system one decision at a time.
+
+```text
+$integration-review Review this screen's PRD/API gaps one by one. Show the exact
+endpoint URLs and PRD sections, and distinguish blockers from unfinished code.
+```
+
+Each conversational brief explains the concrete mismatch, the affected action,
+what already works, a recommendation, and one question for the right owner.
+Evidence includes HTTP methods and full backend URLs, relevant fields, linked
+PRD files with verified page/section locators, and original/review dates.
+Obsolete blockers are withdrawn with evidence, not reported as implemented fixes.
+
+When decision-record maintenance is authorized, all unresolved questions move
+to the latest dated record; earlier files preserve resolved decisions and
+forwarding links. The current question stays concise, with evidence and history
+separated beneath it. Sending a note to PM or backend is pending, not approval.
+Reviewing a decision never authorizes production-code changes.
+
+This handmade skill is selected by Home Manager and uses the normal rebuild
+and agent-reload process above. It requires no Lantern invocation, MCP server,
+plugin, or companion application.
 
 ### lavish-shared-review
 
