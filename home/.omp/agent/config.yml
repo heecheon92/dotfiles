@@ -178,3 +178,5 @@ tui:
   completeScrollback: true
 codexResets:
   autoRedeem: unset
+generate_image:
+  enabled: true
