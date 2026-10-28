@@ -8,7 +8,7 @@ modelRoles:
   plan: openai-codex/gpt-6-astra:xhigh
   commit: openai-codex/gpt-6-luna:medium
   task: openai-codex/gpt-6.1-sol:high
-  fast_task: openai-codex/gpt-6.1-terra:medium
+  fast_task: openai-codex/gpt-6.1-terra:high
   advisor: openai-codex/gpt-6-astra:high
   tiny: local/lfm2.5-230m
   memory: openai-codex/gpt-6-luna

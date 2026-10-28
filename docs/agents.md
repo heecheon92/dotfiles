@@ -28,7 +28,7 @@ OMP의 모델 역할, 내장 에이전트, 위임 시 모델 선택 우선순위
 
 - 기본 `task`: `modelRoles.task`의 Sol `high`. 모호한 요구사항, 위험도가 높은
   변경, 깊은 추론이 필요한 작업에 사용하며 선택이 애매할 때도 기본값입니다.
-- `fast-task`: `modelRoles.fast_task`의 Terra `medium`. 접근 방법과 범위가
+- `fast-task`: `modelRoles.fast_task`의 Terra `high`. 접근 방법과 범위가
   명확하고 빠른 완료가 중요한 구현 작업에 사용합니다. 읽기·쓰기 도구를 사용할
   수 있으며 속도를 이유로 정확성이나 필요한 검증을 생략하지 않습니다.
 - `scout`의 `@smol`과 `sonic`의 `@spark`는 Luna를 유지합니다. 각각 읽기 전용
