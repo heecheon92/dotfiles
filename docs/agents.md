@@ -22,6 +22,25 @@ OMP의 모델 역할, 내장 에이전트, 위임 시 모델 선택 우선순위
 참고하세요. 전체 dotfiles 구성을 적용하지 않아도 원하는 스킬 디렉터리만
 에이전트 또는 Codex 기본 설치 도구로 설치할 수 있습니다.
 
+## OMP 구현 작업의 속도와 품질 선택
+
+기본 `config.yml`은 일반 구현 작업을 두 에이전트로 나눕니다.
+
+- 기본 `task`: `modelRoles.task`의 Sol `high`. 모호한 요구사항, 위험도가 높은
+  변경, 깊은 추론이 필요한 작업에 사용하며 선택이 애매할 때도 기본값입니다.
+- `fast-task`: `modelRoles.fast_task`의 Terra `medium`. 접근 방법과 범위가
+  명확하고 빠른 완료가 중요한 구현 작업에 사용합니다. 읽기·쓰기 도구를 사용할
+  수 있으며 속도를 이유로 정확성이나 필요한 검증을 생략하지 않습니다.
+- `scout`의 `@smol`과 `sonic`의 `@spark`는 Luna를 유지합니다. 각각 읽기 전용
+  탐색과 엄격히 기계적인 작업을 담당하며 `fast-task`로 대체하지 않습니다.
+
+`home/.omp/agent/agents/fast-task.md`의 설명을 보고 메인 에이전트가 위임 유형을
+선택합니다. 모델 후보 배열이나 fallback 체인이 속도·품질을 판단하는 구조는
+아닙니다. Home Manager는 이 정의만 `~/.omp/agent/agents/fast-task.md`에
+연결하므로 다른 사용자 에이전트는 그대로 유지합니다. 새 호스트에서는
+`./rebuild.sh`로 연결을 설치합니다. 기존 실행의 도구 설명에 새 에이전트가
+보이지 않으면 OMP를 다시 실행하세요. 이미 실행 중인 작업의 모델은 바뀌지 않습니다.
+
 ## OMP 입력 자동완성
 
 `home/.omp/agent/config.yml`은 `spelling.autocomplete: auto`를 명시합니다.

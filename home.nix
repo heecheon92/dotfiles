@@ -416,6 +416,9 @@ in
       "${dotfiles}/home/.omp/agent/config-ultra.yml";
   home.file.".omp/agent/themes".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/agent/themes";
+  home.file.".omp/agent/agents/fast-task.md".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/agent/agents/fast-task.md";
   home.file.".omp/agent/extensions/herdr-runtime-context.ts".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/extensions/herdr-runtime-context.ts";
