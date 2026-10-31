@@ -8,7 +8,7 @@ providers:
             order: [cerebras]
 
   hive:
-    baseUrl: https://api-cdn.thehive.ai/api/v3
+    baseUrl: https://api-cdn.deploy.com/api/v1
     api: openai-completions
     apiKey: HIVE_API_KEY
     authHeader: true
