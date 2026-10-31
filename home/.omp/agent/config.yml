@@ -13,7 +13,7 @@ modelRoles:
   tiny: local/lfm2.5-230m
   memory: openai-codex/gpt-6-luna
   judge: openrouter/~typesafe/jev-latest
-  daybreak: openai-codex/gpt-6-sol:auto
+  daybreak: openai-codex/gpt-daybreak-blue-latest:auto
 title:
   generator: tiny
   icons: nf+emoji
@@ -61,6 +61,8 @@ autocompleteMaxVisible: 20
 defaultThinkingLevel: high
 personality: pragmatic
 providers:
+  openai-codex:
+    daybreak: false
   autoThinkingMaxEffort: xhigh
   openaiWebsockets: auto
   tinyModelDevice: default

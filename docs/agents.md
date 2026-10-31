@@ -41,6 +41,25 @@ OMP의 모델 역할, 내장 에이전트, 위임 시 모델 선택 우선순위
 `./rebuild.sh`로 연결을 설치합니다. 기존 실행의 도구 설명에 새 에이전트가
 보이지 않으면 OMP를 다시 실행하세요. 이미 실행 중인 작업의 모델은 바뀌지 않습니다.
 
+## OMP Codex Daybreak 자동 요청
+
+`home/.omp/agent/config.yml`은 OMP 18.14.1의
+`providers.openai-codex.daybreak: false`를 명시합니다. 자격이 있는 ChatGPT
+계정에서 Daybreak Blue 접근 프로그램을 자동 요청하지 않도록 하는 개인정보
+선택입니다. OMP 문서에 따르면 해당 프로그램의 세션 내용은 OpenAI의 모델
+개선에 사용될 수 있습니다.
+
+이 설정은 `modelRoles.daybreak` 모델 별칭과 별개이며 일반 Codex 모델 라우팅은
+바꾸지 않습니다. 전용 `gpt-daybreak-blue-*` 모델을 직접 선택하는 경우까지
+차단하지는 않습니다. 기존 설정 연결을 통해 새 OMP 실행부터 적용되며 Nix
+재빌드는 필요하지 않습니다.
+
+`modelRoles.daybreak`는 `openai-codex/gpt-daybreak-blue-latest:auto`를
+명시하여 사용자가 해당 역할을 선택할 때 전용 Daybreak Blue 모델을 사용합니다.
+자동 접근 요청은 계속 꺼져 있지만 이 명시적 선택은 위 개인정보 경계의 예외입니다.
+`auto` 추론 설정과 모델 순환 목록의 `daybreak` 항목은 유지합니다. 카탈로그에
+모델이 표시되더라도 계정의 실제 접근 권한을 보장하지는 않습니다.
+
 ## OMP 입력 자동완성
 
 `home/.omp/agent/config.yml`은 `spelling.autocomplete: auto`를 명시합니다.
