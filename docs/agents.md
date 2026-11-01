@@ -41,6 +41,15 @@ OMP의 모델 역할, 내장 에이전트, 위임 시 모델 선택 우선순위
 `./rebuild.sh`로 연결을 설치합니다. 기존 실행의 도구 설명에 새 에이전트가
 보이지 않으면 OMP를 다시 실행하세요. 이미 실행 중인 작업의 모델은 바뀌지 않습니다.
 
+## OMP Deploy 모델
+
+`home/.omp/agent/models.yml`의 `deploy` 공급자는
+`https://api-cdn.deploy.com/api/v1`을 사용합니다. 모델 선택자는
+`deploy/deepseek-ai/deepseek-v4.1-flash-1017`이며 표시 이름은
+`DeepSeek V4.1 Flash 1017 (Deploy)`입니다. 기존 로컬 자격 증명과의 호환성을
+위해 `apiKey`의 환경 변수 이름은 `HIVE_API_KEY`를 유지합니다. 공급자 이름
+변경을 위해 키나 로컬 비밀 설정을 바꿀 필요는 없습니다.
+
 ## OMP Codex Daybreak 자동 요청
 
 `home/.omp/agent/config.yml`은 OMP 18.14.1의

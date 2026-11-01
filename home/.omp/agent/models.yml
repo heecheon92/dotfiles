@@ -7,7 +7,7 @@ providers:
             # Prefer Cerebras while allowing other OpenRouter providers as fallbacks.
             order: [cerebras]
 
-  hive:
+  deploy:
     baseUrl: https://api-cdn.deploy.com/api/v1
     api: openai-completions
     apiKey: HIVE_API_KEY
@@ -16,7 +16,7 @@ providers:
       Accept: text/event-stream
     models:
       - id: deepseek-ai/deepseek-v4.1-flash-1017
-        name: DeepSeek V4.1 Flash 1017 (Hive)
+        name: DeepSeek V4.1 Flash 1017 (Deploy)
         reasoning: true
         input: [text, image]
         contextWindow: 1000000
