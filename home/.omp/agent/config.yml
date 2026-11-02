@@ -17,9 +17,14 @@ modelRoles:
   daybreak: openai-codex/gpt-daybreak-blue-latest:auto
   docs: openai-codex/gpt-6.1-terra:auto
 
-  # Per-call model grants — available for explicit selection.
-  # These entries do not assign a model to an agent or task category.
+  # Explicit model selection — also used by the prewalk handoff below.
   deepseek: deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
+prewalk:
+  # Opt in with /prewalk: plan on the current model, then hand off to DeepSeek.
+  enabled: false
+  # /prewalk restart uses this planning role; plain /prewalk keeps the current model.
+  from: "@default"
+  into: "@deepseek"
 title:
   generator: tiny
   icons: nf+emoji
