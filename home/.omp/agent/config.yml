@@ -1,5 +1,6 @@
 setupVersion: 2
 modelRoles:
+  # Assigned roles — used by existing agents and workflows.
   default: openai-codex/gpt-6-astra:medium
   smol: openai-codex/gpt-6-luna:high
   spark: openai-codex/gpt-6-luna:medium
@@ -14,6 +15,11 @@ modelRoles:
   memory: openai-codex/gpt-6-luna
   judge: openrouter/~typesafe/jev-latest
   daybreak: openai-codex/gpt-daybreak-blue-latest:auto
+  docs: openai-codex/gpt-6.1-terra:auto
+
+  # Per-call model grants — available for explicit selection.
+  # These entries do not assign a model to an agent or task category.
+  deepseek: deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
 title:
   generator: tiny
   icons: nf+emoji
@@ -21,7 +27,7 @@ cycleOrder:
   - spark
   - smol
   - default
-  - slow
+  - docs
   - daybreak
 theme:
   dark: monokai-custom
@@ -108,7 +114,7 @@ retry:
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash:high
     commit:
-      - openai-codex/gpt-6-sol:low
+      - openai-codex/gpt-6-luna:low
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:low
       - anthropic/claude-haiku-4-5:low
       - openrouter/z-ai/glm-5.3-flash:max
@@ -135,6 +141,8 @@ retry:
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash:high
+    docs:
+      - anthropic/claude-sonnet-5-5:medium
     openrouter/~typesafe/jev-latest:
       - openrouter/~typesafe/jev-latest
 dev:
@@ -153,6 +161,12 @@ autolearn:
   enabled: true
   autoContinue: false
 task:
+  perCallModel: on
+  perCallModelAllow:
+    - openai-codex/gpt-6.1-sol
+    - openai-codex/gpt-6.1-terra
+    - openai-codex/gpt-6-luna
+    - deploy/deepseek-ai/deepseek-v4.1-flash-1017
   completionProbe: true
   speculativeLaunch: false
   agentModelOverrides:

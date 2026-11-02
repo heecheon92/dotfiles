@@ -398,6 +398,9 @@ in
   # sibling runtime-context extension.
   home.file.".omp/agent/AGENTS.md".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/AGENTS.md";
+  home.file.".omp/agent/APPEND_SYSTEM.md".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/agent/APPEND_SYSTEM.md";
   home.file.".omp/agent/config.yml".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/agent/config.yml";
   home.file.".omp/agent/MODEL-ROUTING.md".source =
@@ -419,6 +422,9 @@ in
   home.file.".omp/agent/agents/fast-task.md".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/agents/fast-task.md";
+  home.file.".omp/agent/agents/docs-writer.md".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/agent/agents/docs-writer.md";
   home.file.".omp/agent/extensions/herdr-runtime-context.ts".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/extensions/herdr-runtime-context.ts";

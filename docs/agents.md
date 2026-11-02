@@ -24,22 +24,100 @@ OMP의 모델 역할, 내장 에이전트, 위임 시 모델 선택 우선순위
 
 ## OMP 구현 작업의 속도와 품질 선택
 
-기본 `config.yml`은 일반 구현 작업을 두 에이전트로 나눕니다.
+기본 `config.yml`은 기존 에이전트별 모델 경로를 유지합니다.
 
 - 기본 `task`: `modelRoles.task`의 Sol `high`. 모호한 요구사항, 위험도가 높은
   변경, 깊은 추론이 필요한 작업에 사용하며 선택이 애매할 때도 기본값입니다.
 - `fast-task`: `modelRoles.fast_task`의 Terra `high`. 접근 방법과 범위가
-  명확하고 빠른 완료가 중요한 구현 작업에 사용합니다. 읽기·쓰기 도구를 사용할
-  수 있으며 속도를 이유로 정확성이나 필요한 검증을 생략하지 않습니다.
+  명확한 구현의 대안입니다. 읽기·쓰기 도구를 사용할 수 있으며 속도를 이유로
+  정확성이나 필요한 검증을 생략하지 않습니다.
 - `scout`의 `@smol`과 `sonic`의 `@spark`는 Luna를 유지합니다. 각각 읽기 전용
   탐색과 엄격히 기계적인 작업을 담당하며 `fast-task`로 대체하지 않습니다.
 
 `home/.omp/agent/agents/fast-task.md`의 설명을 보고 메인 에이전트가 위임 유형을
 선택합니다. 모델 후보 배열이나 fallback 체인이 속도·품질을 판단하는 구조는
-아닙니다. Home Manager는 이 정의만 `~/.omp/agent/agents/fast-task.md`에
-연결하므로 다른 사용자 에이전트는 그대로 유지합니다. 새 호스트에서는
+아닙니다. Home Manager는 관리하는 정의를 개별 파일로 연결하므로 다른 사용자
+에이전트는 그대로 유지합니다. 새 호스트에서는
 `./rebuild.sh`로 연결을 설치합니다. 기존 실행의 도구 설명에 새 에이전트가
 보이지 않으면 OMP를 다시 실행하세요. 이미 실행 중인 작업의 모델은 바뀌지 않습니다.
+
+### 호출별 모델 선택
+
+`task.perCallModel: on`은 task 및 Eval 위임에서 호출별 `model` 선택을
+허용합니다. `task.perCallModelAllow`는 Sol, Terra, Luna,
+`deploy/deepseek-ai/deepseek-v4.1-flash-1017` 네 모델로 명시적 선택을 제한합니다.
+Deploy 모델은 `modelRoles.deepseek`의 `:max` 매핑으로 허용 권한을 부여합니다.
+fallback 체인에 있는 것만으로는 호출별 선택 권한이 생기지 않습니다.
+
+`model`을 생략하면 기존 에이전트 역할과 fallback 체인을 유지합니다. 명시하면
+해당 모델에 고정되며 다른 모델로 fallback하지 않습니다. 호출의 추론 수준은
+별도로 지정할 수 있고 `task.maxEffort` 상한을 따릅니다. `agentModelOverrides`가
+있는 `sonic`, `security-reviewer`에는 명시적 모델을 함께 지정할 수 없습니다.
+이 허용 목록은 에이전트별 목록이나 자동 선택 기준이 아니며, Daybreak 등 다른
+모델의 명시적 override를 허용하지 않습니다. 새 에이전트 정의나 기본 모델 변경은
+필요하지 않습니다.
+
+### OMP 전용 자율 선택 정책
+
+`home/.omp/agent/APPEND_SYSTEM.md`가 메인 에이전트의 선택 기준을 정의합니다.
+일반 구현·디버깅·검증 가능한 리뷰는 Deploy DeepSeek `max`, 복잡하거나 위험한
+작업은 Sol, Terra는 명시적 요청이나 작업별 근거가 있는 대안으로 사용합니다.
+scout/sonic의 Luna 경로는 유지합니다. 위임 전에 모델과 선택 이유를 짧게
+설명하며, 명시적으로 고정한 모델이 실패하면 다른 모델로 바꾼 사실을 알립니다.
+허용 목록이나 오버레이가 선택을 제한하면 권한을 넓히지 않고 기존 경로를 따릅니다.
+
+이 정책은 사용자가 관찰한 DeepSeek의 속도·품질을 로컬 기준으로 삼습니다.
+공개 자료는 [Sol](https://openai.com/index/introducing-gpt-6-1-sol/),
+[Terra](https://openai.com/index/introducing-gpt-6-1-terra/),
+[Luna](https://openai.com/index/introducing-gpt-6-sol-and-luna/),
+[DeepSeek 업데이트](https://api-docs.deepseek.com/updates)를 참고했습니다.
+서로 다른 벤치마크·하네스의 점수를 동일 조건의 순위로 취급하지 않습니다.
+[DeepSeek 추론 문서](https://api-docs.deepseek.com/guides/thinking_mode)는
+기본 `high`와 별도 `max`를 설명하며, 여기의 `max`는 사용자의 정책 선택입니다.
+모델 카탈로그 가격은 공급자별 추정치이며 Codex 구독의 실제 청구액이 아닙니다.
+
+Home Manager는 이 파일만 `~/.omp/agent/APPEND_SYSTEM.md`에 연결합니다.
+공유 `home/AGENTS.md` 및 다른 하네스의 지침은 바꾸지 않습니다. 새 호스트에서는
+`./rebuild.sh`로 링크를 생성하고, 내용 변경 후에는 새 OMP 실행을 시작하세요.
+이 파일은 메인 세션에 적용되며 task 자식에게 상속되지 않습니다. 명시적인
+`--append-system-prompt`나 우선하는 프로젝트 append 설정은 전역 파일보다
+우선할 수 있습니다.
+
+### 독자가 결정하고 실행할 수 있는 문서: docs-writer
+
+`home/.omp/agent/agents/docs-writer.md`는 문서 작성·개선 전용 에이전트입니다.
+frontmatter의 `model: "@docs"`가 `modelRoles.docs`를 참조하므로 모델 이름을
+에이전트에 중복 지정하지 않습니다. 현재 역할은 Terra `auto`이며,
+`config.yml`에서 역할을 바꾸면 이후 위임에 반영됩니다.
+
+`APPEND_SYSTEM.md`는 실질적인 문서 작성·개선 작업을 이 에이전트에 맡기고,
+일반 DeepSeek 우선 정책으로 덮어쓰지 않도록 지정합니다. 호출에는
+`agent: "docs-writer"`를 사용하고 `model`은 생략합니다. 사용자 요청과 프로젝트
+설정은 여전히 우선하며, 이 문서 작성 경로가 제품 결정 권한을 부여하지는 않습니다.
+
+예: “docs-writer로 이 PRD와 API 계약의 충돌을 PM·백엔드 공유용으로 정리해 줘.
+사용자가 무엇을 겪는지, 정확히 어떤 선택이 필요한지 설명하고 미확인 사항은 구분해 줘.”
+별도 slash command는 추가하지 않습니다.
+
+에이전트는 독자·목적·사전 지식에 맞춰 구성을 고릅니다. 결정 문서는 구체적인
+상황 → 요구와 현재 계약의 차이 → 사용자 영향 → 선택지와 질문을 설명하지만,
+사용 가이드나 API 참조 문서까지 같은 틀에 강제로 넣지는 않습니다. 정확성은
+유지하며 출처, 실제 관찰, 추론, 가상 예시, 제안, 확정된 결정을 구분합니다.
+문서만 수정하고 구현 코드는 근거 확인용으로 읽습니다. 합의·구현·운영 검증을
+같은 완료 상태로 취급하지 않습니다.
+
+작성 원칙은 [Google의 독자 분석](https://developers.google.com/tech-writing/one/audience),
+[문서 구성](https://developers.google.com/tech-writing/one/documents),
+[GOV.UK 사용자 요구 중심 작성](https://guidance.publishing.service.gov.uk/writing-to-gov-uk-standards/plan-manage-content/identify-user-needs/),
+[Google Cloud 결정 기록](https://docs.cloud.google.com/architecture/architecture-decision-records)을
+참고했습니다. 이는 일반적인 작성 원칙이지 특정 모델의 우열에 대한 증거는 아닙니다.
+[LLM verbosity 연구](https://aclanthology.org/2025.uncertainlp-main.14/)도 QA 실험에
+한정되므로 모든 긴 문서가 나쁘다는 근거로 사용하지 않습니다.
+
+Home Manager는 `~/.omp/agent/agents/docs-writer.md`만 개별 연결합니다.
+새 호스트에서는 `./rebuild.sh`로 설치하고, 이미 실행 중인 메인 세션에 새 설명과
+라우팅 정책을 확실히 반영하려면 OMP를 다시 시작하세요. 이 에이전트는 자체
+작성 지침을 가지므로 메인 전용 append 파일의 자식 상속에 의존하지 않습니다.
 
 ## OMP Deploy 모델
 

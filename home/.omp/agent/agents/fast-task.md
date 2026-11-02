@@ -1,6 +1,6 @@
 ---
 name: fast-task
-description: General-purpose read-write worker for bounded implementation with a clear approach when turnaround matters. Prefer the default task worker for ambiguous, high-risk, or reasoning-intensive work; when uncertain, prefer task. Use scout for read-only exploration and sonic for strictly mechanical work.
+description: General-purpose read-write alternative for bounded implementation with a clear approach. Follow the parent's model-selection policy; the agent name does not imply it is the fastest available model. Prefer the default task worker for ambiguous, high-risk, or reasoning-intensive work. Use scout for read-only exploration and sonic for strictly mechanical work.
 spawns: "*"
 model: "@fast_task"
 ---
