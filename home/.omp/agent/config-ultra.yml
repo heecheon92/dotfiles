@@ -1,7 +1,7 @@
 # Opt-in overlay: inherit every setting except these roles and fallback chains.
 # Keep tiny/local titles and judge/JEV inherited; other roles use Codex OAuth.
 modelRoles:
-  default: openai-codex/gpt-6-astra:high
+  default: openai-codex/gpt-6-astra:xhigh
   smol: openai-codex/gpt-6-astra:xhigh
   spark: openai-codex/gpt-6-astra:low
   slow: openai-codex/gpt-6-astra:max
