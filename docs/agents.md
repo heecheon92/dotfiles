@@ -130,22 +130,29 @@ Home Manager는 `~/.omp/agent/agents/docs-writer.md`만 개별 연결합니다.
 
 ## OMP Codex Daybreak 자동 요청
 
-`home/.omp/agent/config.yml`은 OMP 18.14.1의
-`providers.openai-codex.daybreak: false`를 명시합니다. 자격이 있는 ChatGPT
-계정에서 Daybreak Blue 접근 프로그램을 자동 요청하지 않도록 하는 개인정보
-선택입니다. OMP 문서에 따르면 해당 프로그램의 세션 내용은 OpenAI의 모델
-개선에 사용될 수 있습니다.
+`home/.omp/agent/config.yml`은 사용자 선택에 따라
+`providers.openai-codex.daybreak: true`를 명시합니다. OMP는 선택된 ChatGPT
+계정과 모델의 검색 메타데이터가 허용할 때 `access_programs.cyber:
+daybreak_blue`를 요청합니다. OpenAI는 Daybreak Blue 세션 내용을 모델 개선에
+사용할 수 있습니다.
 
-이 설정은 `modelRoles.daybreak` 모델 별칭과 별개이며 일반 Codex 모델 라우팅은
-바꾸지 않습니다. 전용 `gpt-daybreak-blue-*` 모델을 직접 선택하는 경우까지
-차단하지는 않습니다. 기존 설정 연결을 통해 새 OMP 실행부터 적용되며 Nix
-재빌드는 필요하지 않습니다.
+이 설정은 역할별 허용 목록이 아니라 공급자 단위 설정입니다. GPT-6 Sol과
+GPT-6 Luna뿐 아니라 해당 프로세스의 다른 적격 Codex 모델 및 보조 요청에도
+적용될 수 있습니다. 일반 기본 모델과 기존 Luna 역할 배정은 유지합니다.
 
-`modelRoles.daybreak`는 `openai-codex/gpt-daybreak-blue-latest:auto`를
-명시하여 사용자가 해당 역할을 선택할 때 전용 Daybreak Blue 모델을 사용합니다.
-자동 접근 요청은 계속 꺼져 있지만 이 명시적 선택은 위 개인정보 경계의 예외입니다.
-`auto` 추론 설정과 모델 순환 목록의 `daybreak` 항목은 유지합니다. 카탈로그에
-모델이 표시되더라도 계정의 실제 접근 권한을 보장하지는 않습니다.
+`modelRoles.daybreak`는 폐기된 `gpt-daybreak-blue-latest` 대신
+`openai-codex/gpt-6-sol:max`를 사용합니다. 추론 수준은 `max`이며 모델 순환 목록의
+`daybreak` 항목은 유지합니다. `/model`에서 GPT-6 Sol 또는 GPT-6 Luna를
+선택해도 같은 공급자 설정을 따르며, 역할 이름 자체가 Daybreak를 켜지는 않습니다.
+기존 설정 연결을 통해 새 OMP 실행부터 적용되므로 Nix 재빌드는 필요하지 않습니다.
+
+OMP 18.16.0은 접근 프로그램이 거절되면 해당 필드를 제거하고 재시도할 수
+있습니다. 따라서 카탈로그 표시나 응답 성공만으로 Daybreak 적용을 확인할 수
+없습니다. `false` 역시 명시적인 `standard` 전송이 아니라 필드 생략이므로
+서버의 기본 처리와 구분해야 합니다. 실제 사용에는 계정·모델별 승인이 필요하며
+GPT-6 Sol/Luna의 Blue 지원을 Astra/Sol 6.1의 승인 조건과 혼동하지 마세요.
+자세한 조건은 [OpenAI 문제 해결 안내](https://help.openai.com/en/articles/20001259)와
+[OMP 요청 처리 소스](https://github.com/can1357/oh-my-pi/blob/v18.16.0/packages/ai/src/providers/openai-codex/access-programs.ts)를 참고하세요.
 
 ## OMP 입력 자동완성
 

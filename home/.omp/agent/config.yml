@@ -14,7 +14,7 @@ modelRoles:
   tiny: local/lfm2.5-230m
   memory: openai-codex/gpt-6-luna
   judge: openrouter/~typesafe/jev-latest
-  daybreak: openai-codex/gpt-daybreak-blue-latest:auto
+  daybreak: openai-codex/gpt-6-sol:max
   docs: openai-codex/gpt-6.1-terra:auto
 
   # Explicit model selection — also used by the prewalk handoff below.
@@ -73,7 +73,7 @@ defaultThinkingLevel: high
 personality: pragmatic
 providers:
   openai-codex:
-    daybreak: false
+    daybreak: true
   autoThinkingMaxEffort: xhigh
   openaiWebsockets: auto
   tinyModelDevice: default
