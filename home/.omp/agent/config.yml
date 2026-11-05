@@ -6,6 +6,7 @@ modelRoles:
   spark: openai-codex/gpt-6-luna:medium
   slow: openai-codex/gpt-6-astra:xhigh
   vision: openai-codex/gpt-6-astra:medium
+  image: openai-codex/gpt-image-2
   plan: openai-codex/gpt-6-astra:xhigh
   commit: openai-codex/gpt-6-luna:medium
   task: openai-codex/gpt-6.1-sol:high
@@ -88,6 +89,7 @@ retry:
   modelFallback: true
   fallbackRevertPolicy: cooldown-expiry
   fallbackChains:
+    image: []
     default:
       - openai-codex/gpt-6.1-sol:high
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high

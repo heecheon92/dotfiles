@@ -19,6 +19,10 @@ Keep user-requested formats and repository language/file conventions.
 Open [the type catalog](references/catalog.md), then only the relevant type references.
 The catalog covers all 31 official types at the recorded review date; each reference contains
 one extractable Mermaid example and a recommendation, alternative, and common trap.
+For compact cross-type notation, read [syntax essentials](references/syntax.md); for themes,
+styling, accessibility, and export flags, read
+[styling and configuration](references/styling.md). Both point to renderable snippets, so
+you can copy a construct without loading every type page.
 Do not load all examples for a simple diagram or enforce a minimum number/type variety.
 
 - **Who owns each step?** Swimlane.
@@ -67,10 +71,11 @@ zoom/pan is optional when it improves inspection. Never count an unrendered fenc
 
 ## Reusable example checks
 
-`scripts/check_examples.py` checks reference links/fences and extracts examples using Python 3's
-standard library. With `--render`, it calls an existing `mmdc` executable without installing anything.
-Use an output directory outside the skill so browser downloads, images and reports stay local.
-Exact commands, prerequisites and the current verified tool versions are in the rendering reference.
+`scripts/check_examples.py` checks reference links/fences and extracts one example from each
+type reference and each cross-type snippet using Python 3's standard library. With `--render`,
+it calls an existing `mmdc` executable without installing anything. Use an output directory
+outside the skill so browser downloads, images and reports stay local. Exact commands,
+prerequisites and the current verified tool versions are in the rendering reference.
 The checks verify example validity, not the factual correctness of a user's architecture.
 
 ## Handoff

@@ -154,6 +154,23 @@ GPT-6 Sol/Luna의 Blue 지원을 Astra/Sol 6.1의 승인 조건과 혼동하지 
 자세한 조건은 [OpenAI 문제 해결 안내](https://help.openai.com/en/articles/20001259)와
 [OMP 요청 처리 소스](https://github.com/can1357/oh-my-pi/blob/v18.16.0/packages/ai/src/providers/openai-codex/access-programs.ts)를 참고하세요.
 
+## OMP 이미지 생성
+
+`home/.omp/agent/config.yml`은 `generate_image.enabled: true`와
+`modelRoles.image: openai-codex/gpt-image-2`를 설정하여 Codex 구독의
+이미지 생성 경로를 우선합니다. `retry.fallbackChains.image: []`는 이미지 역할의
+기본 대체 모델 체인을 끕니다. 일반 대화 역할의 fallback 설정은 바꾸지 않습니다.
+
+OMP 18.16.0의 Codex 경로에서는 구독 백엔드가 실제 이미지 모델을 선택합니다.
+이 설정은 `gpt-image-2.6-sunburst`를 지정하거나 보장하지 않습니다.
+결과에 제공되는 실제 모델 정보를 확인하세요.
+
+빈 이미지 fallback 체인은 현재 대화 모델의 이미지 후보까지 차단하지 않습니다.
+다른 공급자의 대화 모델에서도 반드시 Codex만 사용해야 하는 요청은 이미지 도구의
+`model: openai-codex/gpt-image-2`를 명시해야 합니다. 명시적 도구 모델 선택은
+그 모델만 시도합니다. 기존 설정 연결을 사용하므로 Nix 재빌드는 필요하지 않으며,
+설정을 확실히 반영하려면 OMP를 새로 시작하세요.
+
 ## OMP 입력 자동완성
 
 `home/.omp/agent/config.yml`은 `spelling.autocomplete: auto`를 명시합니다.

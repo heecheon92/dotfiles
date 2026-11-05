@@ -56,7 +56,10 @@ agents if needed to refresh discovery.
 Deselection removes only the previously Home Manager-managed runtime link on
 activation; it does not delete the source directory from dotfiles. Machine-local,
 project-local, and plugin-provided skills are outside this allowlist and remain
-unaffected.
+unaffected. The standalone Skills CLI keeps separate machine-local installer state
+at `~/.agents/.skill-lock.json`; remove a skill it installed globally with
+`npx --yes skills@1.7.0 remove --global <name>`. Dotfiles activation neither reads
+nor rewrites that lock, so it cannot reintroduce a removed standalone skill.
 
 ## Skill ownership and sources
 
@@ -390,14 +393,23 @@ $mermaid explain this service request with the most appropriate diagram types
 ```
 
 Named invocation is harness-specific; “Use the mermaid skill” is also suitable.
-Read [the selection catalog](./handmade/mermaid/references/catalog.md) and
-[renderer guidance](./handmade/mermaid/references/rendering.md). The included Python helper validates
-and optionally renders examples using an existing Mermaid CLI; it does not install tools.
+Read [the selection catalog](./handmade/mermaid/references/catalog.md),
+[renderer guidance](./handmade/mermaid/references/rendering.md),
+[syntax essentials](./handmade/mermaid/references/syntax.md), and
+[styling and configuration](./handmade/mermaid/references/styling.md). The included Python
+helper validates and optionally renders the 31 type examples plus the cross-type snippets
+using an existing Mermaid CLI; it does not install tools.
 
-This is an independently authored, harness-neutral skill maintained separately from upstream
-`mermaid-diagrams`. Home Manager declares the link at
-`~/.agents/skills/mermaid`; apply a normal dotfiles rebuild to activate a new link. An agent can
-also read `home/.agents/skills/handmade/mermaid/SKILL.md` directly before activation.
+This is an independently authored, harness-neutral skill. The former standalone
+`mermaid-diagrams` installation was consolidated into it on 2026-11-02: useful nonduplicate
+syntax, theme, layout, styling, accessibility, and export guidance was rechecked against the
+official Mermaid 12 documentation and rewritten here, rather than vendored. The duplicate
+skill is no longer part of the installation set; its generated global lock entry and runtime
+directory were removed with the Skills CLI, not by editing generated state.
+
+Home Manager declares the link at `~/.agents/skills/mermaid`; apply a normal dotfiles
+rebuild to activate a new link. An agent can also read
+`home/.agents/skills/handmade/mermaid/SKILL.md` directly before activation.
 Other harnesses can install/copy the entire directory through their own skill mechanism.
 
 ### diagram-design

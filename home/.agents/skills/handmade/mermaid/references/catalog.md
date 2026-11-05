@@ -39,6 +39,16 @@ not extra top-level catalog entries. New upstream types need deliberate catalog/
 | [Cynefin](diagrams/cynefin.md) | Classifying problem situations to choose an appropriate decision approach. | Not a model router, linear escalation workflow, or numeric complexity benchmark. |
 | [TreeView](diagrams/treeview.md) | File/folder structure, ownership hierarchy, and nested inventories. | Not cross-links, imports, or execution relationships; those are graphs rather than trees. |
 
+## Cross-type quick references
+
+- [Syntax essentials](syntax.md) collects notation for flowcharts, sequence, class, ER,
+  state, C4, and architecture without choosing a type for you.
+- [Styling and configuration](styling.md) covers frontmatter, themes and looks, layouts,
+  element styling, accessibility metadata, and export flags.
+
+Both pages point to single renderable snippets under [`snippets/`](snippets/) that the
+bundled helper discovers and validates alongside the 31 type examples.
+
 ## Choose views, not decoration
 
 For a service request, combine swimlane (owner), sequence (order), block (context/evidence),

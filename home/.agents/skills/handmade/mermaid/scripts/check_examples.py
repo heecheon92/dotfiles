@@ -17,8 +17,12 @@ ROOT = Path(__file__).resolve().parents[1]
 FENCE = re.compile(r"^```mermaid[^\n]*\n(.*?)^```[ \t]*$", re.M | re.S)
 
 
+EXAMPLE_DIRS = {"diagrams", "snippets"}
+
+
 def inspect_references() -> list[tuple[str, str, str]]:
     examples = []
+    catalog = (ROOT / "references/catalog.md").read_text(encoding="utf-8")
     for path in ROOT.rglob("*.md"):
         text = path.read_text(encoding="utf-8")
         if len(re.findall(r"^```", text, re.M)) % 2:
@@ -29,19 +33,20 @@ def inspect_references() -> list[tuple[str, str, str]]:
             target = link.split("#", 1)[0]
             if target and not (path.parent / target).exists():
                 raise ValueError(f"Missing link target in {path.relative_to(ROOT)}: {target}")
-        if path.parent.name == "diagrams":
-            blocks = FENCE.findall(text)
-            if len(blocks) != 1:
-                raise ValueError(f"Expected one example: {path.name}")
-            if not re.fullmatch(r"[a-z0-9-]+", path.stem):
-                raise ValueError(f"Unsafe example filename: {path.name}")
-            examples.append((path.stem, text.splitlines()[0].removeprefix("# "), blocks[0]))
+        if path.parent.name not in EXAMPLE_DIRS:
+            continue
+        blocks = FENCE.findall(text)
+        if len(blocks) != 1:
+            raise ValueError(f"Expected one example: {path.name}")
+        if not re.fullmatch(r"[a-z0-9-]+", path.stem):
+            raise ValueError(f"Unsafe example filename: {path.name}")
+        # Type examples must be selectable from the catalog; cross-type snippets
+        # are linked from the guides and need no per-type catalog row.
+        if path.parent.name == "diagrams" and f"diagrams/{path.stem}.md" not in catalog:
+            raise ValueError(f"Example not discoverable in catalog: {path.stem}")
+        examples.append((path.stem, text.splitlines()[0].removeprefix("# "), blocks[0]))
     if not examples:
         raise ValueError("No examples found")
-    catalog = (ROOT / "references/catalog.md").read_text(encoding="utf-8")
-    for name, _, _ in examples:
-        if f"diagrams/{name}.md" not in catalog:
-            raise ValueError(f"Example not discoverable in catalog: {name}")
     return sorted(examples)
 
 

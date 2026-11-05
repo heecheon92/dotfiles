@@ -407,7 +407,11 @@ set, add or remove entries in `selectedAgentSkills`, then run the normal
 `./rebuild.sh` and restart skill-aware agents if needed to refresh discovery.
 Deselection removes only previously Home Manager-managed runtime links during
 activation, not source directories. Machine-local, project-local, and
-plugin-provided skills remain unaffected. After moving a selected source
+plugin-provided skills remain unaffected. The standalone Skills CLI's
+`~/.agents/.skill-lock.json` is machine-local installer state, not a dotfiles
+source of truth; remove globally installed standalone skills with
+`npx --yes skills@1.7.0 remove --global <name>` rather than editing that lock.
+After moving a selected source
 directory, update its allowlist path and rebuild to retarget its link; before
 activation the old link can be broken.
 

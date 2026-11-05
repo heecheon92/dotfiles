@@ -40,6 +40,10 @@ current directory is the skill directory; other harnesses can pass absolute path
 The output directory must be new and outside the skill. Paths shown under `/tmp` are POSIX
 examples; choose the host's temporary directory on other platforms.
 
+The helper discovers the 31 entries under `references/diagrams/` and the cross-type snippets
+under `references/snippets/`. Catalog membership is required for type examples; snippets
+only need balanced fences and resolvable local links.
+
 ```sh
 python3 scripts/check_examples.py
 python3 scripts/check_examples.py --output-dir /tmp/mermaid-examples-source
