@@ -58,6 +58,16 @@ In this repository:
 - [config-ultra.yml](config-ultra.yml): opt-in overlay configured to actively consume subscription-based usage, loaded with `omp --config ~/.omp/agent/config-ultra.yml`; see [usage and optional advisor](../../../docs/agents.md#omp-ultra-오버레이).
 - [models.yml](models.yml): custom model/provider definitions and catalog overrides; this is different from assigning roles.
 
+The baseline and budget overlay pin their OpenRouter DeepSeek fallback entries to
+`openrouter/deepseek/deepseek-v4.1-flash-1017`. Across Deploy and OpenRouter,
+DeepSeek defaults to `high`; `smol`, `spark`, and the lightweight `commit` route
+use `low`, while `plan`, `slow`, and `advisor` use `max` where DeepSeek is present.
+The `@deepseek` role (including prewalk handoff) uses `high`. OpenRouter routes
+remain separate from the Deploy provider.
+Whenever a fallback chain includes OpenRouter DeepSeek, Deploy DeepSeek is ordered
+before it with the same effort level, including in the budget overlay. This is
+fallback priority, not a restriction on explicitly selecting a provider.
+
 Effective settings are merged in this order, with later layers winning:
 
 1. Built-in defaults.

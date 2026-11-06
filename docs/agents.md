@@ -46,7 +46,7 @@ OMP의 모델 역할, 내장 에이전트, 위임 시 모델 선택 우선순위
 `task.perCallModel: on`은 task 및 Eval 위임에서 호출별 `model` 선택을
 허용합니다. `task.perCallModelAllow`는 Sol, Terra, Luna,
 `deploy/deepseek-ai/deepseek-v4.1-flash-1017` 네 모델로 명시적 선택을 제한합니다.
-Deploy 모델은 `modelRoles.deepseek`의 `:max` 매핑으로 허용 권한을 부여합니다.
+Deploy 모델은 `modelRoles.deepseek`의 `:high` 매핑으로 허용 권한을 부여합니다.
 fallback 체인에 있는 것만으로는 호출별 선택 권한이 생기지 않습니다.
 
 `model`을 생략하면 기존 에이전트 역할과 fallback 체인을 유지합니다. 명시하면
@@ -60,7 +60,7 @@ fallback 체인에 있는 것만으로는 호출별 선택 권한이 생기지 �
 ### OMP 전용 자율 선택 정책
 
 `home/.omp/agent/APPEND_SYSTEM.md`가 메인 에이전트의 선택 기준을 정의합니다.
-일반 구현·디버깅·검증 가능한 리뷰는 Deploy DeepSeek `max`, 복잡하거나 위험한
+일반 구현·디버깅·검증 가능한 리뷰는 Deploy DeepSeek `high`, 복잡하거나 위험한
 작업은 Sol, Terra는 명시적 요청이나 작업별 근거가 있는 대안으로 사용합니다.
 scout/sonic의 Luna 경로는 유지합니다. 위임 전에 모델과 선택 이유를 짧게
 설명하며, 명시적으로 고정한 모델이 실패하면 다른 모델로 바꾼 사실을 알립니다.
@@ -73,7 +73,10 @@ scout/sonic의 Luna 경로는 유지합니다. 위임 전에 모델과 선택 �
 [DeepSeek 업데이트](https://api-docs.deepseek.com/updates)를 참고했습니다.
 서로 다른 벤치마크·하네스의 점수를 동일 조건의 순위로 취급하지 않습니다.
 [DeepSeek 추론 문서](https://api-docs.deepseek.com/guides/thinking_mode)는
-기본 `high`와 별도 `max`를 설명하며, 여기의 `max`는 사용자의 정책 선택입니다.
+기본 `high`와 별도 `max`를 설명합니다. 로컬 정책은 Deploy와 OpenRouter 모두
+`high`를 기본으로, `smol`/`spark`와 기존 경량 `commit` 경로는 `low`로 사용합니다.
+`plan`/`slow`/`advisor` 및 추가 추론이 필요한 명시적 위임에만 `max`를 사용합니다.
+`@deepseek`와 prewalk 인계도 기본 `high`를 따릅니다.
 모델 카탈로그 가격은 공급자별 추정치이며 Codex 구독의 실제 청구액이 아닙니다.
 
 Home Manager는 이 파일만 `~/.omp/agent/APPEND_SYSTEM.md`에 연결합니다.

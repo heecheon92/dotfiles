@@ -19,7 +19,7 @@ modelRoles:
   docs: openai-codex/gpt-6.1-terra:auto
 
   # Explicit model selection — also used by the prewalk handoff below.
-  deepseek: deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
+  deepseek: deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
 prewalk:
   # Opt in with /prewalk: plan on the current model, then hand off to DeepSeek.
   enabled: false
@@ -95,59 +95,59 @@ retry:
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
       - anthropic/claude-opus-5-5:medium
       - openrouter/z-ai/glm-5.3:max
-      - openrouter/deepseek/deepseek-v4.1-flash:high
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     smol:
       - openai-codex/gpt-6.1-sol:medium
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:low
       - anthropic/claude-sonnet-5-5:medium
       - openrouter/z-ai/glm-5.3-flash:max
-      - openrouter/deepseek/deepseek-v4.1-flash:high
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     slow:
       - openai-codex/gpt-6.1-sol:xhigh
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
       - anthropic/claude-opus-5-5:xhigh
       - openrouter/z-ai/glm-5.3:max
-      - openrouter/deepseek/deepseek-v4.1-flash:max
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:max
     vision:
       - openai-codex/gpt-6.1-sol:high
-      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
+      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
       - anthropic/claude-opus-5-5:medium
       - openrouter/z-ai/glm-5.3-flash:max
-      - openrouter/deepseek/deepseek-v4.1-flash:high
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     plan:
       - openai-codex/gpt-6.1-sol:xhigh
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
       - anthropic/claude-opus-5-5:xhigh
       - openrouter/z-ai/glm-5.3-flash:max
-      - openrouter/deepseek/deepseek-v4.1-flash:high
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:max
     commit:
       - openai-codex/gpt-6-luna:low
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:low
       - anthropic/claude-haiku-4-5:low
       - openrouter/z-ai/glm-5.3-flash:max
-      - openrouter/deepseek/deepseek-v4.1-flash:low
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     task:
       - openai-codex/gpt-6.1-sol:medium
-      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
+      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
       - anthropic/claude-sonnet-5-5:high
       - openrouter/z-ai/glm-5.3-flash:max
-      - openrouter/deepseek/deepseek-v4.1-flash:high
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     fast_task:
-      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
+      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
       - anthropic/claude-sonnet-5-5:high
       - openrouter/z-ai/glm-5.3-flash:max
-      - openrouter/deepseek/deepseek-v4.1-flash:high
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     advisor:
       - openai-codex/gpt-6.1-sol:high
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
       - anthropic/claude-sonnet-5-5:high
       - openrouter/z-ai/glm-5.3-flash:max
-      - openrouter/deepseek/deepseek-v4.1-flash:max
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:max
     spark:
       - anthropic/claude-sonnet-5-5:low
-      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
+      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:low
       - openrouter/z-ai/glm-5.3-flash:max
-      - openrouter/deepseek/deepseek-v4.1-flash:high
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     docs:
       - anthropic/claude-sonnet-5-5:medium
     openrouter/~typesafe/jev-latest:

@@ -20,25 +20,30 @@ retry:
   fallbackChains:
     default:
       - openrouter/z-ai/glm-5.3-flash:high
-      - openrouter/deepseek/deepseek-v4.1-flash:high
+      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     smol:
       - openrouter/z-ai/glm-5.3-flash:low
-      - openrouter/deepseek/deepseek-v4.1-flash:low
+      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:low
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     slow:
       - openrouter/z-ai/glm-5.3-flash:max
       - openai-codex/gpt-6-luna:xhigh
     vision:
       - openrouter/z-ai/glm-5.3-flash:high
-      - openrouter/deepseek/deepseek-v4.1-flash:high
+      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     plan:
       - openrouter/z-ai/glm-5.3-flash:high
       - openai-codex/gpt-6-luna:xhigh
     commit:
       - openrouter/z-ai/glm-5.3-flash:low
-      - openrouter/deepseek/deepseek-v4.1-flash:low
+      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:low
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     task:
       - openrouter/z-ai/glm-5.3-flash:high
-      - openrouter/deepseek/deepseek-v4.1-flash:high
+      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
+      - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     advisor:
       - openrouter/z-ai/glm-5.3-flash:max
       - openai-codex/gpt-6-luna:xhigh

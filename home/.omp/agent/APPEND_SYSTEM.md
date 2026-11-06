@@ -28,10 +28,12 @@ for its own conversation. Keep the shared AGENTS.md harness-neutral.
 - **Deploy DeepSeek:** prefer for routine implementation, ordinary debugging,
   bounded reviews, and moderately ambiguous work with a direct verification
   path. Select the appropriate agent and explicitly pass
-  `deploy/deepseek-ai/deepseek-v4.1-flash-1017:max`. Always include `:max` unless
-  the user requests another effort; the grant role's suffix alone does not set
-  an explicit call's effort. Respect a lower task.maxEffort ceiling and disclose
-  that it prevents the preferred effort; do not raise it automatically.
+  `deploy/deepseek-ai/deepseek-v4.1-flash-1017:high` by default. Use `:low`
+  for smol/spark-style lightweight work; reserve `:max` for plan/slow,
+  advisor work, or assignments with a concrete need for extra reasoning.
+  Always include the selected effort: the grant role's suffix alone does not
+  set an explicit call's effort. Respect a lower task.maxEffort ceiling and
+  disclose it; do not raise it automatically.
 - **Sol:** prefer for architecture, difficult root-cause analysis, security,
   concurrency, data integrity, irreversible migrations, or uncertain verification.
   Use normal task routing when it resolves to Sol; when an explicit choice is
@@ -65,11 +67,12 @@ model. If the user required a specific model, ask before substituting it.
 ## Evidence basis
 
 This is an operator-specific routing policy, not a universal benchmark ranking.
-The user reports DeepSeek Flash 1017 reasoning between Sol and Terra and much
-faster completion than both in their own workloads, and prefers DeepSeek at max
-effort. Treat those observations as the local baseline, not independently measured
-latency or a guarantee on every task. Luna retains its established specialist
-roles; no comparative Luna speed measurement was supplied.
+The user reports that DeepSeek Flash 1017 at max effort thinks too long for
+routine work. Prefer high to balance reasoning quality and latency, low for
+lightweight work, and max only for deliberate extra-reasoning assignments.
+These are local workload observations, not independently measured latency or
+a guarantee on every task. Luna retains its established specialist roles;
+no comparative Luna speed measurement was supplied.
 
 Catalog prices are route-specific estimates, not measured task cost or the user's
 Codex subscription bill. Do not copy price or benchmark tables into dispatch
