@@ -33,7 +33,7 @@ activation.
 Dotfiles is the source registry; the `selectedAgentSkills` map in
 [`home.nix`](../../../home.nix) is the explicit default installation allowlist.
 Each entry maps a flat runtime skill name to its relative grouped source path.
-The ten defaults are:
+The eleven defaults are:
 
 - `chatgpt-review` → `handmade/chatgpt-review`
 - `lantern` → `handmade/lantern`
@@ -41,6 +41,7 @@ The ten defaults are:
 - `lavish-shared-review` → `handmade/lavish-shared-review`
 - `documentation-lifecycle` → `handmade/documentation-lifecycle`
 - `omp-update` → `handmade/omp-update`
+- `tern-update` → `handmade/tern-update`
 - `herdr-update` → `handmade/herdr-update`
 - `mermaid` → `handmade/mermaid`
 - `termaid` → `handmade/termaid`
@@ -65,7 +66,7 @@ nor rewrites that lock, so it cannot reintroduce a removed standalone skill.
 
 This is the human-maintained source registry for the skills checked into this
 repository, not an inventory of every skill installed on a machine. The lists
-below cover all 40 registered skills: 11 handmade and 29 externally imported.
+below cover all 41 registered skills: 12 handmade and 29 externally imported.
 
 ### Handmade skills
 
@@ -79,6 +80,7 @@ or documentation inside a handmade skill are not its installation source.
 - [`lavish-shared-review`](./handmade/lavish-shared-review/SKILL.md)
 - [`mermaid`](./handmade/mermaid/SKILL.md)
 - [`omp-update`](./handmade/omp-update/SKILL.md)
+- [`tern-update`](./handmade/tern-update/SKILL.md)
 - [`herdr-update`](./handmade/herdr-update/SKILL.md)
 - [`termaid`](./handmade/termaid/SKILL.md)
 - [`documentation-lifecycle`](./handmade/documentation-lifecycle/SKILL.md)
@@ -168,6 +170,12 @@ python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/inst
 ```bash
 python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
   --repo heecheon92/dotfiles \
+  --path home/.agents/skills/handmade/tern-update
+```
+
+```bash
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
+  --repo heecheon92/dotfiles \
   --path home/.agents/skills/handmade/herdr-update
 ```
 
@@ -190,6 +198,21 @@ python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/inst
 ```
 
 ## Available skills
+
+### tern-update
+
+Briefs users on noteworthy Tern features and workflows, even when no settings
+changes are needed, and assesses local settings separately from installation.
+Its shared checkpoint records completed release review, not the installed or running app.
+An update uses the verified installation owner; restarting the app or daemon,
+updating OMP or plugins, and Git publication require separate authority.
+
+```text
+$tern-update
+```
+
+See the [guide](./handmade/tern-update/README.md) and
+[workflow](./handmade/tern-update/SKILL.md).
 
 ### Personal Next.js and React patterns
 

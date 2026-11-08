@@ -61,6 +61,14 @@ Home Manager가 `settings.json.before-home-manager`를 덮어쓸 수 없다는 �
 빌드 성공이나 새 system profile 선택만으로 activation 성공을 판단하지 말고,
 rebuild 종료 상태와 실제 `~/.agents/skills/<name>` 링크를 확인하세요.
 
+Tern의 릴리스 검토와 안전한 업데이트 절차는
+[`tern-update`](../home/.agents/skills/handmade/tern-update/README.md)를
+사용합니다. 공유 검토 기록은 이 Mac의 설치·실행 버전이나 호환성 확인을
+뜻하지 않습니다. 실제 설치 관리자의 업데이트 경로를 별도로 확인하며, 실행
+중인 Tern·daemon 재시작이나 OMP 및 플러그인 업데이트는 별도 권한이 필요합니다.
+로컬 설정과 저장소 설정이 다르면 이동 전에 비교해 최신의 공유 가능한 설정만
+보존하고, 경로·크기·비밀값 등 머신별 데이터는 무조건 복사하지 않습니다.
+
 ## Herdr 설정과 Radar
 
 `home/.config/herdr/config.toml`은 호스트 사이에 공유할 `[keys]` mode와
