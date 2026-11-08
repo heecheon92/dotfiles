@@ -245,12 +245,23 @@ OMP 18.4.9부터 bash·Python·JavaScript 실행의 저장 출력 artifact는 �
 설치된 바이너리를 업데이트해도 이미 실행 중인 OMP는 이전 런타임을 사용하므로
 OMP를 다시 실행해야 합니다.
 
-`omp-update` skill은 설치 버전과 마지막 검토 버전을 구분합니다. Tern이 먼저
-업데이트했어도 로컬 checkpoint 이후의 릴리스를 검토하고 필요한 설정을 이관합니다.
-checkpoint가 없으면 검토 시작 범위를 사용자와 정하며 현재 버전을 자동으로
-검토 완료 처리하지 않습니다. 검토·필수 이관·검증이 끝난 실행에서만 갱신하고,
-읽기 전용 audit이나 미해결 작업이 있는 실행에서는 이전 checkpoint를 유지합니다.
-상태는 `${XDG_STATE_HOME:-$HOME/.local/state}/omp-update/`에 두며 Git에는 넣지 않습니다.
+`omp-update`는 설치 버전, 공유 마지막 검토 버전, 최신 공식 stable 릴리스
+(검토 대상), 설치 소유자가 제공하는 업데이트 대상의 네 가지를 구분합니다.
+설치가 뒤처져 있거나 소유자의 업데이트 대상이 없어도 공유 checkpoint 이후부터
+최신 공식 stable까지 검토합니다. GitHub 릴리스는 설치 대상이 아닙니다.
+이미 공유 검토한 릴리스는 다시 브리핑하지 않지만, 매 업데이트 실행에서 현재
+머신의 활성 설정과 런타임 호환성을 별도로 확인합니다. 공유 완료는 릴리스
+브리핑과 공유 설정 결정·이관이 처리되었다는 뜻이지 각 머신의 설치나 호환성
+검증을 보증하지 않습니다. 미해결 릴리스 검토나 공유 설정 결정·필수 이관이
+있으면 checkpoint를 갱신하지 않고, 머신별 설치·런타임 이관을 미룬 경우에는
+별도로 보고합니다. 읽기 전용 audit은 checkpoint를 변경하지 않습니다.
+
+공유 schema 2 checkpoint는 실제 skill 디렉터리의 `review-state.json`이며
+프로필·호스트·설치 정보는 저장하지 않습니다. 이전 로컬 state는 사용하거나
+자동 이관하지 않습니다. Git으로 다른 checkout에 전파하려면 사용자가 명시적으로
+요청한 commit과 push가 필요합니다. 잠금과 revision token은 한 checkout만
+보호하므로, 서로 다른 checkout의 상태가 다르면 실제 완료 근거를 확인하여 가장
+높은 **완전히 검토된** 경계를 조정합니다. 버전 숫자만 보고 선택하지 않습니다.
 helper와 독립 installer는 skill 디렉터리에 함께 들어 있습니다.
 [독립 설치·checkpoint 사용법](../home/.agents/skills/handmade/omp-update/README.md)을 참고합니다.
 
