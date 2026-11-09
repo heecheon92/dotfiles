@@ -5,16 +5,19 @@
     "shape": "block",
     "programs": true,
     "smooth_blink": true,
-    "glide": 120,
     "trail": "blaze",
     "pulse": "ripple"
   },
-  "font_size": 14,
   "font_family": "Berkeley Mono, Herdr Agent Icons Max",
-  "ui_font_size": 14,
   "pane_headers": "Always",
   "status_bar": true,
   "surface_tab_width": 4,
   "surface_chat": "Spine",
-  "prefs_width": 1042
+  "prefs_width": 890,
+  "file_tree": {
+    "width": 449
+  },
+  "git": {
+    "external_editor": "nvim"
+  }
 }
