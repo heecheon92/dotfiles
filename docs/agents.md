@@ -278,6 +278,13 @@ ob
 
 각 overlay의 모델 선택과 세부 설정은 해당 YAML 파일을 기준으로 확인합니다.
 
+현재 budget overlay의 `default`는 `openai-codex/gpt-6.1-sol:high`,
+`task`는 `deploy/deepseek-ai/deepseek-v4.1-flash-1017:high`입니다.
+`slow`·`plan`은 `deploy/deepseek-ai/deepseek-v4.1-flash-1017:max`를 사용합니다.
+fallback에서는 Deploy DeepSeek를 OpenRouter GLM·DeepSeek보다 먼저 시도합니다.
+`task`는 Deploy가 primary이므로 fallback에 같은 선택을 중복하지 않습니다.
+YAML 수정은 재빌드 없이 다음 `ob` 실행에 반영됩니다.
+
 ## OMP 실험용 오버레이
 
 `config-experimental.yml`은 새로 출시된 모델을 시험하기 위한 설정입니다.

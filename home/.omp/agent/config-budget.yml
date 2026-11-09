@@ -1,14 +1,14 @@
 # Process-scoped low-cost model overlay. Launch with `omp-budget`.
 # The normal config remains authoritative for every setting not listed here.
 modelRoles:
-  default: openrouter/z-ai/glm-5.3-flash:max
+  default: openai-codex/gpt-6.1-sol:high
   smol: openai-codex/gpt-6-luna:medium
   spark: openai-codex/gpt-6-luna:medium
-  slow: openrouter/z-ai/glm-5.3-flash:max
+  slow: deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
   vision: openai-codex/gpt-6-luna:high
-  plan: openrouter/z-ai/glm-5.3:high
+  plan: deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
   commit: openai-codex/gpt-6-luna:low
-  task: openrouter/z-ai/glm-5.3-flash:max
+  task: deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
   advisor: openai-codex/gpt-6.1-sol:high
   judge: openrouter/~typesafe/jev-latest
 cycleOrder:
@@ -19,31 +19,33 @@ cycleOrder:
 retry:
   fallbackChains:
     default:
-      - openrouter/z-ai/glm-5.3-flash:high
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
+      - openrouter/z-ai/glm-5.3-flash:high
       - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     smol:
-      - openrouter/z-ai/glm-5.3-flash:low
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:low
+      - openrouter/z-ai/glm-5.3-flash:low
       - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     slow:
+      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
       - openrouter/z-ai/glm-5.3-flash:max
       - openai-codex/gpt-6-luna:xhigh
     vision:
-      - openrouter/z-ai/glm-5.3-flash:high
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
+      - openrouter/z-ai/glm-5.3-flash:high
       - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     plan:
+      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
       - openrouter/z-ai/glm-5.3-flash:high
       - openai-codex/gpt-6-luna:xhigh
     commit:
-      - openrouter/z-ai/glm-5.3-flash:low
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:low
+      - openrouter/z-ai/glm-5.3-flash:low
       - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     task:
       - openrouter/z-ai/glm-5.3-flash:high
-      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
       - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     advisor:
+      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
       - openrouter/z-ai/glm-5.3-flash:max
       - openai-codex/gpt-6-luna:xhigh
