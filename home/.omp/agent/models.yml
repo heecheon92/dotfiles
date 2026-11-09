@@ -32,3 +32,40 @@ providers:
             high: high
             xhigh: max
             max: max
+
+  exaone:
+    baseUrl: https://api.exaone.ai/v1
+    api: openai-completions
+    apiKey: EXAONE_API_KEY
+    authHeader: true
+    models:
+      - id: k-exaone_v2.5
+        name: K-EXAONE 2.5 (EXAONE)
+        reasoning: true
+        thinking:
+          mode: effort
+          efforts: [minimal, low, medium, high, xhigh, max]
+          defaultLevel: high
+          requiresEffort: true
+        supportsTools: true
+        input: [text]
+        contextWindow: 524288
+        maxTokens: 524288
+        compat:
+          supportsStore: false
+          supportsDeveloperRole: false
+          supportsReasoningEffort: true
+          supportsUsageInStreaming: true
+          supportsStrictMode: false
+          maxTokensField: max_tokens
+          thinkingFormat: openai
+          reasoningContentField: reasoning_content
+          replayReasoningContent: true
+          # The API reference lists low/high/max; the agent guide also mentions medium.
+          reasoningEffortMap:
+            minimal: low
+            low: low
+            medium: high
+            high: high
+            xhigh: max
+            max: max

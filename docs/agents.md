@@ -131,6 +131,39 @@ Home Manager는 `~/.omp/agent/agents/docs-writer.md`만 개별 연결합니다.
 위해 `apiKey`의 환경 변수 이름은 `HIVE_API_KEY`를 유지합니다. 공급자 이름
 변경을 위해 키나 로컬 비밀 설정을 바꿀 필요는 없습니다.
 
+## OMP EXAONE 모델
+
+`home/.omp/agent/models.yml`에 LG의 직접 API 공급자 `exaone`을 등록합니다.
+OpenRouter 경유가 아닌 `https://api.exaone.ai/v1`의 OpenAI Chat Completions
+호환 API이며, 선택자는 `exaone/k-exaone_v2.5`입니다. 기존 역할과 fallback은
+변경하지 않습니다.
+
+발급받은 키는 로컬 비밀 관리 방식으로 `EXAONE_API_KEY` 환경 변수에 설정한 뒤,
+그 환경을 상속하는 터미널에서 실행합니다. 실제 키는 dotfiles에 기록하지 않습니다.
+
+```bash
+omp --model exaone/k-exaone_v2.5 --thinking high
+```
+
+기존 세션에서는 `/model` 선택기로 모델을 선택할 수 있습니다. 새 공급자가 보이지
+않으면 OMP를 새로 실행합니다. 기존 Home Manager 링크에서는 Nix 재빌드가 필요 없습니다.
+
+[공식 모델 안내](https://docs.exaone.ai/en/docs/models)는 텍스트 전용 입력,
+도구 호출과 스트리밍, 524,288토큰 context/output 상한을 설명합니다.
+[API 문서](https://docs.exaone.ai/ko/docs/k-exaone-2.5)에 따라 실제 입력 토큰과
+`max_tokens`의 합은 524,288 이하여야 하며 출력 예산에는 추론도 포함됩니다.
+OMP는 `max_tokens`와 `system` 역할을 사용하고, 추론 이력은
+`reasoning_content`로 전달하도록 설정합니다.
+
+API 문서는 추론 강도를 `low/high/max`로 나열하지만
+[agent 안내](https://docs.exaone.ai/ko/docs/agent-start)는 `medium`도 사용합니다.
+이 불일치 때문에 보수적으로 `minimal/low → low`, `medium/high → high`,
+`xhigh/max → max`로 매핑합니다. 추론을 완전히 끄는 API 동작은 확인하지 않았으므로
+`--thinking off`를 추론 비활성화 보장으로 해석하지 않습니다.
+이 모델의 OMP 기본 추론 강도는 `high`입니다(API 자체 기본값은 `max`).
+가격 메타데이터는 미등록 상태이므로 OMP의 비용 표시를 무료 사용의 의미로 해석하지 않습니다.
+인증된 실제 응답·도구 호출·멀티턴 호환성은 별도의 실사용 확인이 필요합니다.
+
 ## OMP Codex Daybreak 자동 요청
 
 `home/.omp/agent/config.yml`은 사용자 선택에 따라
