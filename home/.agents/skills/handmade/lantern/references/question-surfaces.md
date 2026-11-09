@@ -196,63 +196,53 @@ path rather than adding an `Other` option yourself.
 
 ### Availability
 
-OMP registers `ask` only when the session has interactive UI. Headless sessions
-do not expose it. Tool callability is authoritative.
+Use `ask` when it is callable and an interactive UI is available. Registration
+depends on session capabilities; headless extension hosts can differ in
+whether they advertise the tool, and a call without an interactive UI fails.
+If the tool is unavailable, use portable chat.
 
 ### Mapping
 
-Pass exactly one item in `questions`:
+Pass `{ "html": "..." }` containing one plain semantic `<form>`. Keep Lantern's
+one primary decision per round: use a `<fieldset>` and `<legend>` for the
+question, and named controls for its choices. Use radio buttons for one choice
+or checkboxes when multiple constraints may coexist. Put the round heading and
+choice consequences in the form; context, images, and inline SVG belong in the
+HTML, not a `preview` property. Pictures are not shown by every fallback.
 
-- `id`: stable identifier
-- `header`: `Round N · Dimension · Ambiguity NN%`
-- `question`: the current round's primary question
-- `options`: `{ label, description?, preview? }[]`
-- `multi`: `true` only when multiple constraints may coexist
-- `recommended`: only when a genuine safe default exists
-
-OMP automatically supplies the custom-answer path. Never provide its reserved
-labels:
-
-- `Other (type your own)`
-- `Chat about this`
-- `Next →`
+Use `checked`, `selected`, or `value` for a default only when it is a genuine
+safe default, and make any recommendation clear in the form. OMP supplies a
+free-text Other choice for radio or checkbox groups with at least two options,
+but not for `<select>`; do not add an explicit Other option. Do not add buttons,
+scripts, or styles.
 
 ### Example
 
 ```json
 {
-  "questions": [
-    {
-      "id": "scope_boundary",
-      "header": "Round 2 · Scope · Ambiguity 34%",
-      "question": "Which boundary should govern the first version?",
-      "options": [
-        {
-          "label": "Narrow pilot",
-          "description": "One team and one workflow."
-        },
-        {
-          "label": "Department rollout",
-          "description": "All users in one business unit."
-        }
-      ],
-      "multi": false
-    }
-  ]
+  "html": "<form><h2>Round 2 · Scope · Ambiguity 34%</h2><fieldset><legend>Which boundary should govern the first version?</legend><label><input type=\"radio\" name=\"scope_boundary\" value=\"pilot\" required> Narrow pilot — one team and one workflow; limits initial reach.</label><label><input type=\"radio\" name=\"scope_boundary\" value=\"department\" required> Department rollout — all users in one business unit; covers more users initially.</label></fieldset></form>"
 }
 ```
 
 ### Result handling
 
-- OMP may support several questions, but Lantern always sends one.
-- `ask.timeout` defaults to disabled; plan mode disables it regardless of the
-  configured value.
-- Outside plan mode, a configured timeout may auto-select `recommended` or the
-  first option. Do not treat a result marked auto-selected after timeout as an
-  explicit decision.
-- Cancellation aborts the tool call and counts as an interview stop.
-- Rich dialogs may support option previews; selector/editor fallback remains a
-  valid native OMP experience.
+- The text result contains JSON keyed by control `name`, for example
+  `{"scope_boundary": "pilot"}`. `details.answers` is an array of
+  `{ name, question, answer }` entries, with option labels in `answer`;
+  `details.timedOut` indicates a timeout when present. Other text is returned
+  as the value for a radio group or appended to a checkbox group's array.
+- Require an answer for the primary decision (`required` on its controls).
+  An omitted or empty answer is unresolved, not consent.
+- A configured timeout submits the form's current values, including defaults
+  or choices made so far; it is not an explicit decision. Leave the point
+  unresolved and retry through chat. `ask.timeout` defaults to disabled, and
+  plan mode disables it regardless of configuration.
+- Cancellation aborts the tool call and stops the interview.
+- The built-in tool no longer uses the old questions-based notes,
+  “Chat about this,” or images paths. This migration does not require changing
+  other harnesses or extension `ui.askDialog` prompts.
+
+For the full installed contract, see `omp://tools/ask.md`.
 
 ## Pi adapter: `question`
 
