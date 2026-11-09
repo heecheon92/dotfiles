@@ -2,8 +2,8 @@
 # The normal config remains authoritative for every setting not listed here.
 modelRoles:
   default: openai-codex/gpt-6.1-sol:high
-  smol: openai-codex/gpt-6-luna:medium
-  spark: openai-codex/gpt-6-luna:medium
+  smol: openai-codex/gpt-6-luna:high
+  spark: openai-codex/gpt-6-luna:high
   slow: deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
   vision: openai-codex/gpt-6-luna:high
   plan: deploy/deepseek-ai/deepseek-v4.1-flash-1017:max

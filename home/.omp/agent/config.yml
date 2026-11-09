@@ -1,4 +1,4 @@
-setupVersion: 2
+setupVersion: 3
 modelRoles:
   # Assigned roles — used by existing agents and workflows.
   default: openai-codex/gpt-6-astra:medium
@@ -168,7 +168,7 @@ autolearn:
   enabled: true
   autoContinue: false
 task:
-  perCallModel: on
+  perCallModel: "on"
   perCallModelAllow:
     - openai-codex/gpt-6.1-sol
     - openai-codex/gpt-6.1-terra

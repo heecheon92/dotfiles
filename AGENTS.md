@@ -1,5 +1,16 @@
 # Dotfiles agent guidance
 
+## Preserve OMP configuration comments
+
+- Comments in `home/.omp/agent/config.yml` are intentional, user-maintained
+  documentation. Preserve them and their surrounding layout when changing values.
+- Use targeted edits; do not rewrite the YAML through a serializer or config
+  command that strips comments.
+- When an OMP update or migration rewrites the file, restore any removed comments
+  without reverting valid setting changes. Update a comment only when its meaning
+  needs to change with an explicitly requested behavior change.
+- Do not treat comment removal or formatting churn as automatic cleanup.
+
 ## Neovim foreground visibility
 
 Use this procedure for hard-to-read text or guides over transparent, blurred
