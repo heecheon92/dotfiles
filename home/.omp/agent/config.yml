@@ -207,6 +207,7 @@ tui:
   codexResetFireworks: true
   completeScrollback: true
 codexResets:
-  autoRedeem: unset
+  autoRedeem5h: unset
+  autoRedeemWeekly: unset
 generate_image:
   enabled: true

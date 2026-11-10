@@ -218,6 +218,16 @@ GPT-6 Sol/Luna의 Blue 지원을 Astra/Sol 6.1의 승인 조건과 혼동하지 
 자세한 조건은 [OpenAI 문제 해결 안내](https://help.openai.com/en/articles/20001259)와
 [OMP 요청 처리 소스](https://github.com/can1357/oh-my-pi/blob/v18.16.0/packages/ai/src/providers/openai-codex/access-programs.ts)를 참고하세요.
 
+## OMP 저장된 Codex 리셋 사용
+
+OMP 18.18.7부터 `codexResets.autoRedeem5h`와 `autoRedeemWeekly`를 각각
+`unset`으로 설정합니다. 이전 `autoRedeem: unset`의 정책을 두 시간 구간에
+유지하며, 대화형 확인 없이 저장된 리셋을 소비하지 않습니다.
+`omp -p`처럼 확인 UI가 없는 세션에서는 만료가 임박해도 자동으로 소비하지 않습니다.
+수동 확인에는 `/usage reset` 또는 `omp usage reset`을 사용하세요. 인자 없이
+실행하면 목록만 표시하며, 계정 대상을 지정하면 리셋 하나를 소비합니다.
+[18.18.7 설정 문서](https://github.com/can1357/oh-my-pi/blob/v18.18.7/docs/settings.md#saved-reset-auto-consumption)를 참고하세요.
+
 ## OMP 이미지 분석
 
 기본 설정의 `modelRoles.vision`은 `openai-codex/gpt-6.1-terra:medium`입니다.
