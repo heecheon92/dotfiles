@@ -25,7 +25,7 @@ prewalk:
   # Opt in with /prewalk: plan on the current model, then hand off to DeepSeek.
   enabled: false
   # /prewalk restart uses this planning role; plain /prewalk keeps the current model.
-  from: "@slow"
+  from: "@plan"
   into: "@deepseek"
 title:
   generator: tiny
