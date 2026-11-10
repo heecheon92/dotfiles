@@ -426,6 +426,9 @@ in
   home.file.".omp/agent/agents/docs-writer.md".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/agents/docs-writer.md";
+  home.file.".omp/agent/agents/web-operator.md".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/agent/agents/web-operator.md";
   home.file.".omp/agent/extensions/herdr-runtime-context.ts".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/extensions/herdr-runtime-context.ts";

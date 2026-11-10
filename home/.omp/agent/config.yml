@@ -5,8 +5,8 @@ modelRoles:
   smol: openai-codex/gpt-6-luna:high
   spark: openai-codex/gpt-6-luna:medium
   slow: openai-codex/gpt-6-astra:xhigh
-  vision: openai-codex/gpt-6-astra:medium
-  image: openai-codex/gpt-image-2
+  vision: openai-codex/gpt-6.1-terra:medium
+  image: openai/gpt-image-2.6-sunburst
   plan: openai-codex/gpt-6-astra:xhigh
   commit: openai-codex/gpt-6-luna:medium
   task: openai-codex/gpt-6.1-sol:high
@@ -17,6 +17,7 @@ modelRoles:
   judge: openrouter/~typesafe/jev-latest
   daybreak: openai-codex/gpt-6-sol:max
   docs: openai-codex/gpt-6.1-terra:auto
+  browser: openai-codex/gpt-6.1-terra:auto
 
   # Explicit model selection — also used by the prewalk handoff below.
   deepseek: deploy/deepseek-ai/deepseek-v4.1-flash-1017:high

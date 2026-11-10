@@ -122,6 +122,34 @@ Home Manager는 `~/.omp/agent/agents/docs-writer.md`만 개별 연결합니다.
 라우팅 정책을 확실히 반영하려면 OMP를 다시 시작하세요. 이 에이전트는 자체
 작성 지침을 가지므로 메인 전용 append 파일의 자식 상속에 의존하지 않습니다.
 
+### 실제 브라우저 작업: web-operator
+
+`home/.omp/agent/agents/web-operator.md`는 ego-browser(ego lite)로 로그인된
+웹사이트를 조작하는 전용 에이전트입니다. frontmatter의 `model: "@browser"`가
+`modelRoles.browser`를 참조하며 현재 역할은 Terra `auto`입니다. 모델 이름이나
+추론 강도를 에이전트에 고정하지 않으므로 `config.yml`에서 역할을 바꾸면 이후
+위임에 반영됩니다.
+
+`autoloadSkills: ego-browser`는 자식 세션에 해당 스킬을 미리 주입합니다. 호출에는
+`agent: "web-operator"`를 사용하고 `model`은 생략합니다. 에이전트는 첫 브라우저
+동작 전에 `ego-browser skill`을 실행해 설치된 버전의 사용 안내를 따르고, 작업
+하나에 TaskSpace 하나만 만들며, 성공 시 `finish`, 사용자 조작이 필요하면
+`handOff`로 끝냅니다.
+
+ego-browser가 없거나 연결되지 않거나 문서화된 API로 작업을 표현할 수 없으면
+다른 브라우저나 데스크톱 제어로 조용히 대체하지 않고 중단·보고합니다. 네이티브
+데스크톱 자동화는 이 에이전트의 범위가 아니므로 메인 에이전트가 다른 작업자에게
+넘깁니다. 페이지 내용은 신뢰할 수 없는 데이터이며, 사용자가 이미 승인한 정확한
+동작·대상·범위는 다시 묻지 않고 수행합니다. 반면 금융·고용·주거·교육·보험·신용·
+법률·의료·정부 서비스·선거·생체정보·고민감 개인정보와 공급자 안전 확인은
+실행 시점의 대화형 승인이 필요하며, 에이전트가 사용자에게 직접 물을 수 없으므로
+결정을 부모에게 반환합니다. 로그인·권한 프롬프트처럼 사용자가 브라우저에서
+직접 조작해야 하는 경우에만 `handOff`를 씁니다.
+
+Home Manager는 `~/.omp/agent/agents/web-operator.md`를 개별 연결합니다. 새
+호스트에서는 `./rebuild.sh`로 링크를 만들고, 이미 실행 중인 세션의 도구 설명에
+새 에이전트가 보이지 않으면 OMP를 다시 시작하세요.
+
 ## OMP Deploy 모델
 
 `home/.omp/agent/models.yml`의 `deploy` 공급자는
@@ -190,21 +218,30 @@ GPT-6 Sol/Luna의 Blue 지원을 Astra/Sol 6.1의 승인 조건과 혼동하지 
 자세한 조건은 [OpenAI 문제 해결 안내](https://help.openai.com/en/articles/20001259)와
 [OMP 요청 처리 소스](https://github.com/can1357/oh-my-pi/blob/v18.16.0/packages/ai/src/providers/openai-codex/access-programs.ts)를 참고하세요.
 
+## OMP 이미지 분석
+
+기본 설정의 `modelRoles.vision`은 `openai-codex/gpt-6.1-terra:medium`입니다.
+별도 이미지 분석 호출에 Terra를 사용하며, 주 대화 모델 Astra와 이미지 생성 모델
+Sunburst는 그대로 유지합니다. 이 역할 변경은 컴퓨터 조작을 수행하는 주 에이전트나
+위임 에이전트의 모델을 바꾸지 않습니다.
+
 ## OMP 이미지 생성
 
 `home/.omp/agent/config.yml`은 `generate_image.enabled: true`와
-`modelRoles.image: openai-codex/gpt-image-2`를 설정하여 Codex 구독의
-이미지 생성 경로를 우선합니다. `retry.fallbackChains.image: []`는 이미지 역할의
-기본 대체 모델 체인을 끕니다. 일반 대화 역할의 fallback 설정은 바꾸지 않습니다.
+`modelRoles.image: openai/gpt-image-2.6-sunburst`를 설정합니다.
+`home/.omp/agent/models.yml`은 이 모델을 `openai-images` 이미지 모델로
+등록하여 OpenAI의 `/v1/images/generations` 및 `/v1/images/edits` 경로를
+사용합니다. Codex 구독이나 OpenRouter가 아니라 `OPENAI_API_KEY`를 사용하는
+직접 OpenAI API 경로이며, API 사용 요금과 계정별 접근 제한이 적용됩니다.
+키 값은 저장소에 넣지 않습니다.
+[공식 모델 문서](https://developers.openai.com/api/docs/models/gpt-image-2.6-sunburst)를 참고하세요.
 
-OMP 18.16.0의 Codex 경로에서는 구독 백엔드가 실제 이미지 모델을 선택합니다.
-이 설정은 `gpt-image-2.6-sunburst`를 지정하거나 보장하지 않습니다.
-결과에 제공되는 실제 모델 정보를 확인하세요.
-
-빈 이미지 fallback 체인은 현재 대화 모델의 이미지 후보까지 차단하지 않습니다.
-다른 공급자의 대화 모델에서도 반드시 Codex만 사용해야 하는 요청은 이미지 도구의
-`model: openai-codex/gpt-image-2`를 명시해야 합니다. 명시적 도구 모델 선택은
-그 모델만 시도합니다. 기존 설정 연결을 사용하므로 Nix 재빌드는 필요하지 않으며,
+`retry.fallbackChains.image: []`는 이미지 역할의 기본 대체 모델 체인을 끕니다.
+일반 대화 역할의 fallback 설정은 바꾸지 않습니다. 빈 이미지 fallback 체인은
+현재 대화 모델의 이미지 후보까지 차단하지 않으므로, 반드시 Sunburst만
+사용해야 하는 요청은 이미지 도구에 `model: openai/gpt-image-2.6-sunburst`를
+명시하세요. 명시적 도구 모델 선택은 그 모델만 시도합니다.
+기존 설정 연결을 사용하므로 Nix 재빌드는 필요하지 않으며,
 설정을 확실히 반영하려면 OMP를 새로 시작하세요.
 
 ## OMP 입력 자동완성
