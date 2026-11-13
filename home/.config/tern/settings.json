@@ -10,14 +10,43 @@
   },
   "font_family": "Berkeley Mono, Herdr Agent Icons Max",
   "pane_headers": "Always",
-  "status_bar": true,
+  "widgets": [
+    {
+      "id": "cwd"
+    },
+    {
+      "id": "git"
+    },
+    {
+      "id": "run"
+    },
+    {
+      "id": "spacer"
+    },
+    {
+      "id": "network"
+    },
+    {
+      "id": "lines"
+    },
+    {
+      "id": "size"
+    },
+    {
+      "id": "status"
+    }
+  ],
   "surface_tab_width": 4,
   "surface_chat": "Spine",
   "prefs_width": 890,
   "file_tree": {
+    "open": true,
     "width": 449
   },
   "git": {
     "external_editor": "nvim"
+  },
+  "keybinds": {
+    "shift+cmd+n": "new_session"
   }
 }
