@@ -181,6 +181,7 @@ task:
     security-reviewer: "@advisor"
     sonic: "@spark"
   eager: preferred
+  autoParallel: suggest
   enableEffort: false
   showResolvedModelBadge: true
   maxRecursionDepth: 2
