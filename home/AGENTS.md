@@ -52,6 +52,30 @@ they conflict with these defaults.
 - Never call work complete without concrete evidence. Say what was checked,
   what passed, and what remains unverified.
 
+## Agent Identity in Multiplexer Messages
+
+- Every agent MUST begin every message sent to another agent through a terminal
+  multiplexer or its API with `Model (Harness): `, followed by the message.
+  This applies to tmux, cmux, Herdr, Tern, and similar tools, including prompts,
+  replies, follow-ups, and handoffs sent through pane input or messaging APIs.
+- The transport determines the requirement, not whether the agents use the
+  same harness. OMP-to-OMP communication through a multiplexer MUST carry the
+  prefix, just like communication between different harnesses.
+- Native parent/subagent communication within a harness's own delegation
+  system is exempt when it does not pass through a multiplexer.
+- Identify the actual sending model and harness using current runtime evidence.
+  Use a readable model name that preserves its version/variant and the harness
+  name, not the multiplexer name, recipient's identity, agent role, or an assumed
+  default. Update the prefix if the sending model changes. Never invent an
+  identity; if a component cannot be determined, explicitly label it unknown.
+- Examples of the format (use only when they match the actual sender):
+  `GPT-6-Astra (OMP): ...`, `Fable-5.2 (Claude-Code): ...`,
+  `GPT-6.1-Sol (Codex): ...`.
+- Put the prefix at the start of the delivered message itself, not merely in
+  surrounding commentary or a tool description, so the human can identify its
+  sender. This requirement does not authorize sending messages or controlling
+  other panes beyond the user's approved scope.
+
 ## Herdr-aware Runtime
 
 - These are user-global runtime instructions, not repository-specific project
