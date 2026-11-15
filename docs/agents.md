@@ -8,6 +8,19 @@ OMP의 모델 역할, 내장 에이전트, 위임 시 모델 선택 우선순위
 이 문서는 사람이 요청할 때 확인한 최신 안정 버전의 동작만 유지하며, Home Manager로
 `~/.omp/agent/MODEL-ROUTING.md`에도 연결합니다.
 
+## OMP 설정 주석 보존
+
+설정은 `home/.omp/agent/config.yml` 원본에서 필요한 줄만 수정하세요.
+현재 Home Manager 연결은 이 파일을 가리키므로 `/nix/store` 파일을 편집하지 않습니다.
+`omp config get`과 `omp config list`는 값을 확인할 때 사용할 수 있습니다.
+
+OMP 18.20.2의 [설정 저장 경로](https://github.com/can1357/oh-my-pi/blob/v18.20.2/packages/coding-agent/src/config/settings.ts)는
+파싱한 값을 [YAML로 다시 직렬화](https://github.com/can1357/oh-my-pi/blob/v18.20.2/packages/utils/src/yaml-config.ts)하므로
+주석과 빈 줄을 보존하지 않습니다. `omp config set`이나 OMP 설정 UI의 영구 저장 대신
+원본을 직접 편집하세요. 모델 역할 등 다른 영구 설정 저장도 같은 경로를 사용할 수 있습니다.
+저장 후 주석이 사라졌다면 값 변경은 유지하고 Git diff에서 주석과 주변 배치만 복원합니다.
+이는 편집 절차상의 예방책이며 OMP 자체의 저장 동작을 수정하거나 차단하지는 않습니다.
+
 ## Claude Code 설치 채널
 
 `configuration.nix`는 Homebrew의 `claude-code@latest` cask로 Claude Code를 관리합니다.

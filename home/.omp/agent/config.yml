@@ -207,6 +207,7 @@ power:
 tui:
   codexResetFireworks: true
   completeScrollback: true
+  vimMode: false
 codexResets:
   autoRedeem5h: unset
   autoRedeemWeekly: unset
