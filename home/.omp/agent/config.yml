@@ -1,32 +1,36 @@
 setupVersion: 3
 modelRoles:
-  # Assigned roles — used by existing agents and workflows.
-  default: openai-codex/gpt-6-astra:medium
+  # Opus implements, Fable plans, and Astra reviews; defaults remain overridable.
+  default: anthropic/claude-fable-5-2:medium
   smol: openai-codex/gpt-6-luna:high
   spark: openai-codex/gpt-6-luna:medium
   slow: openai-codex/gpt-6-astra:xhigh
   vision: openai-codex/gpt-6.1-terra:medium
   image: openai/gpt-image-2.6-sunburst
-  plan: openai-codex/gpt-6-astra:xhigh
+  plan: anthropic/claude-fable-5-2:high
   commit: openai-codex/gpt-6-luna:medium
-  task: openai-codex/gpt-6.1-sol:high
-  fast_task: openai-codex/gpt-6.1-terra:high
+  task: anthropic/claude-opus-5-5:high
+  fast_task: anthropic/claude-fable-5-2:high
   advisor: openai-codex/gpt-6-astra:high
   tiny: local/lfm2.5-230m
   memory: openai-codex/gpt-6-luna
   judge: openrouter/~typesafe/jev-latest
   daybreak: openai-codex/gpt-6-sol:max
-  docs: openai-codex/gpt-6.1-terra:auto
+  docs: anthropic/claude-fable-5-2:medium
   browser: openai-codex/gpt-6.1-terra:auto
 
-  # Explicit model selection — also used by the prewalk handoff below.
+  # Explicit model selection — available for deliberate per-call choices.
   deepseek: deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
+  astra: openai-codex/gpt-6-astra
+  sol: openai-codex/gpt-6.1-sol
+  fable: anthropic/claude-fable-5-2
+  opus: anthropic/claude-opus-5-5
 prewalk:
-  # Opt in with /prewalk: plan on the current model, then hand off to DeepSeek.
+  # Opt in with /prewalk: plan on the current model, then hand off to @task.
   enabled: false
   # /prewalk restart uses this planning role; plain /prewalk keeps the current model.
   from: "@plan"
-  into: "@deepseek"
+  into: "@task"
 title:
   generator: tiny
   icons: nf+emoji
@@ -91,68 +95,62 @@ retry:
   fallbackRevertPolicy: cooldown-expiry
   fallbackChains:
     image: []
+    # Try direct Codex/Anthropic alternatives first, then Deploy DeepSeek,
+    # OpenRouter GLM, and OpenRouter DeepSeek. OpenRouter uses API credits.
     default:
-      - openai-codex/gpt-6.1-sol:high
+      - openai-codex/gpt-6-astra:high
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
-      - anthropic/claude-opus-5-5:medium
       - openrouter/z-ai/glm-5.3:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     smol:
-      - openai-codex/gpt-6.1-sol:medium
+      - openai-codex/gpt-6.1-terra:medium
+      - anthropic/claude-fable-5-2:low
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:low
-      - anthropic/claude-sonnet-5-5:medium
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     slow:
-      - openai-codex/gpt-6.1-sol:xhigh
+      - anthropic/claude-fable-5-2:xhigh
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
-      - anthropic/claude-opus-5-5:xhigh
       - openrouter/z-ai/glm-5.3:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:max
     vision:
-      - openai-codex/gpt-6.1-sol:high
+      - openai-codex/gpt-6-astra:high
+      - anthropic/claude-fable-5-2:medium
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
-      - anthropic/claude-opus-5-5:medium
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     plan:
-      - openai-codex/gpt-6.1-sol:xhigh
+      - openai-codex/gpt-6-astra:high
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
-      - anthropic/claude-opus-5-5:xhigh
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:max
     commit:
-      - openai-codex/gpt-6-luna:low
+      - anthropic/claude-fable-5-2:low
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:low
-      - anthropic/claude-haiku-4-5:low
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     task:
-      - openai-codex/gpt-6.1-sol:medium
+      - anthropic/claude-fable-5-2:high
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
-      - anthropic/claude-sonnet-5-5:high
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     fast_task:
+      - openai-codex/gpt-6-astra:high
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
-      - anthropic/claude-sonnet-5-5:high
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     advisor:
-      - openai-codex/gpt-6.1-sol:high
+      - anthropic/claude-fable-5-2:high
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
-      - anthropic/claude-sonnet-5-5:high
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:max
     spark:
-      - anthropic/claude-sonnet-5-5:low
+      - anthropic/claude-fable-5-2:low
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:low
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     docs:
-      - anthropic/claude-sonnet-5-5:medium
-    openrouter/~typesafe/jev-latest:
-      - openrouter/~typesafe/jev-latest
+      - openai-codex/gpt-6-astra:medium
 dev:
   autoqaConsent: granted
 display:
@@ -172,12 +170,16 @@ task:
   perCallModel: "on"
   perCallModelAllow:
     - openai-codex/gpt-6.1-sol
+    - openai-codex/gpt-6-astra
+    - anthropic/claude-opus-5-5
+    - anthropic/claude-fable-5-2
     - openai-codex/gpt-6.1-terra
     - openai-codex/gpt-6-luna
     - deploy/deepseek-ai/deepseek-v4.1-flash-1017
   completionProbe: true
   speculativeLaunch: false
   agentModelOverrides:
+    # Keep these specialists pinned; other agents use overridable role defaults.
     security-reviewer: "@advisor"
     sonic: "@spark"
   eager: preferred

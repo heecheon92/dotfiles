@@ -25,30 +25,33 @@ for its own conversation. Keep the shared AGENTS.md harness-neutral.
   verified implementation facts and scope; do not ask it to invent product
   decisions or implement code. Explicit user model choices still take precedence.
 
-- **Deploy DeepSeek:** prefer for routine implementation, ordinary debugging,
-  bounded reviews, and moderately ambiguous work with a direct verification
-  path. Select the appropriate agent and explicitly pass
-  `deploy/deepseek-ai/deepseek-v4.1-flash-1017:high` by default. Use `:low`
-  for smol/spark-style lightweight work; reserve `:max` for plan/slow,
-  advisor work, or assignments with a concrete need for extra reasoning.
-  Always include the selected effort: the grant role's suffix alone does not
-  set an explicit call's effort. Respect a lower task.maxEffort ceiling and
-  disclose it; do not raise it automatically.
-- **Sol:** prefer for architecture, difficult root-cause analysis, security,
-  concurrency, data integrity, irreversible migrations, or uncertain verification.
-  Use normal task routing when it resolves to Sol; when an explicit choice is
-  needed, use `openai-codex/gpt-6.1-sol:high`. Escalate verified reasoning failures
-  from a DeepSeek assignment to Sol rather than repeatedly retrying the same
-  approach. Scope the escalation as a new worker and explain why.
-- **Terra:** retain as an alternative for bounded implementation, visual reasoning,
-  and computer-use assignments when the user requests it or task-specific evidence
-  favors it. Use fast-task's normal route
-  when appropriate, or `openai-codex/gpt-6.1-terra:high` for an explicit override.
-  Do not select Terra merely because the task needs speed.
+- **Opus:** use the normal `task` route (`@task`, Opus high) for general
+  implementation and debugging. Omit `model` unless the assignment has a concrete
+  reason to use another model. An explicit selection uses
+  `anthropic/claude-opus-5-5:high`.
+- **Fable:** use `@plan` (Fable high) for planning. The `plan` role is not a
+  bundled agent named `planner`; for a planning assignment delegated to `task`,
+  explicitly select `anthropic/claude-fable-5-2:high`. Keep `fast-task` on its
+  configured Fable high route for bounded implementation when appropriate.
+- **Astra:** use the normal `reviewer` route (`@slow`, Astra xhigh) for code
+  review. Omit `model` for that default; an explicit selection uses
+  `openai-codex/gpt-6-astra:xhigh`. The reviewer's read-only scope still applies.
+- **Sol:** retain `openai-codex/gpt-6.1-sol:high` as an explicit alternative for
+  a coding assignment or independent second approach when task-specific evidence
+  favors it. Do not automatically replace the requested Opus/Fable/Astra defaults.
+- **Deploy DeepSeek:** retain for explicit user requests, concrete task-specific
+  reasons, and lower-priority automatic fallbacks, not as the default implementation
+  or review route. Use `deploy/deepseek-ai/deepseek-v4.1-flash-1017:high` unless the
+  assignment justifies another supported effort.
+- **Terra:** retain for visual reasoning and computer-use assignments when the
+  user requests it or task-specific evidence favors it. An explicit override uses
+  `openai-codex/gpt-6.1-terra:high`; do not select it merely to promise speed.
 - **Luna:** preserve scout for read-only exploration and sonic for strictly
   mechanical work. Do not replace these specialists with expensive general
   workers merely because per-call overrides are available.
-- When uncertain about risk or verification, prefer the normal task/Sol route.
+- When uncertain, use the selected agent's configured default rather than
+  overriding its model. Always include an effort suffix in an explicit selection;
+  respect and disclose a lower `task.maxEffort` ceiling instead of raising it.
   File count and diff size alone do not measure reasoning difficulty.
 
 ## Explain and verify
@@ -66,13 +69,11 @@ model. If the user required a specific model, ask before substituting it.
 
 ## Evidence basis
 
-This is an operator-specific routing policy, not a universal benchmark ranking.
-The user reports that DeepSeek Flash 1017 at max effort thinks too long for
-routine work. Prefer high to balance reasoning quality and latency, low for
-lightweight work, and max only for deliberate extra-reasoning assignments.
-These are local workload observations, not independently measured latency or
-a guarantee on every task. Luna retains its established specialist roles;
-no comparative Luna speed measurement was supplied.
+These defaults express the user's preferred division of work, not a universal
+benchmark ranking or a measured latency guarantee. Vendor capability claims
+and catalog metadata do not prove which model performs best on this repository.
+Luna retains its established specialist roles. Reassess alternatives from actual
+task outcomes rather than changing the default on speculative performance claims.
 
 Catalog prices are route-specific estimates, not measured task cost or the user's
 Codex subscription bill. Do not copy price or benchmark tables into dispatch

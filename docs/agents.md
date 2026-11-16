@@ -1,6 +1,6 @@
 # 에이전트와 보조 도구
 
-공유 에이전트 스킬과 OMP 저비용 모델 오버레이를 설명합니다.
+공유 에이전트 스킬과 OMP 모델 라우팅 설정을 설명합니다.
 이 문서의 저장소 경로와 `./rebuild.sh` 명령은 모두 저장소 루트를 기준으로 합니다.
 
 OMP의 모델 역할, 내장 에이전트, 위임 시 모델 선택 우선순위와 백그라운드 동작은
@@ -35,24 +35,53 @@ OMP 18.20.2의 [설정 저장 경로](https://github.com/can1357/oh-my-pi/blob/v
 참고하세요. 전체 dotfiles 구성을 적용하지 않아도 원하는 스킬 디렉터리만
 에이전트 또는 Codex 기본 설치 도구로 설치할 수 있습니다.
 
-## OMP 구현 작업의 속도와 품질 선택
+## OMP 모델 역할과 위임
 
-기본 `config.yml`은 기존 에이전트별 모델 경로를 유지합니다.
+기본 대화 역할 `default`는 `anthropic/claude-fable-5-2:medium`입니다.
+위임은 Opus가 구현하고, Fable이 계획하고, Astra가 리뷰하도록 나눕니다.
+이 분리는 사용자가 정한 출발점이며 모델의 우열이나 벤치마크 결과를 뜻하지
+않습니다. 메인 에이전트가 작업 범위와 위험도를 보고 위임 유형을 선택합니다.
 
-- 기본 `task`: `modelRoles.task`의 Sol `high`. 모호한 요구사항, 위험도가 높은
-  변경, 깊은 추론이 필요한 작업에 사용하며 선택이 애매할 때도 기본값입니다.
-- `fast-task`: `modelRoles.fast_task`의 Terra `high`. 접근 방법과 범위가
-  명확한 구현의 대안입니다. 읽기·쓰기 도구를 사용할 수 있으며 속도를 이유로
-  정확성이나 필요한 검증을 생략하지 않습니다.
-- `scout`의 `@smol`과 `sonic`의 `@spark`는 Luna를 유지합니다. 각각 읽기 전용
-  탐색과 엄격히 기계적인 작업을 담당하며 `fast-task`로 대체하지 않습니다.
+- `task`: `@task`, `anthropic/claude-opus-5-5:high`. 일반 구현과 디버깅의
+  기본 위임입니다.
+- `fast-task`: `@fast_task`, `anthropic/claude-fable-5-2:high`. 접근 방법과
+  범위가 명확한 구현의 대안입니다. 속도를 이유로 정확성이나 필요한 검증을
+  생략하지 않습니다.
+- `reviewer`: 번들 정의의 `@slow`, `openai-codex/gpt-6-astra:xhigh`.
+  코드 리뷰의 기본 경로이며 읽기 전용 범위는 그대로입니다.
+- `security-reviewer`: `@advisor`, Astra `high`.
+- `docs-writer`: `@docs`, Fable `medium`. 아래 문서 작성 경로처럼
+  `model`을 생략해 호출합니다.
+- `plan` 역할은 Fable `high`입니다. 이 역할은 `planner`라는 번들 에이전트가
+  아니므로, 계획 작업을 `task`에 위임할 때는 호출에
+  `anthropic/claude-fable-5-2:high`를 명시합니다.
+- `slow`는 Astra `xhigh`, `advisor`는 Astra `high`입니다. 역할 설정만으로
+  선택적 advisor 기능이 활성화되지는 않습니다. `scout`의 `@smol`과 `sonic`의
+  `@spark` 등 기존 경량 역할은 Luna를 유지합니다. `vision`과 `browser`는
+  Terra를 유지합니다.
 
-`home/.omp/agent/agents/fast-task.md`의 설명을 보고 메인 에이전트가 위임 유형을
-선택합니다. 모델 후보 배열이나 fallback 체인이 속도·품질을 판단하는 구조는
-아닙니다. Home Manager는 관리하는 정의를 개별 파일로 연결하므로 다른 사용자
-에이전트는 그대로 유지합니다. 새 호스트에서는
-`./rebuild.sh`로 연결을 설치합니다. 기존 실행의 도구 설명에 새 에이전트가
-보이지 않으면 OMP를 다시 실행하세요. 이미 실행 중인 작업의 모델은 바뀌지 않습니다.
+`agentModelOverrides`로 고정된 에이전트는 `security-reviewer`(`@advisor`)와
+`sonic`(`@spark`)뿐입니다. 이 둘은 호출 시 `model`을 생략하세요. `task`,
+`fast-task`, `reviewer`의 고정은 제거했으므로 이들은 위 역할을 기본값으로
+쓰되 호출별 `model`로 바꿀 수 있습니다.
+Home Manager는 관리하는 에이전트 정의를 개별 파일로 연결하므로 다른 사용자
+에이전트는 그대로 유지합니다. 새 호스트에서는 `./rebuild.sh`로 연결을 설치합니다.
+기존 실행의 도구 설명에 새 에이전트가 보이지 않으면 OMP를 다시 실행하세요.
+이미 실행 중인 작업의 모델은 바뀌지 않습니다.
+
+역할 fallback은 먼저 직접 Anthropic과 OpenAI Codex 경로를 사용합니다. `default`는
+Astra `high`, `smol`은 Terra `medium` 다음 Fable `low`, `slow`는
+Fable `xhigh`, `plan`은 Astra `high`, `vision`은 Astra `high` 다음
+Fable `medium`입니다.
+`commit`과 `spark`는 Fable `low`, `task`는 Fable `high`, `fast_task`는
+Astra `high`, `advisor`는 Fable `high`, `docs`는 Astra `medium`으로
+대체합니다. 기존 DeepSeek·GLM 체인이 있던 열 개 역할에는 그 뒤로 Deploy
+DeepSeek → OpenRouter GLM → OpenRouter DeepSeek를 복원했으며, 이전 역할별
+추론 수준을 유지합니다. 이 경로들은 낮은 우선순위의 자동 fallback이며,
+OpenRouter 요청은 API 크레딧을 사용합니다. `docs`와 빈 `image` 체인에는
+추가하지 않았습니다. OpenRouter `judge`(`openrouter/~typesafe/jev-latest`)
+역할은 유지합니다. opt-in prewalk는 `@task`(Opus `high`)로 인계합니다. 이 설정은 인증이나 계정 선택을 바꾸지 않으며,
+각 모델의 계정 권한이나 과금 여부는 이 문서에서 확인하지 않았습니다.
 
 `task.eager: preferred`는 메인 에이전트가 위임을 선호하도록 지시합니다.
 `task.autoParallel: suggest`는 별도로 native `judge` 모델에 병렬화 가능한
@@ -67,44 +96,74 @@ OMP 18.20.2의 [설정 저장 경로](https://github.com/can1357/oh-my-pi/blob/v
 ### 호출별 모델 선택
 
 `task.perCallModel: on`은 task 및 Eval 위임에서 호출별 `model` 선택을
-허용합니다. `task.perCallModelAllow`는 Sol, Terra, Luna,
-`deploy/deepseek-ai/deepseek-v4.1-flash-1017` 네 모델로 명시적 선택을 제한합니다.
-Deploy 모델은 `modelRoles.deepseek`의 `:high` 매핑으로 허용 권한을 부여합니다.
+허용합니다. `task.perCallModelAllow`는 명시적 선택을 다음 일곱 선택자로
+제한합니다.
+
+- `openai-codex/gpt-6.1-sol`
+- `openai-codex/gpt-6-astra`
+- `anthropic/claude-opus-5-5`
+- `anthropic/claude-fable-5-2`
+- `openai-codex/gpt-6.1-terra`
+- `openai-codex/gpt-6-luna`
+- `deploy/deepseek-ai/deepseek-v4.1-flash-1017`
+
+Astra, Opus, Fable을 새로 추가했고 Sol, Terra, Luna, Deploy DeepSeek는
+기존 항목입니다. `modelRoles`의 `astra`, `sol`, `fable`, `opus` 별칭은 이 중
+네 선택자를 정확히 가리키며 허용 권한을 부여합니다. Deploy 모델은
+`modelRoles.deepseek`의 `:high` 매핑으로 허용 권한을 부여합니다.
 fallback 체인에 있는 것만으로는 호출별 선택 권한이 생기지 않습니다.
 
-`model`을 생략하면 기존 에이전트 역할과 fallback 체인을 유지합니다. 명시하면
-해당 모델에 고정되며 다른 모델로 fallback하지 않습니다. 호출의 추론 수준은
-별도로 지정할 수 있고 `task.maxEffort` 상한을 따릅니다. `agentModelOverrides`가
-있는 `sonic`, `security-reviewer`에는 명시적 모델을 함께 지정할 수 없습니다.
-이 허용 목록은 에이전트별 목록이나 자동 선택 기준이 아니며, Daybreak 등 다른
-모델의 명시적 override를 허용하지 않습니다. 새 에이전트 정의나 기본 모델 변경은
-필요하지 않습니다.
+고정되지 않은 에이전트에서 `model`을 생략하면 에이전트 역할과 fallback 체인을
+유지합니다. 명시하면 해당 모델에 고정되며 일반 fallback과 prewalk가 적용되지
+않습니다. 고정한 모델을 쓸 수 없으면 호출이 실패하고, 다른 모델로 다시 시도할
+때는 대체 사실을 알립니다. 모델을 명시해도 에이전트의 지침·도구·읽기 전용
+범위, 프로젝트 제한, `task.maxEffort` 상한은 그대로 적용됩니다.
+`APPEND_SYSTEM.md`는 명시적 선택자에 `:high` 같은 추론 수준 접미사를 항상
+포함하도록 지시합니다.
+`agentModelOverrides`가 호출별 선택보다 우선하므로 고정된 `security-reviewer`나
+`sonic`에 명시적 `model`을 함께 지정하면 거부됩니다. 이 허용 목록은 에이전트별
+목록이나 자동 선택 기준이 아니며, 목록 밖의 선택자(예:
+`daybreak` 역할의 `openai-codex/gpt-6-sol`)는 역할 매핑이 있어도 명시적
+override에 쓸 수 없습니다. 이는 공급자의 Daybreak 접근 설정과는 별개입니다.
+fallback 체인과 호출별 허용 목록은 서로 별개입니다.
 
 ### OMP 전용 자율 선택 정책
 
 `home/.omp/agent/APPEND_SYSTEM.md`가 메인 에이전트의 선택 기준을 정의합니다.
-일반 구현·디버깅·검증 가능한 리뷰는 Deploy DeepSeek `high`, 복잡하거나 위험한
-작업은 Sol, Terra는 명시적 요청이나 작업별 근거가 있는 대안으로 사용합니다.
-scout/sonic의 Luna 경로는 유지합니다. 위임 전에 모델과 선택 이유를 짧게
-설명하며, 명시적으로 고정한 모델이 실패하면 다른 모델로 바꾼 사실을 알립니다.
-허용 목록이나 오버레이가 선택을 제한하면 권한을 넓히지 않고 기존 경로를 따릅니다.
+일반 구현·리뷰에 Deploy DeepSeek를 우선하던 지침은 제거했습니다. 현재 기준은
+다음과 같습니다.
 
-이 정책은 사용자가 관찰한 DeepSeek의 속도·품질을 로컬 기준으로 삼습니다.
-공개 자료는 [Sol](https://openai.com/index/introducing-gpt-6-1-sol/),
-[Terra](https://openai.com/index/introducing-gpt-6-1-terra/),
-[Luna](https://openai.com/index/introducing-gpt-6-sol-and-luna/),
-[DeepSeek 업데이트](https://api-docs.deepseek.com/updates)를 참고했습니다.
-서로 다른 벤치마크·하네스의 점수를 동일 조건의 순위로 취급하지 않습니다.
-[DeepSeek 추론 문서](https://api-docs.deepseek.com/guides/thinking_mode)는
-기본 `high`와 별도 `max`를 설명합니다. 로컬 정책은 Deploy와 OpenRouter 모두
-`high`를 기본으로, `smol`/`spark`와 기존 경량 `commit` 경로는 `low`로 사용합니다.
-`plan`/`slow`/`advisor` 및 추가 추론이 필요한 명시적 위임에만 `max`를 사용합니다.
-`@deepseek`와 prewalk 인계도 기본 `high`를 따릅니다.
-모델 카탈로그 가격은 공급자별 추정치이며 Codex 구독의 실제 청구액이 아닙니다.
+- 확신이 없으면 선택한 에이전트의 기본 역할을 쓰고 `model`을 생략합니다.
+  구현·디버깅은 `task`(Opus `high`), 범위가 명확한 구현은 `fast-task`
+  (Fable `high`), 코드 리뷰는 `reviewer`(Astra `xhigh`)입니다.
+- 계획은 `@plan`(Fable `high`)을 씁니다. `task`에 위임하는 계획 작업에는
+  `anthropic/claude-fable-5-2:high`를 명시합니다.
+- Sol(`openai-codex/gpt-6.1-sol:high`)은 코딩 작업이나 독립적인 두 번째
+  접근이 필요하고 작업별 근거가 있을 때만 명시적으로 선택하는 대안입니다.
+  Opus·Fable·Astra 기본값을 자동으로 대체하지 않습니다.
+- Deploy DeepSeek는 사용자의 명시적 요청이나 구체적인 작업별 이유가 있을 때
+  선택하며, 낮은 우선순위의 자동 fallback에도 유지합니다. 기본 구현·리뷰 경로가 아닙니다.
+- Terra는 시각 추론과 컴퓨터 사용 작업에, Luna는 `scout`와 `sonic`에 유지합니다.
+- 문서 작업에는 아래 `docs-writer` 경로를 우선합니다.
+
+에이전트는 모델보다 먼저 지침·도구·읽기/쓰기 범위를 기준으로 고릅니다.
+모델을 바꿔도 읽기 전용 에이전트가 구현 작업자가 되지는 않습니다.
+위임 전에 모델과 선택 이유를 짧게 설명합니다. 명시적으로 고정한 모델이
+실패하면 실패를 보고하고, 다른 허용 모델로 다시 시도할 때는 대체 사실을
+알립니다. 사용자가 특정 모델을 요구했다면 대체 전에 묻습니다. 허용 목록이나
+오버레이가 선택을 제한하면 권한을 넓히지 않고 기존 경로를 따릅니다.
+
+`@deepseek`는 기존 `high` 매핑을 유지합니다. opt-in prewalk의 인계 대상은
+`@task`(Opus `high`)이며, `/prewalk restart`의 계획 역할은 `@plan`(Fable `high`)입니다.
+이 기본값은 사용자가 선호하는 역할 분담이며 벤치마크 순위나 측정한 속도를
+근거로 하지 않습니다. 모델 카탈로그 가격은 공급자별 추정치이며 Codex 구독의
+실제 청구액이 아닙니다.
 
 Home Manager는 이 파일만 `~/.omp/agent/APPEND_SYSTEM.md`에 연결합니다.
-공유 `home/AGENTS.md` 및 다른 하네스의 지침은 바꾸지 않습니다. 새 호스트에서는
-`./rebuild.sh`로 링크를 생성하고, 내용 변경 후에는 새 OMP 실행을 시작하세요.
+공유 `home/AGENTS.md` 및 다른 하네스의 지침은 바꾸지 않습니다. 이미 링크가
+있는 호스트에서는 rebuild 없이 내용 변경이 반영되지만, 실행 중인 세션에는
+적용되지 않으므로 새 OMP 세션을 시작하세요. 새 호스트에서만 `./rebuild.sh`로
+링크를 생성합니다.
 이 파일은 메인 세션에 적용되며 task 자식에게 상속되지 않습니다. 명시적인
 `--append-system-prompt`나 우선하는 프로젝트 append 설정은 전역 파일보다
 우선할 수 있습니다.
@@ -113,11 +172,11 @@ Home Manager는 이 파일만 `~/.omp/agent/APPEND_SYSTEM.md`에 연결합니다
 
 `home/.omp/agent/agents/docs-writer.md`는 문서 작성·개선 전용 에이전트입니다.
 frontmatter의 `model: "@docs"`가 `modelRoles.docs`를 참조하므로 모델 이름을
-에이전트에 중복 지정하지 않습니다. 현재 역할은 Terra `auto`이며,
+에이전트에 중복 지정하지 않습니다. 현재 역할은 Fable `medium`이며,
 `config.yml`에서 역할을 바꾸면 이후 위임에 반영됩니다.
 
 `APPEND_SYSTEM.md`는 실질적인 문서 작성·개선 작업을 이 에이전트에 맡기고,
-일반 DeepSeek 우선 정책으로 덮어쓰지 않도록 지정합니다. 호출에는
+이 경로가 일반 모델 선택 기준보다 우선하도록 지정합니다. 호출에는
 `agent: "docs-writer"`를 사용하고 `model`은 생략합니다. 사용자 요청과 프로젝트
 설정은 여전히 우선하며, 이 문서 작성 경로가 제품 결정 권한을 부여하지는 않습니다.
 
@@ -225,7 +284,7 @@ daybreak_blue`를 요청합니다. OpenAI는 Daybreak Blue 세션 내용을 모�
 
 이 설정은 역할별 허용 목록이 아니라 공급자 단위 설정입니다. GPT-6 Sol과
 GPT-6 Luna뿐 아니라 해당 프로세스의 다른 적격 Codex 모델 및 보조 요청에도
-적용될 수 있습니다. 일반 기본 모델과 기존 Luna 역할 배정은 유지합니다.
+적용될 수 있습니다. 기본 대화 모델은 Fable이고 기존 Luna 역할 배정은 유지합니다.
 
 `modelRoles.daybreak`는 폐기된 `gpt-daybreak-blue-latest` 대신
 `openai-codex/gpt-6-sol:max`를 사용합니다. 추론 수준은 `max`이며 모델 순환 목록의
@@ -254,8 +313,8 @@ OMP 18.18.7부터 `codexResets.autoRedeem5h`와 `autoRedeemWeekly`를 각각
 ## OMP 이미지 분석
 
 기본 설정의 `modelRoles.vision`은 `openai-codex/gpt-6.1-terra:medium`입니다.
-별도 이미지 분석 호출에 Terra를 사용하며, 주 대화 모델 Astra와 이미지 생성 모델
-Sunburst는 그대로 유지합니다. 이 역할 변경은 컴퓨터 조작을 수행하는 주 에이전트나
+별도 이미지 분석 호출에 Terra를 사용하며, 기본 대화 모델 Fable과 이미지 생성 모델
+Sunburst는 별도 역할입니다. 이 역할 변경은 컴퓨터 조작을 수행하는 주 에이전트나
 위임 에이전트의 모델을 바꾸지 않습니다.
 
 ## OMP 이미지 생성
