@@ -116,7 +116,9 @@ Homebrew Neovide 앱의 실행 파일 선택은 Nix의 `pkgs.neovim` 경로로 �
   `statuscolumn = ""`)을 사용합니다. 파일명 색상과 일반 편집 창의 statuscolumn은
   유지하며, 아직 저장하지 않은 buffer 변경을 나타내는 기능은 아닙니다.
   Snacks의 파일 검색, grep(단어 검색 포함), 탐색기는 `hidden = true`로 숨김 파일과
-  디렉터리를 기본 표시하되, Git ignore 규칙은 계속 적용합니다.
+  디렉터리를 기본 표시합니다. 탐색기는 `ignored = true`도 적용해 `.env` 같은 Git ignored
+  항목을 표시하며, 탐색기에서 `I`로 ignored 표시를 토글할 수 있습니다.
+  파일 검색과 grep에는 Git ignore 규칙을 계속 적용합니다.
   Oil도 `view_options.show_hidden = true`로 숨김 항목을 기본 표시하며,
   기존의 Git ignore 처리 방식은 변경하지 않습니다.
   Normal 모드의 `<leader>fh`는 Oil과 Snacks의 숨김 표시를 세션 전체에서 함께 토글합니다.

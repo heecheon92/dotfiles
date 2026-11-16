@@ -33,6 +33,7 @@ return {
           grep_word = { hidden = true },
           explorer = {
             hidden = true,
+            ignored = true,
             layout = { preset = "sidebar", preview = "main" },
             actions = {
               toggle_preview_placement = function(picker)
