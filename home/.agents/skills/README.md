@@ -97,7 +97,7 @@ adopt changes into individual projects deliberately.
 | Skills | Upstream source | Import record | Update procedure |
 | --- | --- | --- | --- |
 | [Jakub Krehel's 13 skills](#jakub-krehels-interface-skills) | [`jakubkrehel/skills`](https://github.com/jakubkrehel/skills), `skills/<name>/` | Commit-pinned entries in `home/skills-lock.json` | [Stage the collection](#jakub-krehel), then [review and apply](#review-and-apply-the-staged-import) |
-| [Emil Kowalski's 18 skills](#emil-kowalskis-design-and-animation-skills) | [`emilkowalski/skills`](https://github.com/emilkowalski/skills), `skills/<name>/`; linked from [the author's skill page](https://emilkowal.ski/skill) | Commit-pinned entries in `home/skills-lock.json` | [Stage the collection](#emil-kowalski), then [review and apply](#review-and-apply-the-staged-import) |
+| [Emil Kowalski's 20 skills](#emil-kowalskis-design-and-animation-skills) | [`emilkowalski/skills`](https://github.com/emilkowalski/skills), `skills/<name>/`; linked from [the author's skill page](https://emilkowal.ski/skill) | Commit-pinned entries in `home/skills-lock.json` | [Stage the collection](#emil-kowalski), then [review and apply](#review-and-apply-the-staged-import) |
 | [`diagram-design`](#diagram-design) | [`cathrynlavery/diagram-design`](https://github.com/cathrynlavery/diagram-design), `skills/diagram-design/` | Commit-pinned entry in `home/skills-lock.json` | [Stage this skill only](#cathryn-lavery), then [review and apply](#review-and-apply-the-staged-import) |
 | [`create-readme`](#create-readme) | [`github/awesome-copilot`](https://github.com/github/awesome-copilot) | Source, path, and content hash in `home/skills-lock.json`; no commit recorded | [Update this skill only](#create-readme) |
 
@@ -474,8 +474,8 @@ The collection includes:
 The [public skill page](https://emilkowal.ski/skill) points to a repository now
 named [`emilkowalski/skills`](https://github.com/emilkowalski/skills).
 This copy is pinned to
-[`5206a950b715e0cabe7043ea0b2304332b91494e`](https://github.com/emilkowalski/skills/tree/5206a950b715e0cabe7043ea0b2304332b91494e)
-and contains all 18 public skills at that revision:
+[`64eb3deb9a5fbfa041faf783e0bc3fd635872e9c`](https://github.com/emilkowalski/skills/tree/64eb3deb9a5fbfa041faf783e0bc3fd635872e9c)
+and contains all 20 public skills at that revision:
 
 - `emil-design-eng`: design-engineering and animation guidance.
 - `animate`: implement web animations with deliberate timing and easing.
@@ -483,23 +483,20 @@ and contains all 18 public skills at that revision:
 - `animation-performance`: diagnose animation bottlenecks and improve frame performance.
 - `animation-vocabulary`: describe motion precisely when directing an agent.
 - `apple-design`: Apple interface and motion principles adapted for the web.
+- `ask-emil`: choose the appropriate skill for a design or animation task.
 - `ask-sonner`: Sonner toast setup, styling, and troubleshooting.
 - `break-ui`: stress-test interfaces with difficult content and data.
 - `choreograph`: coordinate timing and motion across multiple elements.
 - `find-animation-opportunities`: identify useful motion without over-animating.
 - `gestures`: implement drag, swipe, and sheet interactions.
 - `improve-animations`: audit motion and produce prioritized implementation plans.
+- `learn-taste`: propose reusable rules from the user's design corrections and write only approved rules.
 - `mobile-native`: improve the native feel of mobile web interfaces.
 - `pick-ui-library`: choose appropriate UI libraries instead of unnecessary custom implementations.
 - `prototype`: compare distinct UI implementations through a visual picker.
 - `remove-animations`: identify and remove unnecessary motion.
 - `review-animations`: review existing motion against explicit standards.
 - `write-swift`: modern Swift types, concurrency, performance, and testing.
-
-At this revision, `gestures` mentions `animation-accessibility` and
-`debug-animation`, but neither skill exists in the upstream collection. The
-import preserves upstream text; treat those suggestions as unavailable rather
-than assuming a missing dependency was installed.
 
 ### Activating the upstream collections
 
@@ -560,7 +557,7 @@ Destination: `home/.agents/skills/external/jakubkrehel/<name>/`.
 
 ```bash
 (cd "$stage" && npx --yes skills@1.7.0 add \
-  https://github.com/emilkowalski/skills/tree/5206a950b715e0cabe7043ea0b2304332b91494e \
+  https://github.com/emilkowalski/skills/tree/64eb3deb9a5fbfa041faf783e0bc3fd635872e9c \
   --skill '*' --agent codex --yes)
 ```
 
