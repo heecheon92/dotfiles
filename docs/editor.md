@@ -138,13 +138,20 @@ Homebrew Neovide 앱의 실행 파일 선택은 Nix의 `pkgs.neovim` 경로로 �
 ## 언어와 포맷
 
 `home/.config/nvim/lua/config/lazy.lua`는 로컬 `plugins`보다 먼저
-`lang.python`, `lang.typescript`, `lang.tailwind`, `lang.json`, `lang.yaml`,
+`lang.python`, `lang.rust`, `lang.typescript`, `lang.tailwind`, `lang.json`, `lang.yaml`,
 `lang.markdown`, `formatting.prettier` 공식 extra를 불러옵니다. HTML과 CSS/SCSS/Less는
 공식 언어 extra가 없는 범위를 `home/.config/nvim/lua/plugins/languages.lua`의
-`html`/`cssls` 서버 설정으로 보완합니다. Mason은 이 선언에서 필요한 서버와 formatter를
-설치합니다.
+`html`/`cssls` 서버 설정으로 보완합니다. 일반 서버와 formatter는 Mason으로 설치하고,
+Rust 도구 체인은 아래의 rustup 구성 요소를 사용합니다.
 
 - Python은 Pyrefly와 Ruff, JavaScript/TypeScript/React는 기본 `vtsls`를 사용합니다.
+- Rust는 공식 extra의 `rustaceanvim`이 `rust-analyzer` 연결을 관리합니다.
+  새 머신에서는 rustup으로 Rust 도구 체인을 설치한 뒤
+  `rustup component add rust-analyzer rust-src rustfmt clippy`를 실행합니다.
+  프로젝트가 `rust-toolchain.toml`로 도구 체인을 고정했다면 해당 프로젝트에서도 구성 요소를
+  설치해야 합니다. Cargo 프로젝트의 `.rs` 파일을 열면 진단·완성·정의 이동을 사용할 수
+  있으며, `<leader>cR`은 Rust 코드 액션입니다. Cargo.toml에는 `crates.nvim`,
+  Rust/RON에는 Treesitter 파서가 추가되며, 디버거 의존성 `codelldb`는 Mason이 설치합니다.
 - Tailwind, JSON, YAML과 Markdown은 각각 `tailwindcss`, `jsonls`, `yamlls`,
   `marksman`을 사용합니다. JSON/YAML schema, 프로젝트 의존성, Tailwind 진입점처럼
   프로젝트별 조건은 별도로 갖춰야 합니다.
