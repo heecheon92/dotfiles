@@ -152,7 +152,7 @@ The finite local catalog includes these **13 selectors**:
 
 - Tiny/title group: `local/lfm2.5-230m`, `local/lfm2.5-350m`, `local/falcon-h1-90m`.
 - Tiny/memory group: `local/qwen3-1.7b`, `local/llama3.2:3b`, `local/gemma-3-1b`, `local/qwen2.5-1.5b`, `local/lfm2-1.2b`.
-- TTS: `local/kokoro`.
+- TTS: `local/phonon-31m` (replaced `local/kokoro` in OMP 18.21.0).
 - STT: `local/parakeet-tdt-0.6b-v3`, `local/whisper-base`, `local/whisper-small`, `local/whisper-large-v3-turbo`.
 
 The two tiny groups describe intended workloads; all eight entries have catalog kind `tiny`. A listed local model is not necessarily downloaded or supported by every backend. In particular, the Qwen3 1.7B ONNX export has a known incompatibility in this version; MLX is the supported path for that entry. [Local models][local-models] · [Tiny registry][tiny-registry]
@@ -183,7 +183,7 @@ The shipped priority file has chains for only seven roles:
 - **`slow`:** starts with GPT-5.6 Sol candidates, followed by Fable, Kimi K3, GLM, Opus, and other GPT candidates.
 - **`image`:** starts with GPT Image 1 candidates, then supported Gemini, Grok, and FLUX image candidates.
 - **`web`:** starts with `web/parallel` and `web/perplexity`, then grounded-chat and other search-provider candidates.
-- **`speech`:** `local/kokoro`, then xAI TTS candidates.
+- **`speech`:** `local/phonon-31m`, then xAI TTS candidates.
 - **`dictation`:** `local/parakeet-tdt-0.6b-v3`.
 - **`judge`:** `typesafe/jev-latest`, then `@tiny`, `@smol`, and `@default`.
 
@@ -289,6 +289,7 @@ Prewalk is a one-time handoff: a worker starts on one selection and can switch a
 
 - `task.prewalk` applies the generic task behavior; it is off by default.
 - `task.agentPrewalk.<agent>` overrides that agent's frontmatter: `"off"`, `"on"`, or a target selector.
+- `task.agentPrewalkAuto.<agent>` (OMP 18.21.0+) lets the native judge decide per assignment instead of always arming: `"on"` (target `prewalk.autoTarget`), `"off"`, or a target selector. An unconditional setting above wins, and spawns with a per-call model are never judged.
 - An unavailable target is skipped. A same-model but lower-effort selection can still be a real handoff.
 
 Do not enable prewalk while diagnosing basic routing unless you also want the model to change mid-task. [Prewalk][prewalk]
