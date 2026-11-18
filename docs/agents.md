@@ -44,10 +44,10 @@ OMP 18.20.2의 [설정 저장 경로](https://github.com/can1357/oh-my-pi/blob/v
 
 - `task`: `@task`, `anthropic/claude-opus-5-5:high`. 일반 구현과 디버깅의
   기본 위임입니다.
-- `fast-task`: `@fast_task`, `anthropic/claude-fable-5-2:high`. 접근 방법과
+- `fast-task`: `@fast_task`, `openai-codex/gpt-6.2-astra:medium`. 접근 방법과
   범위가 명확한 구현의 대안입니다. 속도를 이유로 정확성이나 필요한 검증을
   생략하지 않습니다.
-- `reviewer`: 번들 정의의 `@slow`, `openai-codex/gpt-6-astra:xhigh`.
+- `reviewer`: 번들 정의의 `@slow`, `openai-codex/gpt-6.2-astra:xhigh`.
   코드 리뷰의 기본 경로이며 읽기 전용 범위는 그대로입니다.
 - `security-reviewer`: `@advisor`, Astra `high`.
 - `docs-writer`: `@docs`, Fable `medium`. 아래 문서 작성 경로처럼
@@ -74,7 +74,7 @@ Astra `high`, `smol`은 Terra `medium` 다음 Fable `low`, `slow`는
 Fable `xhigh`, `plan`은 Astra `high`, `vision`은 Astra `high` 다음
 Fable `medium`입니다.
 `commit`과 `spark`는 Fable `low`, `task`는 Fable `high`, `fast_task`는
-Astra `high`, `advisor`는 Fable `high`, `docs`는 Astra `medium`으로
+Fable `high`, `advisor`는 Fable `high`, `docs`는 Astra `medium`으로
 대체합니다. 기존 DeepSeek·GLM 체인이 있던 열 개 역할에는 그 뒤로 Deploy
 DeepSeek → OpenRouter GLM → OpenRouter DeepSeek를 복원했으며, 이전 역할별
 추론 수준을 유지합니다. 이 경로들은 낮은 우선순위의 자동 fallback이며,
@@ -96,15 +96,16 @@ OpenRouter 요청은 API 크레딧을 사용합니다. `docs`와 빈 `image` 체
 ### 호출별 모델 선택
 
 `task.perCallModel: on`은 task 및 Eval 위임에서 호출별 `model` 선택을
-허용합니다. `task.perCallModelAllow`는 명시적 선택을 다음 일곱 선택자로
+허용합니다. `task.perCallModelAllow`는 명시적 선택을 다음 여덟 선택자로
 제한합니다.
 
-- `openai-codex/gpt-6.1-sol`
-- `openai-codex/gpt-6-astra`
+- `openai-codex/gpt-6.2-sol`
+- `openai-codex/gpt-6.2-astra`
 - `anthropic/claude-opus-5-5`
 - `anthropic/claude-fable-5-2`
 - `openai-codex/gpt-6.1-terra`
 - `openai-codex/gpt-6-luna`
+- `openai-codex/gpt-6-sol` (Daybreak 전용)
 - `deploy/deepseek-ai/deepseek-v4.1-flash-1017`
 
 Astra, Opus, Fable을 새로 추가했고 Sol, Terra, Luna, Deploy DeepSeek는
@@ -122,10 +123,19 @@ fallback 체인에 있는 것만으로는 호출별 선택 권한이 생기지 �
 포함하도록 지시합니다.
 `agentModelOverrides`가 호출별 선택보다 우선하므로 고정된 `security-reviewer`나
 `sonic`에 명시적 `model`을 함께 지정하면 거부됩니다. 이 허용 목록은 에이전트별
-목록이나 자동 선택 기준이 아니며, 목록 밖의 선택자(예:
-`daybreak` 역할의 `openai-codex/gpt-6-sol`)는 역할 매핑이 있어도 명시적
-override에 쓸 수 없습니다. 이는 공급자의 Daybreak 접근 설정과는 별개입니다.
-fallback 체인과 호출별 허용 목록은 서로 별개입니다.
+목록이나 자동 선택 기준이 아니며, 목록 밖의 선택자는 역할 매핑이 있어도 명시적
+override에 쓸 수 없습니다. fallback 체인과 호출별 허용 목록은 서로 별개입니다.
+
+`openai-codex/gpt-6-sol`은 Daybreak(`daybreak_blue` cyber 접근) 전용 항목입니다.
+`daybreak` 역할(`:max`)이 이 선택자를 가리키며, 어떤 에이전트 정의에도 고정하지
+않았습니다. 대신 메인 에이전트가 취약점 연구, 익스플로잇·악성코드 분석, 바이너리
+리버스 엔지니어링, 일반 모델이 거절하는 보안 테스트처럼 해당 접근이 필요한
+작업이거나 사용자가 요청할 때 호출별로 `openai-codex/gpt-6-sol:max`를 선택합니다.
+일반 구현·리뷰·계획에는 쓰지 않습니다. `security-reviewer`는 `@advisor`에
+고정되어 있어 이 override를 받을 수 없으므로 `task` 같은 고정되지 않은
+에이전트로 위임합니다. 호출별 허용은 공급자 설정
+`providers.openai-codex.daybreak`와 별개이며, 실제 Daybreak 적용에는 그 설정과
+계정·모델별 승인이 모두 필요합니다.
 
 ### OMP 전용 자율 선택 정책
 
@@ -135,15 +145,17 @@ fallback 체인과 호출별 허용 목록은 서로 별개입니다.
 
 - 확신이 없으면 선택한 에이전트의 기본 역할을 쓰고 `model`을 생략합니다.
   구현·디버깅은 `task`(Opus `high`), 범위가 명확한 구현은 `fast-task`
-  (Fable `high`), 코드 리뷰는 `reviewer`(Astra `xhigh`)입니다.
+  (Astra `medium`), 코드 리뷰는 `reviewer`(Astra `xhigh`)입니다.
 - 계획은 `@plan`(Fable `high`)을 씁니다. `task`에 위임하는 계획 작업에는
   `anthropic/claude-fable-5-2:high`를 명시합니다.
-- Sol(`openai-codex/gpt-6.1-sol:high`)은 코딩 작업이나 독립적인 두 번째
+- Sol(`openai-codex/gpt-6.2-sol:high`)은 코딩 작업이나 독립적인 두 번째
   접근이 필요하고 작업별 근거가 있을 때만 명시적으로 선택하는 대안입니다.
   Opus·Fable·Astra 기본값을 자동으로 대체하지 않습니다.
 - Deploy DeepSeek는 사용자의 명시적 요청이나 구체적인 작업별 이유가 있을 때
   선택하며, 낮은 우선순위의 자동 fallback에도 유지합니다. 기본 구현·리뷰 경로가 아닙니다.
 - Terra는 시각 추론과 컴퓨터 사용 작업에, Luna는 `scout`와 `sonic`에 유지합니다.
+- Daybreak(`openai-codex/gpt-6-sol:max`)는 cyber 접근이 필요한 보안 작업이나
+  사용자 요청이 있을 때만 호출별로 선택합니다. 에이전트 정의에 고정하지 않습니다.
 - 문서 작업에는 아래 `docs-writer` 경로를 우선합니다.
 
 에이전트는 모델보다 먼저 지침·도구·읽기/쓰기 범위를 기준으로 고릅니다.
@@ -291,6 +303,21 @@ GPT-6 Luna뿐 아니라 해당 프로세스의 다른 적격 Codex 모델 및 �
 `daybreak` 항목은 유지합니다. `/model`에서 GPT-6 Sol 또는 GPT-6 Luna를
 선택해도 같은 공급자 설정을 따르며, 역할 이름 자체가 Daybreak를 켜지는 않습니다.
 기존 설정 연결을 통해 새 OMP 실행부터 적용되므로 Nix 재빌드는 필요하지 않습니다.
+
+`daybreak`는 일반 모델 역할이 아니라 `daybreak_blue`(cyber) 접근 프로그램을
+쓰기 위한 전용 역할입니다. 따라서 이 계정에서 해당 프로그램을 제공하는 Codex
+모델만 지정해야 합니다. 2026-11-18 기준으로 계정별 모델 목록이 `daybreak_blue`를
+제공하는 모델은 `gpt-6-sol`, `gpt-6-luna`, `gpt-5.6-*`, `gpt-daybreak-blue-latest`이며
+`gpt-6.2-sol`, `gpt-6.2-astra`, `gpt-6.1-sol`, `gpt-6-astra`, `gpt-6.1-terra`는
+`standard`만 제공합니다. 다른 GPT 역할을 새 버전으로 올릴 때 이 역할은 함께
+바꾸지 말고, 새 모델이 `daybreak_blue`를 제공하는지 먼저 확인하세요. 제공하지
+않는 모델을 지정하면 오류 없이 일반 모델로 동작합니다.
+
+확인 방법: OMP가 저장한 Codex 모델 검색 결과(`~/.omp/agent/models.db`의
+`model_cache`, `openai-codex` 최신 행)에서 각 모델의
+`accountAccess.<계정>.cyberPrograms`를 읽습니다. `omp usage`의 계정 줄에
+`daybreak` 표시가 없더라도 조회 실패와 구분되지 않으므로 그것만으로 접근 권한이
+없다고 판단하지 않습니다.
 
 OMP 18.16.0은 접근 프로그램이 거절되면 해당 필드를 제거하고 재시도할 수
 있습니다. 따라서 카탈로그 표시나 응답 성공만으로 Daybreak 적용을 확인할 수

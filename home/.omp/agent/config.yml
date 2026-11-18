@@ -4,27 +4,31 @@ modelRoles:
   default: anthropic/claude-fable-5-2:medium
   smol: openai-codex/gpt-6-luna:high
   spark: openai-codex/gpt-6-luna:medium
-  slow: openai-codex/gpt-6-astra:xhigh
+  slow: openai-codex/gpt-6.2-astra:xhigh
   vision: openai-codex/gpt-6.1-terra:medium
   image: openai/gpt-image-2.6-sunburst
   plan: anthropic/claude-fable-5-2:high
   commit: openai-codex/gpt-6-luna:medium
   task: anthropic/claude-opus-5-5:high
-  fast_task: anthropic/claude-fable-5-2:high
-  advisor: openai-codex/gpt-6-astra:high
+  fast_task: openai-codex/gpt-6.2-astra:medium
+  advisor: openai-codex/gpt-6.2-astra:high
   tiny: local/lfm2.5-230m
   memory: openai-codex/gpt-6-luna
   judge: openrouter/~typesafe/jev-latest
-  daybreak: openai-codex/gpt-6-sol:max
   docs: anthropic/claude-fable-5-2:medium
   browser: openai-codex/gpt-6.1-terra:auto
 
   # Explicit model selection — available for deliberate per-call choices.
   deepseek: deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
-  astra: openai-codex/gpt-6-astra
-  sol: openai-codex/gpt-6.1-sol
+  astra: openai-codex/gpt-6.2-astra
+  sol: openai-codex/gpt-6.2-sol
   fable: anthropic/claude-fable-5-2
   opus: anthropic/claude-opus-5-5
+  # Special role: must point at a Codex model that offers the daybreak_blue
+  # cyber access program on this account (gpt-6-sol and gpt-6-luna as of
+  # 2026-11-18; gpt-6.2-sol/astra are standard-only). Do not bump it with the
+  # other GPT roles without checking; see docs/agents.md, Daybreak section.
+  daybreak: openai-codex/gpt-6-sol:max
 prewalk:
   # Opt in with /prewalk: plan on the current model, then hand off to @task.
   enabled: false
@@ -98,7 +102,7 @@ retry:
     # Try direct Codex/Anthropic alternatives first, then Deploy DeepSeek,
     # OpenRouter GLM, and OpenRouter DeepSeek. OpenRouter uses API credits.
     default:
-      - openai-codex/gpt-6-astra:high
+      - openai-codex/gpt-6.2-astra:high
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
       - openrouter/z-ai/glm-5.3:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:high
@@ -114,13 +118,13 @@ retry:
       - openrouter/z-ai/glm-5.3:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:max
     vision:
-      - openai-codex/gpt-6-astra:high
+      - openai-codex/gpt-6.2-astra:high
       - anthropic/claude-fable-5-2:medium
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     plan:
-      - openai-codex/gpt-6-astra:high
+      - openai-codex/gpt-6.2-astra:high
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:max
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:max
@@ -135,7 +139,7 @@ retry:
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     fast_task:
-      - openai-codex/gpt-6-astra:high
+      - anthropic/claude-fable-5-2:medium
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:high
@@ -150,7 +154,7 @@ retry:
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     docs:
-      - openai-codex/gpt-6-astra:medium
+      - openai-codex/gpt-6.2-astra:medium
 dev:
   autoqaConsent: granted
 display:
@@ -169,12 +173,15 @@ autolearn:
 task:
   perCallModel: "on"
   perCallModelAllow:
-    - openai-codex/gpt-6.1-sol
-    - openai-codex/gpt-6-astra
+    - openai-codex/gpt-6.2-sol
+    - openai-codex/gpt-6.2-astra
     - anthropic/claude-opus-5-5
     - anthropic/claude-fable-5-2
     - openai-codex/gpt-6.1-terra
     - openai-codex/gpt-6-luna
+    # Daybreak (cyber access) model: agents may pick it per call when a
+    # security assignment needs it; no agent definition is wired to it.
+    - openai-codex/gpt-6-sol
     - deploy/deepseek-ai/deepseek-v4.1-flash-1017
   completionProbe: true
   speculativeLaunch: false

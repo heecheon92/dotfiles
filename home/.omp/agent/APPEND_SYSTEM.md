@@ -32,11 +32,11 @@ for its own conversation. Keep the shared AGENTS.md harness-neutral.
 - **Fable:** use `@plan` (Fable high) for planning. The `plan` role is not a
   bundled agent named `planner`; for a planning assignment delegated to `task`,
   explicitly select `anthropic/claude-fable-5-2:high`. Keep `fast-task` on its
-  configured Fable high route for bounded implementation when appropriate.
+  configured Astra medium route for bounded implementation when appropriate.
 - **Astra:** use the normal `reviewer` route (`@slow`, Astra xhigh) for code
   review. Omit `model` for that default; an explicit selection uses
-  `openai-codex/gpt-6-astra:xhigh`. The reviewer's read-only scope still applies.
-- **Sol:** retain `openai-codex/gpt-6.1-sol:high` as an explicit alternative for
+  `openai-codex/gpt-6.2-astra:xhigh`. The reviewer's read-only scope still applies.
+- **Sol:** retain `openai-codex/gpt-6.2-sol:high` as an explicit alternative for
   a coding assignment or independent second approach when task-specific evidence
   favors it. Do not automatically replace the requested Opus/Fable/Astra defaults.
 - **Deploy DeepSeek:** retain for explicit user requests, concrete task-specific
@@ -46,6 +46,16 @@ for its own conversation. Keep the shared AGENTS.md harness-neutral.
 - **Terra:** retain for visual reasoning and computer-use assignments when the
   user requests it or task-specific evidence favors it. An explicit override uses
   `openai-codex/gpt-6.1-terra:high`; do not select it merely to promise speed.
+- **Daybreak:** `openai-codex/gpt-6-sol:max` (the `daybreak` role) is the Codex
+  model with the `daybreak_blue` cyber access program. No agent definition is
+  wired to it; select it per call when a security assignment needs that
+  access, such as vulnerability research, exploit or malware analysis, binary
+  reverse engineering, or security testing the standard models decline, or
+  when the user asks for it. Do not use it for ordinary coding, review, or
+  planning, and do not move it to a newer GPT version without confirming that
+  model offers `daybreak_blue`. `security-reviewer` stays pinned to `@advisor`
+  and cannot take this override; use `task` or another unpinned agent. OpenAI
+  may use Daybreak session content to improve its models.
 - **Luna:** preserve scout for read-only exploration and sonic for strictly
   mechanical work. Do not replace these specialists with expensive general
   workers merely because per-call overrides are available.
