@@ -10,7 +10,9 @@ modelRoles:
   plan: anthropic/claude-fable-5-2:high
   commit: openai-codex/gpt-6-luna:medium
   task: anthropic/claude-opus-5-5:high
-  fast_task: openai-codex/gpt-6.2-astra:medium
+  # Deliberate primary: this Codex account offers Ultrafast for GPT-6.2 Sol.
+  # Before proposing a replacement, verify its Ultrafast access and update the tier hook if needed.
+  fast_task: openai-codex/gpt-6.2-sol:high
   advisor: openai-codex/gpt-6.2-astra:high
   tiny: local/lfm2.5-230m
   memory: openai-codex/gpt-6-luna

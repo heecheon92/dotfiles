@@ -44,9 +44,13 @@ OMP 18.20.2의 [설정 저장 경로](https://github.com/can1357/oh-my-pi/blob/v
 
 - `task`: `@task`, `anthropic/claude-opus-5-5:high`. 일반 구현과 디버깅의
   기본 위임입니다.
-- `fast-task`: `@fast_task`, `openai-codex/gpt-6.2-astra:medium`. 접근 방법과
-  범위가 명확한 구현의 대안입니다. 속도를 이유로 정확성이나 필요한 검증을
-  생략하지 않습니다.
+- `fast-task`: `@fast_task`, `openai-codex/gpt-6.2-sol:high`. 접근 방법과
+  범위가 명확한 구현에 씁니다. 이 계정에서 GPT-6.2 Sol의 Ultrafast를 쓸 수 있어
+  사용자가 기본 모델로 선택했습니다. `high`는 추론 수준이고, Ultrafast는
+  `model-service-tier.ts` 훅이 모델 ID를 보고 요청하는 서비스 티어입니다.
+  새 모델이 나왔다는 이유만으로 교체하지 마세요. 변경을 제안하기 전에 이 계정에서
+  후보 모델이 Ultrafast를 제공하는지, 훅이 해당 ID에 그 티어를 요청하는지 확인하세요.
+  속도를 이유로 정확성이나 필요한 검증을 생략하지 않습니다.
 - `reviewer`: 번들 정의의 `@slow`, `openai-codex/gpt-6.2-astra:xhigh`.
   코드 리뷰의 기본 경로이며 읽기 전용 범위는 그대로입니다.
 - `security-reviewer`: `@advisor`, Astra `high`.
@@ -74,7 +78,7 @@ Astra `high`, `smol`은 Terra `medium` 다음 Fable `low`, `slow`는
 Fable `xhigh`, `plan`은 Astra `high`, `vision`은 Astra `high` 다음
 Fable `medium`입니다.
 `commit`과 `spark`는 Fable `low`, `task`는 Fable `high`, `fast_task`는
-Fable `high`, `advisor`는 Fable `high`, `docs`는 Astra `medium`으로
+Fable `medium`, `advisor`는 Fable `high`, `docs`는 Astra `medium`으로
 대체합니다. 기존 DeepSeek·GLM 체인이 있던 열 개 역할에는 그 뒤로 Deploy
 DeepSeek → OpenRouter GLM → OpenRouter DeepSeek를 복원했으며, 이전 역할별
 추론 수준을 유지합니다. 이 경로들은 낮은 우선순위의 자동 fallback이며,
@@ -145,10 +149,10 @@ override에 쓸 수 없습니다. fallback 체인과 호출별 허용 목록은 
 
 - 확신이 없으면 선택한 에이전트의 기본 역할을 쓰고 `model`을 생략합니다.
   구현·디버깅은 `task`(Opus `high`), 범위가 명확한 구현은 `fast-task`
-  (Astra `medium`), 코드 리뷰는 `reviewer`(Astra `xhigh`)입니다.
+  (Sol `high`, Ultrafast 요청), 코드 리뷰는 `reviewer`(Astra `xhigh`)입니다.
 - 계획은 `@plan`(Fable `high`)을 씁니다. `task`에 위임하는 계획 작업에는
   `anthropic/claude-fable-5-2:high`를 명시합니다.
-- Sol(`openai-codex/gpt-6.2-sol:high`)은 코딩 작업이나 독립적인 두 번째
+- `fast-task` 이외에서 Sol(`openai-codex/gpt-6.2-sol:high`)은 코딩 작업이나 독립적인 두 번째
   접근이 필요하고 작업별 근거가 있을 때만 명시적으로 선택하는 대안입니다.
   Opus·Fable·Astra 기본값을 자동으로 대체하지 않습니다.
 - Deploy DeepSeek는 사용자의 명시적 요청이나 구체적인 작업별 이유가 있을 때

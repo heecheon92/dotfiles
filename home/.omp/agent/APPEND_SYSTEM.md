@@ -31,8 +31,12 @@ for its own conversation. Keep the shared AGENTS.md harness-neutral.
   `anthropic/claude-opus-5-5:high`.
 - **Fable:** use `@plan` (Fable high) for planning. The `plan` role is not a
   bundled agent named `planner`; for a planning assignment delegated to `task`,
-  explicitly select `anthropic/claude-fable-5-2:high`. Keep `fast-task` on its
-  configured Astra medium route for bounded implementation when appropriate.
+  explicitly select `anthropic/claude-fable-5-2:high`.
+- **Bounded implementation:** dispatch `fast-task` without a model override by default.
+  Its `@fast_task` primary is GPT-6.2 Sol with high reasoning effort because
+  the user's Codex account offers Ultrafast for it. Do not replace this primary
+  as part of a routine model upgrade. Before proposing a change, verify the
+  replacement's account-specific tier support and check the model-service-tier hook.
 - **Astra:** use the normal `reviewer` route (`@slow`, Astra xhigh) for code
   review. Omit `model` for that default; an explicit selection uses
   `openai-codex/gpt-6.2-astra:xhigh`. The reviewer's read-only scope still applies.
