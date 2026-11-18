@@ -432,6 +432,9 @@ in
   home.file.".omp/agent/extensions/herdr-runtime-context.ts".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/extensions/herdr-runtime-context.ts";
+  home.file.".omp/agent/extensions/model-service-tier.ts".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/agent/extensions/model-service-tier.ts";
   # Keep OMP's plugin registry reproducible while leaving downloaded packages
   # machine-local. The activation below restores them from the pinned lockfile.
   home.file.".omp/plugins/package.json".source =

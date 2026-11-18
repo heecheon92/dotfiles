@@ -302,6 +302,13 @@ Do not enable prewalk while diagnosing basic routing unless you also want the mo
 
 Service tier is another independent control: `tier.subagent` and per-agent `task.agentServiceTierOverrides` affect supported provider service tiers, not agent type or reasoning effort.
 
+The `model-service-tier.ts` extension applies a model-based rule in the main
+session and extension-enabled workers: Codex GPT‑6.2 Sol requests Ultrafast
+and GPT‑6.2 Astra requests Fast (`priority`). It reapplies the rule at prompt
+start and on retry fallback, overriding inherited tiers and manual `/fast`
+choices for these two models. OMP still omits tiers the selected model doesn't
+advertise. This does not change reasoning effort or advisor tier settings.
+
 ## Background execution and context
 
 ### Ordinary subagents
