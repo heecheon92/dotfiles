@@ -6,12 +6,20 @@ beside it. It works alone; it needs no other skill, no installs and no network.
 
 ## Use
 
-Ask as you normally would:
+Name the skill and say what you want. How you name it depends on the tool:
+
+| Tool | Type |
+|---|---|
+| OMP | `/skill:diorama-maker <your request>` |
+| Claude Code | `/diorama-maker <your request>` |
+| Codex | `$diorama-maker <your request>` |
 
 ```text
-Explain how our login flow works, step by step, so a new developer can follow it.
-Make a page I can share that shows why yesterday's outage happened.
+/skill:diorama-maker Explain how our login flow works, step by step, so a new developer can follow it.
+/diorama-maker Make a page I can share that shows why yesterday's outage happened.
 ```
+
+You can also ask without the skill name; the agent picks the skill when the request matches.
 
 | Output | When | What you get |
 |---|---|---|

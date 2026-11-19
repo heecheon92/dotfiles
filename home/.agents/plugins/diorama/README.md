@@ -20,23 +20,81 @@ none of those sites' text, artwork or code.
 | `diorama-planner` | Plan a collection with you, create its folder and run the write → review → approve queue | `diorama-maker` |
 | `diorama-reviewer` | Review a walkthrough before you read it: as a newcomer, then against the format and the sources | `diorama-maker` |
 
-## Try it
+## How to use it
 
-One explanation:
+Name the skill at the start of your message, then say what you want in plain words. The way
+to name a skill depends on the tool:
+
+| Tool | Type |
+|---|---|
+| OMP | `/skill:diorama-maker <your request>` |
+| Claude Code | `/diorama-maker <your request>` |
+| Codex | `$diorama-maker <your request>` |
+
+The same pattern works for `diorama-planner` and `diorama-reviewer`. You can also leave the
+skill name out and just ask; the agent picks the skill when your request matches it. Naming
+it makes sure the right one is used.
+
+### The usual flow
+
+For a set of walkthroughs you only talk to the planner. It calls the other two for you:
 
 ```text
-Explain how our login flow works, step by step, as a page I can share with a new teammate.
+diorama-planner   asks what you want, proposes the outline, waits for your approval
+   └─ for each walkthrough, in order:
+        diorama-maker     writes it and renders it
+        diorama-reviewer  reviews it; the findings are fixed
+        you               read it and approve, or ask for changes
 ```
 
-A set:
+For a single explanation, `diorama-maker` is enough. Add `diorama-reviewer` afterwards if you
+want it checked before you share it.
+
+### Explain one thing: `diorama-maker`
 
 ```text
-I want an onboarding guide to our door-access system for new engineers. I have no lesson list yet.
+/skill:diorama-maker Explain how our login flow works, step by step, as a page I can share with a new teammate.
+```
+
+```text
+/diorama-maker Walk me through why yesterday's deploy failed. Keep it in the chat.
+```
+
+```text
+$diorama-maker Make a page that shows how a request travels from the browser to our database.
+```
+
+Say "page" when you want a file to keep or share. Without it you get the steps in the
+conversation.
+
+### Build a set: `diorama-planner`
+
+```text
+/skill:diorama-planner I want an onboarding guide to our door-access system for new engineers. I have no lesson list yet.
+```
+
+```text
+/diorama-planner Create a course from these topics: 1) how a badge tap works 2) keeping doors in sync 3) the morning rush.
 ```
 
 The planner asks whether you have a list of topics. If you do, it uses yours; if not, it
 proposes an outline. Nothing is written until you approve the outline, and you approve each
 walkthrough after a model review.
+
+To pick up an existing collection later, open its folder and ask:
+
+```text
+$diorama-planner Continue this collection.
+```
+
+### Check one before you read it: `diorama-reviewer`
+
+```text
+/skill:diorama-reviewer Review walkthroughs/badge-tap.js before I read it.
+```
+
+The planner runs this step for you inside a collection. Use it directly for a single page,
+or when you want a second opinion from a different model.
 
 ## What you get
 
@@ -110,25 +168,6 @@ repository's top-level skills and does not find the plugin.
 
 To remove them later: `npx skills remove --global diorama-maker diorama-planner diorama-reviewer`.
 
-### With git only
-
-Fetches just the plugin folder (about 1 MB) and copies the skills into place:
-
-```bash
-git clone --depth 1 --filter=blob:none --sparse https://github.com/heecheon92/dotfiles.git diorama-src
-cd diorama-src
-git sparse-checkout set home/.agents/plugins/diorama
-
-mkdir -p ~/.agents/skills
-cp -R home/.agents/plugins/diorama/skills/diorama-* ~/.agents/skills/
-
-cd .. && rm -rf diorama-src
-```
-
-Copy into the skills folder your agent reads. `~/.agents/skills` is the shared location;
-Claude Code reads `~/.claude/skills` and Codex reads `~/.codex/skills`. To remove the
-plugin, delete the three `diorama-*` folders from there. To update, repeat the steps.
-
 ### With Codex's bundled installer
 
 ```bash
@@ -149,11 +188,6 @@ python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/inst
 
 The links point at the repository, so edits take effect without reinstalling. See the
 [plugins README](../README.md) for removal and for linking `diorama-maker` alone.
-
-### After installing
-
-Start a new agent session so the skills are discovered, then try one of the prompts above.
-Nothing else needs to be installed: the pages the skills produce open in any browser.
 
 ## Optional companions
 

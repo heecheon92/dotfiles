@@ -21,23 +21,82 @@ collection이 될 수 있습니다.
 | `diorama-planner` | collection을 함께 기획하고, 폴더를 만들고, 작성 → 리뷰 → 승인 순서를 진행합니다 | `diorama-maker` |
 | `diorama-reviewer` | 사용자가 읽기 전에 walkthrough를 검토합니다. 먼저 처음 보는 독자의 눈으로 읽고, 이어서 형식과 출처에 맞는지 확인합니다 | `diorama-maker` |
 
-## 사용해 보기
+## 사용 방법
 
-설명 하나:
+메시지 맨 앞에 스킬 이름을 적고, 이어서 원하는 것을 평소 말하듯 쓰면 됩니다. 스킬을
+부르는 방식은 도구마다 다릅니다.
+
+| 도구 | 입력 |
+|---|---|
+| OMP | `/skill:diorama-maker <요청 내용>` |
+| Claude Code | `/diorama-maker <요청 내용>` |
+| Codex | `$diorama-maker <요청 내용>` |
+
+`diorama-planner`와 `diorama-reviewer`도 같은 방식으로 부릅니다. 스킬 이름 없이 그냥
+요청해도 되며, 요청이 스킬 설명과 맞으면 에이전트가 알아서 고릅니다. 이름을 적으면
+원하는 스킬이 확실히 쓰입니다.
+
+### 일반적인 흐름
+
+walkthrough 여러 개를 만들 때는 planner에게만 말하면 됩니다. 나머지 둘은 planner가 대신
+부릅니다.
 
 ```text
-우리 로그인 흐름이 어떻게 동작하는지, 새 팀원에게 공유할 수 있는 페이지로 단계별로 설명해 줘.
+diorama-planner   원하는 것을 묻고, 목차를 제안하고, 승인을 기다립니다
+   └─ walkthrough마다 순서대로:
+        diorama-maker     작성하고 화면에 그려 봅니다
+        diorama-reviewer  검토하고, 지적된 내용을 고칩니다
+        사용자            읽어 보고 승인하거나 수정을 요청합니다
 ```
 
-여러 개 묶음:
+설명 하나만 필요하면 `diorama-maker`로 충분합니다. 공유하기 전에 점검받고 싶으면 이어서
+`diorama-reviewer`를 부르세요.
+
+### 하나를 설명할 때: `diorama-maker`
 
 ```text
-신입 엔지니어를 위한 출입 통제 시스템 온보딩 가이드를 만들고 싶어. 아직 목차는 없어.
+/skill:diorama-maker 우리 로그인 흐름이 어떻게 동작하는지, 새 팀원에게 공유할 수 있는 페이지로 단계별로 설명해 줘.
+```
+
+```text
+/diorama-maker 어제 배포가 왜 실패했는지 단계별로 설명해 줘. 대화 안에서만 보여 주면 돼.
+```
+
+```text
+$diorama-maker 요청 하나가 브라우저에서 우리 데이터베이스까지 가는 과정을 보여 주는 페이지를 만들어 줘.
+```
+
+보관하거나 공유할 파일이 필요하면 "페이지"라고 말하세요. 말하지 않으면 대화 안에서
+단계별로 설명합니다.
+
+### 여러 개를 묶어 만들 때: `diorama-planner`
+
+```text
+/skill:diorama-planner 신입 엔지니어를 위한 출입 통제 시스템 온보딩 가이드를 만들고 싶어. 아직 목차는 없어.
+```
+
+```text
+/diorama-planner 이 주제들로 강의를 만들어 줘: 1) 배지 태그가 동작하는 방식 2) 출입문 동기화 3) 출근 시간 혼잡.
 ```
 
 planner는 다룰 주제 목록이 이미 있는지 먼저 묻습니다. 있으면 그 목록을 그대로 쓰고,
 없으면 목차를 제안합니다. 목차를 승인하기 전에는 아무것도 작성하지 않으며, 각
 walkthrough는 모델 리뷰를 거친 뒤 사용자가 승인합니다.
+
+나중에 기존 collection을 이어서 작업하려면 그 폴더를 열고 이렇게 요청하세요.
+
+```text
+$diorama-planner 이 collection 이어서 진행해 줘.
+```
+
+### 읽기 전에 검토받을 때: `diorama-reviewer`
+
+```text
+/skill:diorama-reviewer walkthroughs/badge-tap.js를 내가 읽기 전에 검토해 줘.
+```
+
+collection 안에서는 planner가 이 단계를 대신 진행합니다. 단일 페이지를 검토하거나, 다른
+모델의 의견을 한 번 더 받고 싶을 때 직접 부르세요.
 
 ## 결과물
 
@@ -111,26 +170,6 @@ npx skills add https://github.com/heecheon92/dotfiles/tree/main/home/.agents/plu
 
 나중에 제거하려면: `npx skills remove --global diorama-maker diorama-planner diorama-reviewer`.
 
-### git만으로 설치
-
-플러그인 폴더(약 1 MB)만 내려받아 스킬을 제자리에 복사합니다.
-
-```bash
-git clone --depth 1 --filter=blob:none --sparse https://github.com/heecheon92/dotfiles.git diorama-src
-cd diorama-src
-git sparse-checkout set home/.agents/plugins/diorama
-
-mkdir -p ~/.agents/skills
-cp -R home/.agents/plugins/diorama/skills/diorama-* ~/.agents/skills/
-
-cd .. && rm -rf diorama-src
-```
-
-사용하는 에이전트가 읽는 스킬 폴더에 복사하세요. `~/.agents/skills`는 여러 도구가 함께
-쓰는 위치이고, Claude Code는 `~/.claude/skills`, Codex는 `~/.codex/skills`를 읽습니다.
-제거하려면 그 폴더에서 `diorama-*` 폴더 세 개를 지우면 됩니다. 업데이트하려면 같은
-과정을 다시 실행하세요.
-
 ### Codex에 포함된 설치 스크립트로 설치
 
 ```bash
@@ -151,11 +190,6 @@ python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/inst
 
 링크가 저장소를 가리키므로 수정한 내용이 재설치 없이 바로 반영됩니다. 제거 방법과
 `diorama-maker`만 따로 연결하는 방법은 [plugins README](../README.md)에 있습니다.
-
-### 설치한 뒤
-
-스킬이 인식되도록 에이전트 세션을 새로 시작한 다음, 위의 예시 요청을 시도해 보세요. 더
-설치할 것은 없습니다. 스킬이 만드는 페이지는 어떤 브라우저에서든 열립니다.
 
 ## 선택 사항으로 함께 쓰면 좋은 스킬
 
