@@ -148,6 +148,7 @@ button { font-family: inherit; }
 .wt-head { display: flex; gap: 24px; align-items: flex-end; justify-content: space-between; margin: 0 4px 16px; }
 .wt-head h1 { font-size: 25px; line-height: 1.2; margin: 0 0 4px; font-weight: 800; letter-spacing: -0.02em; }
 .crumb { margin: 0 0 2px; font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: .02em; }
+.question { margin: 2px 0 6px; font-size: 15.5px; line-height: 1.45; font-weight: 700; color: var(--ink); max-width: 90ch; }
 .summary { margin: 0; color: var(--ink-2); max-width: 100ch; }
 .note { margin: 3px 0 0; font-size: 12px; color: var(--muted); }
 .pills { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0 0 4px; flex-shrink: 0; }
@@ -343,6 +344,35 @@ button { font-family: inherit; }
 .changes li { display: flex; gap: 9px; align-items: baseline; margin: 4px 0; font-size: 12.5px; }
 .mark { flex-shrink: 0; width: 18px; height: 18px; border-radius: 5px; display: inline-grid; place-items: center; font-size: 12px; font-weight: 800; line-height: 1; background: var(--tb); color: var(--tf); border: 1.2px solid var(--tf); transform: translateY(3px); }
 
+/* Try it: options the reader picks on a try step, and the verdict on the one picked */
+.try { margin: 14px 0 4px; padding: 11px 12px 12px; border: 1.3px dashed var(--ink); border-radius: 12px; background: var(--card-2); }
+.try .section-h { margin: 0 0 4px; }
+.try-prompt { margin: 0 0 10px; font-size: 12.5px; line-height: 1.55; color: var(--ink-2); }
+.try-options { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.try-opt { padding: 6px 11px; font-size: 12.5px; }
+.try-opt kbd { padding: 0 4px; }
+.try-opt[aria-pressed="true"] { background: var(--amber-b); transform: translateY(2px); box-shadow: 0 .5px 0 var(--drop); }
+.try-opt[aria-pressed="true"]:hover:not(:disabled) { background: var(--amber-b); }
+.try-reset { margin-left: auto; }
+.try-verdict { margin-top: 10px; padding: 9px 12px 10px; border: 1.3px solid var(--ink); border-radius: 10px; background: var(--tb); color: var(--tf); box-shadow: 0 2.5px 0 var(--drop); animation: verdict-in .36s cubic-bezier(.2, .7, .2, 1); }
+.try-v-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; margin: 0; }
+.try-v-text { font-size: 14px; font-weight: 800; }
+.try-v-opt { font-size: 11px; font-weight: 700; white-space: nowrap; }
+.try-v-why { margin: 3px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--ink); }
+@keyframes verdict-in { from { opacity: 0; transform: translateY(4px); } }
+
+/* Sources: where the facts and numbers come from */
+.sources { border-top: 1px solid var(--line); margin-top: 16px; }
+.sources summary { cursor: pointer; margin: 12px 0 6px; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--muted); }
+.sources-h { text-transform: uppercase; }
+.sources summary .tag { letter-spacing: 0; }
+.sources ul { list-style: none; margin: 0; padding: 0; }
+.sources li { display: flex; gap: 9px; align-items: flex-start; margin: 8px 0; font-size: 12px; line-height: 1.5; }
+.sources li .tag { flex-shrink: 0; margin-top: 2px; }
+.src-claim { margin: 0; color: var(--ink); }
+.src-from { margin: 1px 0 0; font-size: 11.5px; color: var(--muted); overflow-wrap: anywhere; }
+.src-from a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
 .nav { display: flex; gap: 10px; margin-top: 18px; }
 .nav .primary { flex: 1 1 auto; min-width: 0; justify-content: space-between; }
 .nav .primary span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -375,6 +405,7 @@ kbd { font: 10.5px var(--mono); padding: 0 5px; border: 1px solid var(--line); b
 .step-btn.past .step-short { color: var(--ink-2); }
 .step-btn.current .dot-n { border-color: var(--ink); color: var(--ink); background: var(--green-b); transform: scale(1.1); box-shadow: 0 2px 0 var(--drop); }
 .step-btn.current .step-short { color: var(--ink); font-weight: 800; }
+.step-btn .try-mark { position: absolute; top: 0; left: calc(50% + 7px); width: 10px; height: 10px; border: 1.3px solid var(--ink); border-radius: 2.5px; background: var(--amber-b); transform: rotate(45deg); }
 
 @container dio (max-width: 760px) {
   .page { padding: 14px 12px 20px; }
@@ -519,6 +550,41 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
 .hit-where { font-size: 10.5px; font-weight: 700; color: var(--muted); }
 .hit-title { font-size: 13.5px; font-weight: 800; }
 .hit-sub { font-size: 12px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ================= Contact sheet (#/<id>/sheet) ================= */
+
+.sheet { padding: 18px 24px 32px; }
+.sheet-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+.sheet-head { align-items: flex-start; }
+.sheet-counts { margin: 4px 0 0; font-size: 12px; font-weight: 700; color: var(--muted); }
+.sheet-checks { margin: 0 4px 18px; padding: 14px 18px; }
+.sheet-checks .section-h { margin: 0 0 8px; }
+.sheet-findings { list-style: none; margin: 0; padding: 0; }
+.sheet-findings li { display: flex; gap: 9px; align-items: flex-start; margin: 5px 0; font-size: 12.5px; line-height: 1.5; }
+.sheet-findings .tag { flex-shrink: 0; margin-top: 2px; }
+.sheet-clear { margin: 0; font-weight: 800; color: var(--green-f); }
+.sheet-uncovered { margin: 10px 0 0; font-size: 12px; color: var(--muted); }
+/* Tiles at least 500 px wide: a still keeps the reference framing (960 px wide), so narrower tiles shrink labels below reading size. */
+.sheet-grid { list-style: none; margin: 0; padding: 0 4px; display: grid; grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); gap: 16px; }
+.tile { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 10px 12px; }
+.tile-option { background: var(--card-2); border-style: dashed; }
+.tile-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; font-size: 12px; font-weight: 700; color: var(--muted); }
+.tile-id { color: var(--ink); font-weight: 800; }
+.tile-title { margin: 0; font-size: 14.5px; line-height: 1.3; }
+.tile-title a { color: inherit; text-decoration: none; }
+.tile-title a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.tile-opt { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; font-size: 12px; color: var(--ink-2); }
+.tile-why { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-2); }
+.tile-scene { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--stage); border: 1px solid var(--line); border-radius: 9px; }
+.tile-scene * { animation: none !important; }
+.tile-metrics { display: flex; flex-wrap: wrap; gap: 2px 12px; margin: 0; font-size: 11.5px; color: var(--muted); }
+.tile-metrics b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.tile-words { display: flex; flex-wrap: wrap; gap: 2px 10px; margin: 0; font-size: 11.5px; color: var(--muted); }
+.tile-words .over { color: var(--red-f); font-weight: 800; }
+@container dio (max-width: 760px) {
+  .sheet { padding: 14px 12px 24px; }
+  .sheet-grid { grid-template-columns: minmax(0, 1fr); }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

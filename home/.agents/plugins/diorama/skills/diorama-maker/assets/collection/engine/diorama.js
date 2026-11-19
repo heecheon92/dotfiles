@@ -14,13 +14,12 @@
 (() => {
   'use strict';
 
-  const VERSION = '0.1.0';
+  const VERSION = '0.2.0';
   const NS = 'http://www.w3.org/2000/svg';
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
   const phoneQuery = matchMedia('(max-width: 600px)');
   const warn = (m) => console.warn(`[diorama] ${m}`);
   const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-  const validated = new WeakSet();   // walkthrough objects already checked, so warnings print once
 
   /* ================= Small helpers ================= */
 
@@ -614,6 +613,7 @@
 
   const DEFAULT_LABELS = {
     goals: "What you'll learn", strip: 'In this walkthrough', changes: 'What changed', next: 'Next', back: 'Back', restart: 'Start again', chapters: {},
+    sources: 'Where this comes from', sourced: 'sourced', assumed: 'assumption', try: 'Try it', reset: 'Reset',
     sections: 'Sections', home: 'Overview', continue: 'Continue', planned: 'planned', draft: 'draft',
   };
 
@@ -644,6 +644,7 @@
     <div>
       ${opts.crumb ? `<p class="crumb">${esc(opts.crumb)}</p>` : ''}
       <h1 data-ref="title" tabindex="-1"></h1>
+      <p data-ref="question" class="question" hidden></p>
       <p data-ref="summary" class="summary"></p>
       <p data-ref="note" class="note" hidden></p>
     </div>
@@ -685,11 +686,16 @@
         <button data-ref="backBtn" class="btn" type="button"></button>
         <button data-ref="nextBtn" class="btn primary" type="button"></button>
       </div>
-      <p class="kbd-hint"><span><kbd>←</kbd> <kbd>→</kbd> step</span> · <span><kbd>R</kbd> replay</span> · <span><kbd>Space</kbd> pause</span>${opts.searchHint ? ' · <span><kbd>/</kbd> search</span>' : ''}</p>
+      <p class="kbd-hint"><span><kbd>←</kbd> <kbd>→</kbd> step</span> · <span data-ref="tryHint" hidden></span><span><kbd>R</kbd> replay</span> · <span><kbd>Space</kbd> pause</span>${opts.searchHint ? ' · <span><kbd>/</kbd> search</span>' : ''}</p>
+      <p data-ref="tryLive" class="sr-only" aria-live="polite"></p>
       <section data-ref="goals" class="goals" aria-labelledby="dio-goals-head" hidden>
         <h3 id="dio-goals-head" data-ref="goalsHead" class="section-h"></h3>
         <ul data-ref="goalsList"></ul>
       </section>
+      <details data-ref="sources" class="sources" hidden>
+        <summary data-ref="sourcesHead"></summary>
+        <ul data-ref="sourcesList"></ul>
+      </details>
     </aside>
 
     <nav class="strip card" aria-label="Steps">
@@ -702,39 +708,68 @@
 </div>`;
   }
 
-  // opts: { labels, start (0-based step), crumb, searchHint, docTitle,
-  //         prev: { title, go } | null   where Back on the first step leads,
-  //         end: { label, icon, go }      what the last step's primary button does,
-  //         onStep(i) }                   called after every step change
-  function mountWalkthrough(host, w, opts) {
+  /* ================= Walkthrough model ================= */
+  // What follows from the data alone: the scenes (one per step, then one per try option), the
+  // layout of every scene at rest, camera planning for a given stage size, still pictures and the
+  // automatic checks. The walkthrough view and the contact sheet both draw from it. It is built
+  // once per walkthrough object, which is also why its checks print only once.
+
+  const models = new WeakMap();
+  const SCENE_KEYS = ['show', 'state', 'links', 'flows', 'panel'];
+  const OPTION_LETTERS = 'abcde';
+  // The stage size the checks and the contact sheet assume: about what a 1440 × 900 window leaves for the stage.
+  const REF = { W: 960, H: 540 };
+  const UNSPACED = /\p{Script=Han}|\p{Script=Hiragana}|\p{Script=Katakana}|\p{Script=Thai}/u;
+
+  // Camera limits for a stage of W × H px. A bigger stage may zoom further in, so the scene grows
+  // with the window instead of floating in empty space.
+  function viewFor(W, H, o = {}) {
+    return { W, H, margin: 26, zMin: .3, zMax: o.phone ? 1.45 : clamp(Math.min(W / 700, H / 400), 1.45, 2.6), hud: clamp(W / 780, .86, 1.16), inlinePanel: !!o.inline };
+  }
+  const viewRect = (c, V) => ({ x: c.cx - V.W / 2 / c.z, y: c.cy - V.H / 2 / c.z, w: V.W / c.z, h: V.H / c.z });
+
+  function modelOf(w) {
+    let m = models.get(w);
+    if (!m) {
+      m = buildModel(w);
+      models.set(w, m);
+      m.report();
+    }
+    return m;
+  }
+
+  function buildModel(w) {
     const NODES = w.nodes || {};
     const LINKS = w.links || {};
     const STEPS = w.steps;
     const METRICS = Array.isArray(w.metrics) ? w.metrics : [];
-    const LBL = opts.labels;
-    host.innerHTML = viewMarkup(opts);
-    const R = {};
-    for (const el of host.querySelectorAll('[data-ref]')) R[el.dataset.ref] = el;
-    const $ = (name) => R[name];
-    $('sceneDefs').innerHTML = defsMarkup();
-    let reduce = motionQuery.matches;
 
-    // Everything asynchronous goes through these two, so destroy() can cancel all of it.
-    let alive = true;
-    const timeouts = new Set(), frames = new Set();
-    function later(fn, ms) {
-      const t = setTimeout(() => { timeouts.delete(t); fn(); }, ms);
-      timeouts.add(t);
-    }
-    function nextFrame(fn) {
-      const f = requestAnimationFrame((now) => { frames.delete(f); fn(now); });
-      frames.add(f);
-    }
+    /* ================= Scenes: steps and try options ================= */
+    // SCENES[i] is step i. Each try option adds one scene after the steps: its step with the
+    // option's scene keys and metrics in place of the step's own; everything else is inherited.
+
+    const SCENES = STEPS.slice();
+    const META = STEPS.map((s, i) => ({ step: i, opt: -1, id: String(i + 1), name: `step ${i + 1}` }));
+    const tries = STEPS.map((s, i) => {
+      const t = s.try;
+      if (!isObject(t) || !Array.isArray(t.options) || !t.options.length) return null;
+      const options = t.options.slice(0, 5).map((raw, k) => {
+        const o = isObject(raw) ? raw : {}, v = isObject(o.verdict) ? o.verdict : {}, os = isObject(o.scene) ? o.scene : {};
+        const label = typeof o.label === 'string' && o.label.trim() ? o.label : `Option ${k + 1}`;
+        const scene = { ...(s.scene || {}) };
+        for (const key of SCENE_KEYS) if (key in os) scene[key] = os[key];
+        const index = SCENES.length, id = `${i + 1}${OPTION_LETTERS[k]}`;
+        SCENES.push({ ...s, scene, metrics: isObject(o.metrics) ? o.metrics : s.metrics });
+        META.push({ step: i, opt: k, id, name: `step ${id} (option ${JSON.stringify(label)})`, raw: o });
+        return { label, scene: index, verdict: { tone: toneOf(v.tone), text: String(v.text ?? ''), why: String(v.why ?? '') } };
+      });
+      return { prompt: String(t.prompt ?? ''), options };
+    });
 
     /* ================= Per-step node state ================= */
 
     function propsFor(id, i) {
-      const n = NODES[id], st = ((STEPS[i] && STEPS[i].scene && STEPS[i].scene.state) || {})[id] || {};
+      const n = NODES[id], st = ((SCENES[i] && SCENES[i].scene && SCENES[i].scene.state) || {})[id] || {};
       const dflt = n.type === 'crowd' ? 12 : n.type === 'queue' ? 3 : 0;
       return {
         load: typeof st.load === 'number' ? clamp(st.load, 0, 1) : null,
@@ -761,7 +796,7 @@
     for (const id in NODES) {
       if (NODES[id].type !== 'queue') continue;
       let m = 4;
-      STEPS.forEach((s, i) => { if ((s.scene && s.scene.show || []).includes(id)) m = Math.max(m, Math.ceil(propsFor(id, i).count)); });
+      SCENES.forEach((s, i) => { if ((s.scene && s.scene.show || []).includes(id)) m = Math.max(m, Math.ceil(propsFor(id, i).count)); });
       queueCaps[id] = Math.min(16, m);
     }
     const shell = (id) => ({ id, cap: queueCaps[id] });
@@ -811,7 +846,7 @@
     }
 
     const hasHead = (style) => style !== 'cut' && style !== 'beat';
-    const stepLinks = (i) => (i >= 0 && STEPS[i].scene && STEPS[i].scene.links) || {};
+    const stepLinks = (i) => (i >= 0 && SCENES[i].scene && SCENES[i].scene.links) || {};
     function linkStyle(i, id) { const s = (stepLinks(i)[id] || {}).style; return STYLES.includes(s) ? s : 'solid'; }
     function linkText(i, id) { const v = stepLinks(i)[id] || {}; return String('label' in v ? (v.label ?? '') : (LINKS[id].label ?? '')); }
     const linkLabelSpec = (text, style) => ({ lines: [{ t: text, size: 9.5, w: 700 }], tone: style === 'cut' ? 'red' : style === 'off' ? 'gray' : 'paper' });
@@ -876,9 +911,11 @@
     }
     const stackItemSize = (it) => (it.gauge ? [GAUGE_W, PILL_H] : pillSize(tagSpec(it.tag)));
 
+    // Places every pill of scene i. `items` names each placed box, for the overlap check (rule 8).
     function layoutOverlays(i, plan, base, sides) {
       const ctx = { hulls: base.hulls, samples: base.samples, pills: [], labels: [] };
-      const out = { cost: 0, entLabels: {}, linkLabels: {} };
+      const out = { cost: 0, entLabels: {}, linkLabels: {}, items: [] };
+      const nameOf = (id) => JSON.stringify(plan.props[id].label || id);
       for (const id of plan.show) {
         const info = plan.ents[id];
         if (!info.d.hull) continue;
@@ -888,6 +925,7 @@
           const box = boxAt(x, y, w, h);
           out.cost += placementCost(box, ctx, null) + STACK_SIDES[side];
           ctx.pills.push(box);
+          out.items.push({ box, what: it.gauge ? `the gauge on ${nameOf(id)}` : `tag ${JSON.stringify(String(it.tag.text ?? ''))} on ${nameOf(id)}` });
         });
       }
       for (const id of plan.show) {
@@ -900,6 +938,7 @@
         out.cost += best.cost;
         const [w, h] = pillSize(spec);
         ctx.pills.push(boxAt(best.x, best.y, w, h));
+        out.items.push({ box: boxAt(best.x, best.y, w, h), what: `the label ${nameOf(id)}` });
       }
       for (const id of plan.linkIds) {
         const text = linkText(i, id);
@@ -910,15 +949,16 @@
         out.cost += best.cost;
         const [w, h] = pillSize(spec);
         ctx.labels.push(boxAt(best.x, best.y, w, h));
+        out.items.push({ box: boxAt(best.x, best.y, w, h), what: `link label ${JSON.stringify(text)}` });
       }
       out.ctx = ctx;
       return out;
     }
 
     function buildPlan(i) {
-      const sc = STEPS[i].scene || {};
+      const sc = SCENES[i].scene || {};
       const show = (sc.show || []).filter((id) => NODES[id]);
-      const plan = { i, show, props: {}, ents: {}, labels: {}, linkIds: [], panel: sc.panel && sc.panel.lines ? sc.panel : null };
+      const plan = { i, show, props: {}, ents: {}, labels: {}, linkIds: [], hullIds: [], panel: sc.panel && sc.panel.lines ? sc.panel : null };
       const base = { hulls: [], samples: [] };
       const pts = [];
       for (const id of show) {
@@ -927,7 +967,7 @@
         const d = drawEntity(shell(id), n, restParams(pr));
         plan.ents[id] = { d, labelAt: null, side: 'above' };
         if (d.extent) pts.push(...d.extent);
-        if (d.hull) { base.hulls.push(d.hull); pts.push(...d.hull); }
+        if (d.hull) { base.hulls.push(d.hull); plan.hullIds.push(id); pts.push(...d.hull); }
       }
       plan.linkIds = Object.keys(sc.links || {}).filter((id) => LINKS[id] && show.includes(LINKS[id].from) && show.includes(LINKS[id].to));
       for (const id of plan.linkIds) {
@@ -953,34 +993,32 @@
       for (const b of best.ctx.pills.concat(best.ctx.labels)) pts.push(...boxCorners(b));
       plan.bounds = pts.length ? bboxOf(pts) : { x0: -100, y0: -60, x1: 100, y1: 60 };
       plan.ctx = best.ctx;
+      plan.items = best.items;
       return plan;
     }
 
     /* ================= Camera ================= */
+    // V is a stage size from viewFor(). Plans do not depend on the stage size; cameras do.
 
-    const VIEW = { W: 900, H: 520, margin: 26, zMax: 1.45, zMin: .3, phoneZ: .85, hud: 1 };
-
-    const viewRect = (c) => ({ x: c.cx - VIEW.W / 2 / c.z, y: c.cy - VIEW.H / 2 / c.z, w: VIEW.W / c.z, h: VIEW.H / c.z });
-
-    function fitCamera(b) {
+    function fitCamera(b, V) {
       const bw = Math.max(40, b.x1 - b.x0), bh = Math.max(40, b.y1 - b.y0);
-      const z = clamp(Math.min(VIEW.zMax, (VIEW.W - 2 * VIEW.margin) / bw, (VIEW.H - 2 * VIEW.margin) / bh), VIEW.zMin, VIEW.zMax);
+      const z = clamp(Math.min(V.zMax, (V.W - 2 * V.margin) / bw, (V.H - 2 * V.margin) / bh), V.zMin, V.zMax);
       return { cx: (b.x0 + b.x1) / 2, cy: (b.y0 + b.y1) / 2, z };
     }
 
     // Keeps the previous framing when the new content still fits with room to spare.
-    function keepsPrevious(prev, next, b) {
+    function keepsPrevious(prev, next, b, V) {
       if (!prev) return false;
       if (!(prev.z <= next.z + 1e-6 && prev.z >= next.z * .9)) return false;
-      const v = viewRect(prev), m = 12 / prev.z;
+      const v = viewRect(prev, V), m = 12 / prev.z;
       if (b.x0 < v.x + m || b.y0 < v.y + m || b.x1 > v.x + v.w - m || b.y1 > v.y + v.h - m) return false;
       return Math.abs(next.cx - prev.cx) < .15 * v.w && Math.abs(next.cy - prev.cy) < .18 * v.h;
     }
 
-    function cardWorldRect(c, corner, cw, ch) {
-      const v = viewRect(c), m = 12;
-      const sx = corner[1] === 'r' ? VIEW.W - m - cw : m;
-      const sy = corner[0] === 'b' ? VIEW.H - m - ch - 3 : m;
+    function cardWorldRect(c, corner, cw, ch, V) {
+      const v = viewRect(c, V), m = 12;
+      const sx = corner[1] === 'r' ? V.W - m - cw : m;
+      const sy = corner[0] === 'b' ? V.H - m - ch - 3 : m;
       return { x0: v.x + sx / c.z, y0: v.y + sy / c.z, x1: v.x + (sx + cw) / c.z, y1: v.y + (sy + ch + 3) / c.z };
     }
 
@@ -990,35 +1028,50 @@
     }
 
     // Finds the largest zoom at which the card fits in a corner, sliding the content away from
-    // that corner within the free margin before zooming out further.
-    function dockPanel(plan, cam, prevCorner) {
-      const L = panelLayout(plan.panel);
-      const cw = L.w * VIEW.hud, ch = L.h * VIEW.hud, b = plan.bounds;
+    // that corner within the free margin before zooming out further. `at` is { panel, bounds, ctx }.
+    function dockPanel(at, cam, prevCorner, V) {
+      const L = panelLayout(at.panel);
+      const cw = L.w * V.hud, ch = L.h * V.hud, b = at.bounds;
       const order = [prevCorner, 'tr', 'br', 'tl', 'bl'].filter((c, k, a) => c && a.indexOf(c) === k);
       const shifts = [[0, 0], [.5, 0], [0, .5], [.5, .5], [1, 0], [0, 1], [1, .5], [.5, 1], [1, 1]];
-      for (let z = cam.z; z >= VIEW.zMin - 1e-6; z -= .025) {
-        const sx = Math.max(0, VIEW.W - 2 * VIEW.margin - (b.x1 - b.x0) * z) / 2 / z;
-        const sy = Math.max(0, VIEW.H - 2 * VIEW.margin - (b.y1 - b.y0) * z) / 2 / z;
+      for (let z = cam.z; z >= V.zMin - 1e-6; z -= .025) {
+        const sx = Math.max(0, V.W - 2 * V.margin - (b.x1 - b.x0) * z) / 2 / z;
+        const sy = Math.max(0, V.H - 2 * V.margin - (b.y1 - b.y0) * z) / 2 / z;
         for (const [fx, fy] of shifts) {
           for (const corner of order) {
             const c = { cx: (b.x0 + b.x1) / 2 + (corner[1] === 'r' ? 1 : -1) * fx * sx, cy: (b.y0 + b.y1) / 2 + (corner[0] === 'b' ? 1 : -1) * fy * sy, z };
-            if (!cardHits(cardWorldRect(c, corner, cw, ch), plan.ctx)) return { ...c, corner };
+            if (!cardHits(cardWorldRect(c, corner, cw, ch, V), at.ctx)) return { ...c, corner };
           }
         }
       }
       return { ...cam, corner: 'tr' };
     }
 
-    function planCameras() {
+    // One framing per step. A try step is framed to hold its base and every option, so choosing
+    // an option never moves the camera. Returns one camera per scene.
+    function planCameras(V) {
+      const cams = [];
       let prev = null;
-      for (const plan of plans) {
-        let cam = fitCamera(plan.bounds);
-        if (keepsPrevious(prev, cam, plan.bounds)) cam = { cx: prev.cx, cy: prev.cy, z: prev.z };
-        if (plan.panel && !VIEW.inlinePanel) cam = dockPanel(plan, cam, prev && prev.corner);
-        plan.cam = cam;
+      STEPS.forEach((_, i) => {
+        const group = [plans[i], ...(tries[i] ? tries[i].options.map((o) => plans[o.scene]) : [])];
+        const one = group.length === 1;
+        const bounds = one ? group[0].bounds : bboxOf(group.flatMap((p) => boxCorners(p.bounds)));
+        let cam = fitCamera(bounds, V);
+        if (keepsPrevious(prev, cam, bounds, V)) cam = { cx: prev.cx, cy: prev.cy, z: prev.z };
+        const docked = V.inlinePanel ? [] : group.filter((p) => p.panel);
+        if (docked.length) {
+          const area = (p) => { const L = panelLayout(p.panel); return L.w * L.h; };
+          const panel = docked.reduce((a, p) => (area(p) > area(a) ? p : a)).panel;
+          const ctx = one ? group[0].ctx : { hulls: group.flatMap((p) => p.ctx.hulls), pills: group.flatMap((p) => p.ctx.pills), labels: group.flatMap((p) => p.ctx.labels) };
+          cam = dockPanel({ panel, bounds, ctx }, cam, prev && prev.corner, V);
+        }
+        for (const p of group) cams[p.i] = cam;
         prev = cam;
-      }
+      });
+      return cams;
     }
+
+    const plans = SCENES.map((_, k) => buildPlan(k));
 
     /* ================= Recap panel (HUD card in screen pixels) ================= */
 
@@ -1059,6 +1112,351 @@
       return s;
     }
 
+    /* ================= Pills, links and flows shared by the stage and the stills ================= */
+
+    const depthOf = (n) => (n.type === 'zone' ? -1e4 : n.type === 'queue' ? -1e3 + n.x - n.y : n.x - n.y);
+    const fadeOutOf = (k) => 1 - clamp(k / .42, 0, 1);
+    const fadeInOf = (k) => clamp((k - .55) / .4, 0, 1);
+
+    // A node's pills: its stack (gauge, tags) and its name label. While a step changes them, old
+    // and new cross-fade, and pills that stay slide to their new place in the stack.
+    function overlayFor(e, d, p) {
+      const n = e.n, k = e.c.swap;
+      const swapping = e.from && k < 1;
+      const item = (it, idx, a) => {
+        const [w] = stackItemSize(it), [x, y] = stackPos(d, e.side || 'above', idx, w);
+        return it.gauge ? gaugeSvg(x, y, e.c.load ?? 0, a) : pillSvg(x, y, tagSpec(it.tag), a);
+      };
+      const now = stackOf(n, e.to), before = swapping ? stackOf(n, e.from) : null;
+      const mv = inOut(clamp(k, 0, 1));
+      let s = '';
+      if (before) {
+        before.forEach((it, j) => { if (!now.some((o) => o.key === it.key)) s += item(it, j, fadeOutOf(k)); });
+      }
+      now.forEach((it, i) => {
+        const j = before ? before.findIndex((o) => o.key === it.key) : -1;
+        s += item(it, before && j >= 0 ? lerp(j, i, mv) : i, !before || j >= 0 ? 1 : fadeInOf(k));
+      });
+      if (!LABEL_ON_FACE.has(n.type) && e.labelPos) {
+        const [lx, ly] = [e.labelPos[0], e.labelPos[1] - p.lift];
+        for (const t of p.texts) {
+          const spec = labelSpec(n, t);
+          if (spec) s += pillSvg(lx, ly, spec, t.a);
+        }
+      }
+      return s;
+    }
+
+    function arrowPath(tip, dir) {
+      const nx = -dir[1], ny = dir[0];
+      const bx = tip[0] - dir[0] * 9, by = tip[1] - dir[1] * 9;
+      return `M${pt(tip)}L${pt([bx + nx * 4.2, by + ny * 4.2])}L${pt([bx - nx * 4.2, by - ny * 4.2])}Z`;
+    }
+
+    // The flows of scene k, keeping only the legs on links for which has(id) is true.
+    function flowList(k, has) {
+      return ((SCENES[k].scene || {}).flows || []).map((f) => ({
+        f,
+        kind: KINDS.includes(f.kind) ? f.kind : 'request',
+        legs: (f.route || []).map((r) => ({ id: String(r).replace(/^~/, ''), rev: String(r).startsWith('~') })).filter((l) => has(l.id)),
+        acc: .6,
+      })).filter((fl) => fl.legs.length);
+    }
+
+    // Reduced motion and the stills: each flow becomes still chevrons along its links.
+    // legOf(leg) gives the length a dot travels on that leg and the point at a distance along it.
+    function chevronsSvg(list, legOf) {
+      let s = '';
+      const chev = (leg, t, kind, side) => {
+        const { L, at } = legOf(leg);
+        const a = at(L * t), b = at(Math.min(L, L * t + 2));
+        const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+        const ox = -Math.sin(ang) * side, oy = Math.cos(ang) * side;
+        return `<path class="chev chev-${kind}" transform="translate(${n1(a[0] + ox)} ${n1(a[1] + oy)}) rotate(${n1(ang * 180 / Math.PI)})" d="M-3-4.5 2 0-3 4.5"/>`;
+      };
+      for (const fl of list) {
+        const side = fl.f.bounce ? -5 : 0;
+        for (const leg of fl.legs) {
+          const count = clamp(Math.floor(legOf(leg).L / 30), 1, 5);
+          for (let k = 0; k < count; k++) {
+            const t = .12 + .76 * (k + .5) / count;
+            s += chev(leg, t, fl.kind, side);
+            if (fl.f.bounce) s += chev({ ...leg, rev: !leg.rev }, 1 - t, 'response', side);
+          }
+        }
+      }
+      return s;
+    }
+
+    // Scene k settled, as one picture framed by `cam` on a stage of size V: what the stage shows
+    // once a step has finished arriving, with flows as still chevrons and the summary card docked.
+    function stillSvg(k, cam, V) {
+      const plan = plans[k], v = viewRect(cam, V);
+      let floor = '', links = '', body = '', over = '', hudCard = '';
+      for (const id of plan.show.slice().sort((a, b) => depthOf(NODES[a]) - depthOf(NODES[b]))) {
+        const n = NODES[id], pr = plan.props[id], info = plan.ents[id], p = restParams(pr);
+        const d = drawEntity(shell(id), n, p);
+        if (d.floor) { floor += d.floor; continue; }
+        body += composeEntity(d, p);
+        over += overlayFor({ n, c: { swap: 1, load: pr.load ?? 0 }, from: null, to: pr, side: info.side, labelPos: info.labelAt }, d, p);
+      }
+      for (const id of plan.linkIds) {
+        const g = linkGeom(id), style = linkStyle(k, id), head = hasHead(style), text = linkText(k, id), at = plan.labels[id];
+        links += `<path class="lk ${style}" d="${roundLine(trimPts(g.pts, 0, Math.max(.5, g.len - (head ? 7 : 0))), 9)}"/>`;
+        if (head) links += `<path class="ah${style === 'off' ? ' off' : ''}" d="${arrowPath(g.tip, g.dir)}"/>`;
+        if (style === 'cut') links += crossMark(g.mid.p);
+        if (text && at) over += pillSvg(at[0], at[1], linkLabelSpec(text, style));
+      }
+      const chevrons = chevronsSvg(flowList(k, (id) => plan.linkIds.includes(id)), (leg) => {
+        const g = linkGeom(leg.id), hi = Math.max(4, g.len - (hasHead(linkStyle(k, leg.id)) ? 10 : 2));
+        return { L: hi - 2, at: (s) => pointAt(g.pts, leg.rev ? hi - s : 2 + s).p };
+      });
+      if (plan.panel && !V.inlinePanel && cam.corner) {
+        const L = panelLayout(plan.panel), m = 12;
+        const sx = cam.corner[1] === 'r' ? V.W - m - L.w * V.hud : m;
+        const sy = cam.corner[0] === 'b' ? V.H - m - L.h * V.hud - 3 : m;
+        hudCard = `<g transform="translate(${n2(v.x)} ${n2(v.y)}) scale(${(v.w / V.W).toFixed(4)})"><g class="hud-card" transform="translate(${n1(sx)} ${n1(sy)}) scale(${n2(V.hud)})">${panelSvg(L)}</g></g>`;
+      }
+      const grid = `<rect class="deco" x="${n1(v.x)}" y="${n1(v.y)}" width="${n1(v.w)}" height="${n1(v.h)}" fill="url(#iso-grid)" opacity=".7"/>`;
+      return {
+        viewBox: `${n2(v.x)} ${n2(v.y)} ${n2(v.w)} ${n2(v.h)}`,
+        svg: `${grid}<g>${floor}</g><g>${links}</g><g class="chev">${chevrons}</g><g>${body}</g><g>${over}</g>${hudCard}`,
+      };
+    }
+
+    /* ================= Automatic checks ================= */
+    // Warnings: the data breaks a rule of the format (rules 1, 2, 3, 7, 8, 9, sources).
+    // Notes: text or layout over its budget. Both are listed on the contact sheet and printed to
+    // the console once per walkthrough.
+
+    const q = (s) => JSON.stringify(String(s ?? ''));
+    const isList = (para) => /^\s*<(ul|ol)\b/i.test(String(para));
+    // Words in a piece of inline HTML; null for text written without spaces (Chinese, Japanese, Thai).
+    function wordCount(html) {
+      const t = plainText(String(html ?? ''));
+      if (UNSPACED.test(t)) return null;
+      return t ? t.split(' ').length : 0;
+    }
+
+    // Rules 1, 2 and 3 for one scene.
+    function checkScene(k, warn) {
+      const n = META[k].name, s = SCENES[k], sc = s.scene || {}, show = sc.show || [], links = sc.links || {};
+      for (const id of show) if (!NODES[id]) warn(`${n}: scene.show names unknown node "${id}" (rule 1)`);
+      for (const id of Object.keys(sc.state || {})) if (!NODES[id]) warn(`${n}: scene.state names unknown node "${id}" (rule 1)`);
+      for (const id of Object.keys(links)) {
+        const L = LINKS[id];
+        if (!L) warn(`${n}: scene.links names unknown link "${id}" (rule 1)`);
+        else if (!show.includes(L.from) || !show.includes(L.to)) warn(`${n}: link "${id}" is shown but "${show.includes(L.from) ? L.to : L.from}" is not (rule 2)`);
+      }
+      (sc.flows || []).forEach((f, j) => {
+        const legs = (f.route || []).map((r) => ({ id: String(r).replace(/^~/, ''), rev: String(r).startsWith('~') }));
+        if (!legs.length) warn(`${n}: flow ${j + 1} has an empty route`);
+        for (const l of legs) {
+          if (!LINKS[l.id]) warn(`${n}: flow ${j + 1} uses unknown link "${l.id}" (rule 1)`);
+          else if (!(l.id in links)) warn(`${n}: flow ${j + 1} uses link "${l.id}", which is not shown in this step (rule 2)`);
+        }
+        for (let r = 1; r < legs.length; r++) {
+          const a = LINKS[legs[r - 1].id], b = LINKS[legs[r].id];
+          if (!a || !b) continue;
+          const shared = [a.from, a.to].some((x) => x === b.from || x === b.to);
+          const end = legs[r - 1].rev ? a.from : a.to, start = legs[r].rev ? b.to : b.from;
+          if (!shared) warn(`${n}: flow ${j + 1} links "${legs[r - 1].id}" and "${legs[r].id}" share no endpoint (rule 7)`);
+          else if (end !== start) warn(`${n}: flow ${j + 1} arrives at "${end}" but leaves from "${start}"; prefix a link with ~ to travel it backwards (rule 7)`);
+        }
+      });
+      if (METRICS.length > 1 && s.metrics) {
+        const total = METRICS[METRICS.length - 1].id, tv = s.metrics[total];
+        const parts = METRICS.slice(0, -1).map((m) => s.metrics[m.id]).filter((v) => typeof v === 'number');
+        const sum = parts.reduce((a, b) => a + b, 0);
+        if (typeof tv === 'number' ? Math.abs(tv - sum) > 1e-9 : parts.length > 0) warn(`${n}: metrics.${total} is ${tv} but the other metrics add up to ${sum} (rule 3)`);
+      }
+    }
+
+    // Rule 8 for one scene: pills, labels and the summary card that cover an object or each other.
+    function overlapsIn(k, cam, V) {
+      const plan = plans[k], items = plan.items.slice(), out = [];
+      if (plan.panel && !V.inlinePanel && cam.corner) {
+        const L = panelLayout(plan.panel);
+        items.push({ box: cardWorldRect(cam, cam.corner, L.w * V.hud, L.h * V.hud, V), what: 'the summary card' });
+      }
+      items.forEach((a, x) => {
+        const inner = inflate(a.box, -1.5);
+        plan.hullIds.forEach((id, h) => {
+          if (polyBoxOverlap(plan.ctx.hulls[h], inner)) out.push(`${a.what} overlaps the ${q(plan.props[id].label || id)} object`);
+        });
+        for (let y = x + 1; y < items.length; y++) if (overlapArea(a.box, items[y].box) > 4) out.push(`${a.what} overlaps ${items[y].what}`);
+      });
+      return out;
+    }
+
+    // The smallest text size (in stage units) that scene k draws, for the label-size note.
+    function smallestText(k) {
+      const plan = plans[k];
+      let min = Infinity;
+      for (const id of plan.show) {
+        const n = NODES[id], pr = plan.props[id];
+        if (n.type === 'zone') { if (pr.label) min = Math.min(min, 10.5); continue; }
+        if (LABEL_ON_FACE.has(n.type)) { if (pr.sub) min = Math.min(min, pr.label ? 10 : 12); else if (pr.label) min = Math.min(min, 11.5); }
+        else if (pr.sub) min = Math.min(min, 9);
+        else if (pr.label) min = Math.min(min, 10.5);
+        if (stackOf(n, pr).length) min = Math.min(min, 10.5);
+      }
+      if (Object.keys(plan.labels).length) min = Math.min(min, 9.5);
+      return min;
+    }
+
+    function runChecks() {
+      const warnings = [], notes = [];
+      const warn = (m) => warnings.push(m), note = (m) => notes.push(m);
+      const order = STEPS.flatMap((_, i) => [i, ...(tries[i] ? tries[i].options.map((o) => o.scene) : [])]);
+      // Every scene, steps first with their options after them. An option repeats what its step
+      // already reported for the parts it inherits, so only its new findings are kept.
+      const perScene = (find) => {
+        const found = SCENES.map((_, k) => { const out = []; find(k, (m) => out.push(m)); return out; });
+        for (const k of order) {
+          const m = META[k];
+          const seen = m.opt < 0 ? null : new Set(found[m.step].map((x) => x.replace(META[m.step].name, m.name)));
+          for (const x of found[k]) if (!seen || !seen.has(x)) warn(x);
+        }
+      };
+
+      if (typeof w.id !== 'string' || !KEBAB.test(w.id)) warn(`id ${JSON.stringify(w.id)} should be a kebab-case string`);
+      for (const [id, L] of Object.entries(LINKS)) {
+        if (!NODES[L.from] || !NODES[L.to]) warn(`link "${id}" joins a node that does not exist (rule 1)`);
+      }
+      perScene(checkScene);
+      (Array.isArray(w.goals) ? w.goals : []).forEach((g, k) => {
+        if (!Number.isInteger(g.step) || g.step < 0 || g.step >= STEPS.length) warn(`goal ${k + 1} points at step index ${g.step}, which does not exist (rule 1)`);
+      });
+      const ids = Object.keys(NODES).filter((id) => NODES[id].type !== 'zone');
+      for (let a = 0; a < ids.length; a++) {
+        for (let b = a + 1; b < ids.length; b++) {
+          const A = NODES[ids[a]], B = NODES[ids[b]], d = Math.hypot(A.x - B.x, A.y - B.y);
+          if (d < 6) warn(`nodes "${ids[a]}" and "${ids[b]}" are ${n1(d)} grid units apart; keep at least 6 (rule 7)`);
+        }
+      }
+      perScene((k, out) => {
+        const hits = overlapsIn(k, refCams[k], refView);
+        hits.slice(0, 4).forEach((h) => out(`${META[k].name}: ${h}; move a node or shorten the text (rule 8)`));
+        if (hits.length > 4) out(`${META[k].name}: ${hits.length - 4} more overlap${hits.length === 5 ? '' : 's'} like these (rule 8)`);
+      });
+
+      STEPS.forEach((s, i) => {
+        if (s.try === undefined) return;
+        const t = s.try, n = `step ${i + 1}`;
+        if (!isObject(t) || !Array.isArray(t.options)) { warn(`${n}: "try" needs an "options" array with 2 to 5 options (rule 9)`); return; }
+        const count = t.options.length;
+        if (count < 2 || count > 5) warn(`${n}: the try has ${count} option${count === 1 ? '' : 's'}; give it 2 to 5${count > 5 ? ' (only the first 5 are shown)' : ''} (rule 9)`);
+        const base = { scene: s.scene || {}, metrics: s.metrics ?? null };
+        (tries[i] ? tries[i].options : []).forEach((opt) => {
+          const m = META[opt.scene], o = m.raw, v = isObject(o.verdict) ? o.verdict : {};
+          if (typeof o.label !== 'string' || !o.label.trim()) warn(`${m.name}: the option has no "label" (rule 9)`);
+          if (typeof v.text !== 'string' || !v.text.trim()) warn(`${m.name}: the option has no verdict.text (rule 9)`);
+          if (v.tone !== undefined && !TONES.includes(v.tone)) warn(`${m.name}: verdict.tone ${JSON.stringify(v.tone)} is not one of ${TONES.join(', ')} (rule 9)`);
+          if (same({ scene: SCENES[opt.scene].scene, metrics: SCENES[opt.scene].metrics ?? null }, base)) warn(`${m.name}: the option is identical to the base scene, so choosing it changes nothing; give it its own value of the variable (rule 9)`);
+        });
+      });
+
+      if (w.sources !== undefined) {
+        if (!Array.isArray(w.sources)) warn('"sources" should be an array of { claim, kind, source, url } entries (sources)');
+        else w.sources.forEach((src, k) => {
+          const claim = isObject(src) && typeof src.claim === 'string' ? src.claim.trim() : '';
+          const n = `sources entry ${k + 1}${claim ? ` (${q(claim.length > 48 ? `${claim.slice(0, 47)}…` : claim)})` : ''}`;
+          if (!isObject(src)) { warn(`${n} is not an object (sources)`); return; }
+          if (!claim) warn(`${n} has no "claim" (sources)`);
+          if (src.kind === 'data') {
+            if (typeof src.source !== 'string' || !src.source.trim()) warn(`${n}: kind "data" needs a "source" that says where the value comes from; add one, or mark the entry "assumption" (sources)`);
+          } else if (src.kind !== 'assumption') warn(`${n}: unknown kind ${JSON.stringify(src.kind)}; use "data" or "assumption" (sources)`);
+        });
+      }
+
+      const isRecap = (s) => s.chapter === 'recap';
+      STEPS.forEach((s, i) => {
+        const n = `step ${i + 1}`, body = Array.isArray(s.body) ? s.body : [];
+        if (!isRecap(s) && body.length !== 2) note(`${n}: the body has ${body.length} paragraph${body.length === 1 ? '' : 's'}; a step has exactly 2`);
+        body.forEach((para, k) => {
+          const c = isList(para) ? null : wordCount(para);
+          if (c !== null && c > 40) note(`${n}: paragraph ${k + 1} has ${c} words; keep each to 40 or fewer`);
+        });
+        const sw = wordCount(s.short), tw = wordCount(s.title);
+        if (sw !== null && sw > 2) note(`${n}: "short" ${q(s.short)} has ${sw} words; use 1 or 2`);
+        if (tw !== null && tw > 8) note(`${n}: the title has ${tw} words; keep it to 8 or fewer`);
+        if (Array.isArray(s.changes) && s.changes.length > 3) note(`${n}: "changes" has ${s.changes.length} lines; keep it to 3 or fewer`);
+      });
+      const nodesIn = (i) => ((SCENES[i].scene || {}).show || []).filter((id) => NODES[id] && NODES[id].type !== 'zone');
+      const first = nodesIn(0);
+      if (first.length > 2) note(`step 1 shows ${first.length} nodes; start with 1 or 2 and bring in the rest as the story needs them`);
+      for (let i = 1; i < STEPS.length; i++) {
+        const before = new Set(nodesIn(i - 1)), added = nodesIn(i).filter((id) => !before.has(id));
+        if (added.length > 2) note(`step ${i + 1} adds ${added.length} nodes (${added.join(', ')}); add at most 2 per step`);
+      }
+      if (!isRecap(STEPS[STEPS.length - 1])) note('the last step is not a recap; end on a step with chapter "recap"');
+      STEPS.forEach((_, i) => {
+        const size = Math.min(...[i, ...(tries[i] ? tries[i].options.map((o) => o.scene) : [])].map(smallestText));
+        const z = refCams[i].z, px = size * z;
+        if (size < Infinity && px < 8) note(`step ${i + 1}: at the reference stage size (${REF.W} × ${REF.H} px) the camera zooms out to ×${n2(z)}, so ${size} px labels show at ${n1(px)} px (under 8); move nodes closer together or show fewer at once`);
+      });
+      const tried = STEPS.map((s, i) => (s.try !== undefined ? i + 1 : 0)).filter(Boolean);
+      if (tried.length > 2) note(`${tried.length} steps have a try (steps ${tried.join(', ')}); keep it to 2 or fewer`);
+      for (const t of tries) {
+        for (const o of t ? t.options : []) {
+          const name = META[o.scene].name, tw = wordCount(o.verdict.text), yw = wordCount(o.verdict.why);
+          if (tw !== null && tw > 4) note(`${name}: verdict.text has ${tw} words; keep it to 4 or fewer`);
+          if (yw !== null && yw > 20) note(`${name}: verdict.why has ${yw} words; keep it to one sentence of 20 or fewer`);
+        }
+      }
+      const numberTags = SCENES.some((s) => Object.values((s.scene || {}).state || {}).some((st) => isObject(st) && Array.isArray(st.tags) && st.tags.some((t) => /\d/.test(String(t && t.text)))));
+      const hasSources = Array.isArray(w.sources) && w.sources.length > 0;
+      if ((METRICS.length || numberTags) && !hasSources && !(typeof w.note === 'string' && w.note.trim())) {
+        note(`the walkthrough shows numbers (${METRICS.length ? 'metrics' : 'tags with numbers'}) but has neither "sources" nor "note"; say where the numbers come from`);
+      }
+      return { warnings, notes };
+    }
+
+    const refView = viewFor(REF.W, REF.H);
+    const refCams = planCameras(refView);
+    const checks = runChecks();
+
+    return {
+      NODES, LINKS, STEPS, SCENES, META, METRICS, tries, plans, refView, refCams, checks,
+      propsFor, queueCaps, linkGeom, hasHead, linkStyle, linkText, linkLabelSpec, depthOf, fadeOutOf, fadeInOf, overlayFor, arrowPath,
+      panelRows, panelLayout, panelSvg, flowList, chevronsSvg, planCameras, stillSvg, wordCount, isList,
+      report() {
+        const id = w.id || 'walkthrough';
+        for (const m of checks.warnings) console.warn(`[diorama] ${id}: ${m}`);
+        for (const m of checks.notes) console.info(`[diorama] note: ${id}: ${m}`);
+      },
+    };
+  }
+
+  // opts: { labels, start (0-based step), crumb, searchHint, docTitle,
+  //         prev: { title, go } | null   where Back on the first step leads,
+  //         end: { label, icon, go }      what the last step's primary button does,
+  //         onStep(i) }                   called after every step change
+  function mountWalkthrough(host, w, opts) {
+    const M = modelOf(w);
+    const { NODES, LINKS, STEPS, SCENES, META, METRICS, tries, plans } = M;
+    const { propsFor, queueCaps, linkGeom, hasHead, linkStyle, linkText, linkLabelSpec, depthOf, fadeOutOf, fadeInOf, overlayFor, arrowPath, panelRows, panelLayout, panelSvg, flowList, chevronsSvg } = M;
+    const LBL = opts.labels;
+    host.innerHTML = viewMarkup(opts);
+    const R = {};
+    for (const el of host.querySelectorAll('[data-ref]')) R[el.dataset.ref] = el;
+    const $ = (name) => R[name];
+    $('sceneDefs').innerHTML = defsMarkup();
+    let reduce = motionQuery.matches;
+
+    // Everything asynchronous goes through these two, so destroy() can cancel all of it.
+    let alive = true;
+    const timeouts = new Set(), frames = new Set();
+    function later(fn, ms) {
+      const t = setTimeout(() => { timeouts.delete(t); fn(); }, ms);
+      timeouts.add(t);
+    }
+    function nextFrame(fn) {
+      const f = requestAnimationFrame((now) => { frames.delete(f); fn(now); });
+      frames.add(f);
+    }
+
     /* ================= Runtime state ================= */
 
     const svg = $('scene'), wrap = $('sceneWrap');
@@ -1066,9 +1464,11 @@
     const gridFadeEl = $('sceneDefs').querySelector('#grid-fade');
     const gridFade = () => gridFadeEl;
 
-    let plans = [];
+    const VIEW = viewFor(900, 520);
+    let cams = [];         // one camera per scene for the current stage size
     let cur = -1;          // step shown in the explanation
-    let stageIdx = -1;     // step whose scene the stage is heading to
+    let choice = -1;       // the try option chosen on that step, or -1 for its base scene
+    let stageIdx = -1;     // scene the stage is heading to
     let stageToken = 0;
     let paused = false;
     let clock = 0;         // animation time in ms; stands still while paused
@@ -1115,8 +1515,6 @@
 
     /* ---------- Entities ---------- */
 
-    const depthOf = (n) => (n.type === 'zone' ? -1e4 : n.type === 'queue' ? -1e3 + n.x - n.y : n.x - n.y);
-
     function insertByDepth(parent, node, depth) {
       node.dataset.depth = depth;
       const next = [...parent.children].find((c) => Number(c.dataset.depth) > depth);
@@ -1137,9 +1535,6 @@
       e.og.remove();
       ents.delete(e.id);
     }
-
-    const fadeOutOf = (k) => 1 - clamp(k / .42, 0, 1);
-    const fadeInOf = (k) => clamp((k - .55) / .4, 0, 1);
 
     function liveParams(e) {
       const c = e.c, k = c.swap;
@@ -1162,33 +1557,6 @@
       e.og.innerHTML = d.hull ? overlayFor(e, d, p) : '';
     }
 
-    function overlayFor(e, d, p) {
-      const n = e.n, k = e.c.swap;
-      const swapping = e.from && k < 1;
-      const item = (it, idx, a) => {
-        const [w] = stackItemSize(it), [x, y] = stackPos(d, e.side || 'above', idx, w);
-        return it.gauge ? gaugeSvg(x, y, e.c.load ?? 0, a) : pillSvg(x, y, tagSpec(it.tag), a);
-      };
-      const now = stackOf(n, e.to), before = swapping ? stackOf(n, e.from) : null;
-      const mv = inOut(clamp(k, 0, 1));
-      let s = '';
-      if (before) {
-        before.forEach((it, j) => { if (!now.some((o) => o.key === it.key)) s += item(it, j, fadeOutOf(k)); });
-      }
-      now.forEach((it, i) => {
-        const j = before ? before.findIndex((o) => o.key === it.key) : -1;
-        s += item(it, before && j >= 0 ? lerp(j, i, mv) : i, !before || j >= 0 ? 1 : fadeInOf(k));
-      });
-      if (!LABEL_ON_FACE.has(n.type) && e.labelPos) {
-        const [lx, ly] = [e.labelPos[0], e.labelPos[1] - p.lift];
-        for (const t of p.texts) {
-          const spec = labelSpec(n, t);
-          if (spec) s += pillSvg(lx, ly, spec, t.a);
-        }
-      }
-      return s;
-    }
-
     /* ---------- Links ---------- */
 
     function makeLink(id) {
@@ -1209,12 +1577,6 @@
       lk.lg.remove();
       lk.geo.remove();
       lks.delete(lk.id);
-    }
-
-    function arrowPath(tip, dir) {
-      const nx = -dir[1], ny = dir[0];
-      const bx = tip[0] - dir[0] * 9, by = tip[1] - dir[1] * 9;
-      return `M${pt(tip)}L${pt([bx + nx * 4.2, by + ny * 4.2])}L${pt([bx - nx * 4.2, by - ny * 4.2])}Z`;
     }
 
     function renderLink(lk) {
@@ -1242,7 +1604,7 @@
 
     /* ---------- Camera and HUD ---------- */
 
-    function camTargetOf(c) { const v = viewRect(c); return { x: v.x, y: v.y, w: v.w, h: v.h }; }
+    function camTargetOf(c) { const v = viewRect(c, VIEW); return { x: v.x, y: v.y, w: v.w, h: v.h }; }
 
     function applyCamera() {
       cam.dirty = false;
@@ -1266,10 +1628,11 @@
       hud.g.setAttribute('opacity', n2(hud.op));
     }
 
-    function setPanel(plan, instant, delay) {
+    function setPanel(k, instant, delay) {
+      const plan = k >= 0 ? plans[k] : null;
       const panel = plan && plan.panel && !VIEW.inlinePanel ? plan.panel : null;
       const key = panel ? JSON.stringify(panel) : '';
-      if (plan && plan.cam && plan.cam.corner) hud.corner = plan.cam.corner;
+      if (plan && cams[k].corner) hud.corner = cams[k].corner;
       hud.dirty = true;
       if (key === hud.key) return;
       if (hud.g) {
@@ -1289,7 +1652,7 @@
 
     function renderPanelInline(i) {
       const box = $('panelInline');
-      const panel = VIEW.inlinePanel && i >= 0 ? (STEPS[i].scene || {}).panel : null;
+      const panel = VIEW.inlinePanel && i >= 0 ? (SCENES[i].scene || {}).panel : null;
       if (!panel || !panel.lines) { box.hidden = true; box.innerHTML = ''; return; }
       box.hidden = false;
       box.innerHTML = `<div class="pi-title">${esc(String(panel.title || '').toUpperCase())}</div>` + panelRows(panel).map((r) => `<div class="pi-row ${r.kind}">${esc(r.t)}</div>`).join('');
@@ -1340,8 +1703,8 @@
         }
         for (const h of hud.old) h.g.remove();
         hud.old = [];
-        if (plan) Object.assign(cam, camTargetOf(plan.cam), { dirty: true });
-        setPanel(plan, true, 0);
+        if (plan) Object.assign(cam, camTargetOf(cams[i]), { dirty: true });
+        setPanel(i, true, 0);
         if (plan) startFlows(i);
         return;
       }
@@ -1436,11 +1799,11 @@
       }
 
       if (plan) {
-        const t = camTargetOf(plan.cam);
+        const t = camTargetOf(cams[i]);
         for (const k of ['x', 'y', 'w', 'h']) tween(cam, k, t[k], CAM, { owner: cam, delay: tCam });
         end = Math.max(end, tCam + CAM);
       }
-      setPanel(plan, false, Math.max(0, end - 300));
+      setPanel(i, false, Math.max(0, end - 300));
 
       after(end + 40, () => {
         if (token !== stageToken || !plan) return;
@@ -1475,12 +1838,7 @@
 
     function startFlows(i) {
       stopFlows();
-      flows = ((STEPS[i].scene || {}).flows || []).map((f) => ({
-        f,
-        kind: KINDS.includes(f.kind) ? f.kind : 'request',
-        legs: (f.route || []).map((r) => ({ id: String(r).replace(/^~/, ''), rev: String(r).startsWith('~') })).filter((l) => lks.has(l.id)),
-        acc: .6,
-      })).filter((fl) => fl.legs.length);
+      flows = flowList(i, (id) => lks.has(id));
       if (reduce) drawChevrons();
     }
 
@@ -1565,28 +1923,11 @@
 
     // Reduced motion: each flow becomes still chevrons along its links.
     function drawChevrons() {
-      let s = '';
-      const chev = (lk, leg, t, kind, side) => {
-        const [lo, hi] = legRange(lk), L = hi - lo;
-        const a = legPoint(lk, leg, L * t), b = legPoint(lk, leg, Math.min(L, L * t + 2));
-        const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
-        const ox = -Math.sin(ang) * side, oy = Math.cos(ang) * side;
-        return `<path class="chev chev-${kind}" transform="translate(${n1(a[0] + ox)} ${n1(a[1] + oy)}) rotate(${n1(ang * 180 / Math.PI)})" d="M-3-4.5 2 0-3 4.5"/>`;
-      };
-      for (const fl of flows) {
-        const side = fl.f.bounce ? -5 : 0;
-        for (const leg of fl.legs) {
-          const lk = lks.get(leg.id), [lo, hi] = legRange(lk);
-          const count = clamp(Math.floor((hi - lo) / 30), 1, 5);
-          for (let k = 0; k < count; k++) {
-            const t = .12 + .76 * (k + .5) / count;
-            s += chev(lk, leg, t, fl.kind, side);
-            if (fl.f.bounce) s += chev(lk, { ...leg, rev: !leg.rev }, 1 - t, 'response', side);
-          }
-        }
-      }
       const g = svgEl('g', { class: 'chev' }, layer.packets);
-      g.innerHTML = s;
+      g.innerHTML = chevronsSvg(flows, (leg) => {
+        const lk = lks.get(leg.id), [lo, hi] = legRange(lk);
+        return { L: hi - lo, at: (s) => legPoint(lk, leg, s) };
+      });
     }
 
     /* ---------- Frame loop ---------- */
@@ -1642,6 +1983,8 @@
       document.title = opts.docTitle || w.title || 'Walkthrough';
       $('title').textContent = w.title || '';
       $('summary').textContent = w.summary || '';
+      $('question').hidden = !w.question;
+      $('question').textContent = w.question || '';
       if (w.note) { $('note').hidden = false; $('note').textContent = `# ${w.note}`; }
       const minutes = w.minutes ?? opts.minutes, level = w.level ?? opts.level;
       const pills = [];
@@ -1652,6 +1995,26 @@
       $('stripHead').textContent = LBL.strip;
       $('goalsHead').textContent = LBL.goals;
       $('goals').hidden = !(Array.isArray(w.goals) && w.goals.length);
+      renderSources();
+    }
+
+    // The ledger under the goals: where each fact and number comes from, collapsed by default.
+    function renderSources() {
+      const list = Array.isArray(w.sources) ? w.sources.filter(isObject) : [];
+      $('sources').hidden = !list.length;
+      if (!list.length) return;
+      const kindOf = (s) => (s.kind === 'data' ? ['green', LBL.sourced] : s.kind === 'assumption' ? ['amber', LBL.assumed] : ['gray', String(s.kind ?? '?')]);
+      const counts = [['data', 'green', LBL.sourced], ['assumption', 'amber', LBL.assumed]]
+        .map(([kind, tone, label]) => [list.filter((s) => s.kind === kind).length, tone, label])
+        .filter(([n]) => n)
+        .map(([n, tone, label]) => ` · ${tagHtml(`${label} ${n}`, tone)}`).join('');
+      $('sourcesHead').innerHTML = `<span class="sources-h">${esc(LBL.sources)}</span>${counts}`;
+      $('sourcesList').innerHTML = list.map((s) => {
+        const [tone, tag] = kindOf(s);
+        const text = String(s.source ?? '').trim(), url = String(s.url ?? '').trim();
+        const from = /^https?:\/\//i.test(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(text || url)}</a>` : esc(text || url);
+        return `<li>${tagHtml(tag, tone)}<div><p class="src-claim">${esc(s.claim ?? '')}</p>${from ? `<p class="src-from">${from}</p>` : ''}</div></li>`;
+      }).join('');
     }
 
     function renderLegend() {
@@ -1692,7 +2055,7 @@
     }
 
     function updateMetrics(i, animate) {
-      const vals = STEPS[i].metrics || {};
+      const vals = SCENES[i].metrics || {};
       for (const c of chips) {
         const v = typeof vals[c.m.id] === 'number' ? vals[c.m.id] : null;
         if (v === c.value) continue;
@@ -1738,6 +2101,7 @@
       blocks.push(`<div class="guide-head"><span>${i + 1} / ${STEPS.length}</span><span class="badge tone-${CHAPTER_TONE[chapter] || 'gray'}">${esc(LBL.chapters[chapter] || chapter)}</span></div>`);
       blocks.push(`<h2>${esc(s.title || '')}</h2>`);
       for (const para of s.body || []) blocks.push(/^\s*<(ul|ol|p)\b/i.test(para) ? `<div class="body">${para}</div>` : `<div class="body"><p>${para}</p></div>`);
+      if (tries[i]) blocks.push(tryBlock(tries[i]));
       if (s.callout && s.callout.text) {
         const c = CALLOUT[s.callout.kind] || CALLOUT.insight;
         blocks.push(`<div class="callout tone-${c.tone}"><span class="callout-icon">${iconHtml(c.icon)}</span><div><strong>${c.label}</strong><p>${s.callout.text}</p></div></div>`);
@@ -1754,6 +2118,74 @@
       guide.className = dir && !reduce ? 'guide' : 'guide still';
       guide.style.setProperty('--slide', `${dir > 0 ? 36 : -36}px`);
       guide.innerHTML = blocks.map((b, k) => `<div class="blk" style="--i:${k}">${b}</div>`).join('');
+    }
+
+    /* ---------- Try it ---------- */
+    // A try step offers options; choosing one moves the stage to that option's scene without
+    // sliding the text. Reset, or leaving the step, returns to the step's own (base) scene.
+
+    const sceneNow = () => (choice >= 0 && tries[cur] ? tries[cur].options[choice].scene : cur);
+
+    function tryBlock(t) {
+      const buttons = t.options.map((o, k) => `<button type="button" class="btn try-opt" data-try="${k}" aria-pressed="false"><kbd aria-hidden="true">${k + 1}</kbd><span>${esc(o.label)}</span></button>`).join('');
+      return `<section class="try" aria-labelledby="dio-try-head" aria-live="off"><h3 class="section-h" id="dio-try-head">${esc(LBL.try)}</h3>`
+        + `${t.prompt ? `<p class="try-prompt">${esc(t.prompt)}</p>` : ''}`
+        + `<div class="try-options" role="group" aria-label="${esc(t.prompt || LBL.try)}">${buttons}`
+        + `<button type="button" class="btn small try-reset" data-try="reset" hidden>${iconHtml('replay')}<span>${esc(LBL.reset)}</span></button></div>`
+        + '<div class="try-verdict" hidden></div></section>';
+    }
+
+    function syncTry() {
+      const box = $('guide').querySelector('.try');
+      if (!box) return;
+      const o = choice >= 0 ? tries[cur].options[choice] : null;
+      for (const b of box.querySelectorAll('.try-opt')) b.setAttribute('aria-pressed', String(Number(b.dataset.try) === choice));
+      box.querySelector('.try-reset').hidden = !o;
+      const v = box.querySelector('.try-verdict');
+      v.hidden = !o;
+      v.className = `try-verdict tone-${o ? o.verdict.tone : 'paper'}`;
+      v.innerHTML = o ? `<p class="try-v-head"><span class="try-v-text">${esc(o.verdict.text)}</span><span class="try-v-opt">${esc(o.label)}</span></p>${o.verdict.why ? `<p class="try-v-why">${esc(o.verdict.why)}</p>` : ''}` : '';
+    }
+
+    function showChoice() {
+      const k = sceneNow();
+      setPaused(false);
+      syncTry();
+      updateMetrics(k, true);
+      describeScene(k);
+      renderPanelInline(k);
+      stageTo(k, false);
+    }
+
+    function choose(k) {
+      const t = tries[cur];
+      if (!t || k < 0 || k >= t.options.length || k === choice) return;
+      choice = k;
+      showChoice();
+      const o = t.options[k];
+      $('tryLive').textContent = `${o.label}: ${o.verdict.text.replace(/[.!?]$/, '')}.${o.verdict.why ? ` ${o.verdict.why}` : ''}`;
+    }
+
+    function resetTry() {
+      if (!tries[cur] || choice < 0) return;
+      choice = -1;
+      showChoice();
+      $('tryLive').textContent = LBL.reset;
+    }
+
+    // Keys on a try step: 1-5 choose, 0 resets. Returns false when the key means nothing here.
+    function tryKey(n) {
+      const t = tries[cur];
+      if (!t || n > t.options.length) return false;
+      if (n === 0) resetTry();
+      else choose(n - 1);
+      return true;
+    }
+
+    function renderTryHint(i) {
+      const t = tries[i], hint = $('tryHint');
+      hint.hidden = !t;
+      hint.innerHTML = t ? `<kbd>1</kbd>${t.options.length > 1 ? `–<kbd>${t.options.length}</kbd>` : ''} ${esc(LBL.try.toLocaleLowerCase())} · <kbd>0</kbd> ${esc(LBL.reset.toLocaleLowerCase())} · ` : '';
     }
 
     function renderNav(i) {
@@ -1787,11 +2219,13 @@
       ol.style.setProperty('--n', STEPS.length);
       STEPS.forEach((s, k) => {
         const li = document.createElement('li');
+        const t = tries[k];
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = 'step-btn';
-        b.innerHTML = `<span class="dot-n" aria-hidden="true">${k + 1}</span><span class="step-short">${esc(s.short || `Step ${k + 1}`)}</span>`;
-        b.setAttribute('aria-label', `Step ${k + 1}: ${s.short || s.title || ''}`);
+        b.className = t ? 'step-btn has-try' : 'step-btn';
+        b.innerHTML = `<span class="dot-n" aria-hidden="true">${k + 1}</span>${t ? '<span class="try-mark" aria-hidden="true"></span>' : ''}<span class="step-short">${esc(s.short || `Step ${k + 1}`)}</span>`;
+        b.setAttribute('aria-label', `Step ${k + 1}: ${s.short || s.title || ''}${t ? ` (${LBL.try})` : ''}`);
+        if (t) b.title = LBL.try;
         b.addEventListener('click', () => go(k));
         li.appendChild(b);
         ol.appendChild(li);
@@ -1814,7 +2248,7 @@
     /* ---------- Text alternative for the stage ---------- */
 
     function describeScene(i) {
-      const sc = STEPS[i].scene || {};
+      const sc = SCENES[i].scene || {}, m = META[i];
       const name = (id) => (NODES[id] ? propsFor(id, i).label || id : id);
       const items = [];
       for (const id of sc.show || []) {
@@ -1844,7 +2278,8 @@
         items.push(`Moving: ${f.kind || 'request'} dots ${stops.join(' → ')}${f.bounce ? ' and back' : ''}${f.fail ? (f.fail >= 1 ? ', every one fails' : ', some fail') : ''}`);
       }
       if (sc.panel && sc.panel.lines) items.push(`${sc.panel.title || 'Summary'}: ${sc.panel.lines.map((l) => String(l).replace(/^[=!#] /, '').replace(/\s+/g, ' ')).join('; ')}`);
-      $('sceneTitle').textContent = `Stage, step ${i + 1}: ${STEPS[i].title || ''}`;
+      const opt = m.opt >= 0 ? tries[m.step].options[m.opt] : null;
+      $('sceneTitle').textContent = `Stage, step ${m.step + 1}: ${SCENES[i].title || ''}${opt ? ` (${LBL.try}: ${opt.label})` : ''}`;
       $('sceneText').innerHTML = `<ul>${items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`;
     }
 
@@ -1861,9 +2296,11 @@
     function replay() {
       if (cur < 0) return;
       setPaused(false);
-      if (reduce) { stageTo(cur, true); return; }
-      stageTo(cur - 1, true);   // step 1 has no previous scene, so this empties the stage
-      stageTo(cur, false);
+      const k = sceneNow();
+      if (reduce) { stageTo(k, true); return; }
+      // With an option chosen, replay the change from the step's base scene to that option.
+      stageTo(k === cur ? cur - 1 : cur, true);   // step 1 has no previous scene, so this empties the stage
+      stageTo(k, false);
     }
 
     /* ================= Layout of the stage ================= */
@@ -1872,22 +2309,17 @@
       const wrapW = wrap.clientWidth;
       let W = wrapW;
       const H = svg.clientHeight || 400;
-      VIEW.inlinePanel = wrapW < 520;
-      if (phoneQuery.matches && plans.length) {
-        // On a phone the stage keeps a readable minimum scale and pans sideways instead.
-        const need = Math.max(...plans.map((pl) => (pl.bounds.x1 - pl.bounds.x0) * VIEW.phoneZ + 2 * VIEW.margin));
-        const hNeed = Math.max(...plans.map((pl) => (pl.bounds.y1 - pl.bounds.y0) * VIEW.phoneZ + 2 * VIEW.margin));
+      if (phoneQuery.matches) {
+        // On a phone the stage keeps a readable minimum scale (0.85) and pans sideways instead.
+        const need = Math.max(...plans.map((pl) => (pl.bounds.x1 - pl.bounds.x0) * .85 + 2 * VIEW.margin));
+        const hNeed = Math.max(...plans.map((pl) => (pl.bounds.y1 - pl.bounds.y0) * .85 + 2 * VIEW.margin));
         if (need > wrapW && hNeed <= H) W = Math.ceil(Math.min(need, wrapW * 2.6));
         else if (need > wrapW) W = Math.ceil(Math.min(need * H / hNeed, wrapW * 2.6));
       }
       svg.style.width = W > wrapW ? `${W}px` : '';
-      VIEW.W = W;
-      VIEW.H = H;
-      VIEW.hud = clamp(W / 780, .86, 1.16);
-      // A bigger stage may zoom further in, so the scene grows with the window instead of floating in empty space.
-      VIEW.zMax = phoneQuery.matches ? 1.45 : clamp(Math.min(W / 700, H / 400), 1.45, 2.6);
+      Object.assign(VIEW, viewFor(W, H, { inline: wrapW < 520, phone: phoneQuery.matches }));
       $('scrollHint').hidden = W <= wrapW + 1;
-      planCameras();
+      cams = M.planCameras(VIEW);
     }
 
     function relayout() {
@@ -1896,68 +2328,16 @@
       if (prevW === VIEW.W && prevH === VIEW.H) return;
       if (stageIdx >= 0) {
         for (const k of ['x', 'y', 'w', 'h']) for (let t = tweens.length - 1; t >= 0; t--) if (tweens[t].target === cam && tweens[t].key === k) tweens.splice(t, 1);
-        Object.assign(cam, camTargetOf(plans[stageIdx].cam), { dirty: true });
+        Object.assign(cam, camTargetOf(cams[stageIdx]), { dirty: true });
         hud.key = '__relayout';
-        setPanel(plans[stageIdx], true, 0);
+        setPanel(stageIdx, true, 0);
       }
-      renderPanelInline(cur);
+      renderPanelInline(sceneNow());
       centreScroll();
     }
 
     function centreScroll() {
       if (wrap.scrollWidth > wrap.clientWidth) wrap.scrollLeft = (wrap.scrollWidth - wrap.clientWidth) / 2;
-    }
-
-    /* ================= Validation (schema rules 1, 2, 3, 7) ================= */
-
-    function validate() {
-      const warn = (m) => console.warn(`[diorama] ${w.id || 'walkthrough'}: ${m}`);
-      if (typeof w.id !== 'string' || !KEBAB.test(w.id)) warn(`id ${JSON.stringify(w.id)} should be a kebab-case string`);
-      for (const [id, L] of Object.entries(LINKS)) {
-        if (!NODES[L.from] || !NODES[L.to]) warn(`link "${id}" joins a node that does not exist (rule 1)`);
-      }
-      STEPS.forEach((s, i) => {
-        const n = i + 1, sc = s.scene || {}, show = sc.show || [], links = sc.links || {};
-        for (const id of show) if (!NODES[id]) warn(`step ${n}: scene.show names unknown node "${id}" (rule 1)`);
-        for (const id of Object.keys(sc.state || {})) if (!NODES[id]) warn(`step ${n}: scene.state names unknown node "${id}" (rule 1)`);
-        for (const id of Object.keys(links)) {
-          const L = LINKS[id];
-          if (!L) warn(`step ${n}: scene.links names unknown link "${id}" (rule 1)`);
-          else if (!show.includes(L.from) || !show.includes(L.to)) warn(`step ${n}: link "${id}" is shown but "${show.includes(L.from) ? L.to : L.from}" is not (rule 2)`);
-        }
-        (sc.flows || []).forEach((f, k) => {
-          const legs = (f.route || []).map((r) => ({ id: String(r).replace(/^~/, ''), rev: String(r).startsWith('~') }));
-          if (!legs.length) warn(`step ${n}: flow ${k + 1} has an empty route`);
-          for (const l of legs) {
-            if (!LINKS[l.id]) warn(`step ${n}: flow ${k + 1} uses unknown link "${l.id}" (rule 1)`);
-            else if (!(l.id in links)) warn(`step ${n}: flow ${k + 1} uses link "${l.id}", which is not shown in this step (rule 2)`);
-          }
-          for (let q = 1; q < legs.length; q++) {
-            const a = LINKS[legs[q - 1].id], b = LINKS[legs[q].id];
-            if (!a || !b) continue;
-            const shared = [a.from, a.to].some((x) => x === b.from || x === b.to);
-            const end = legs[q - 1].rev ? a.from : a.to, start = legs[q].rev ? b.to : b.from;
-            if (!shared) warn(`step ${n}: flow ${k + 1} links "${legs[q - 1].id}" and "${legs[q].id}" share no endpoint (rule 7)`);
-            else if (end !== start) warn(`step ${n}: flow ${k + 1} arrives at "${end}" but leaves from "${start}"; prefix a link with ~ to travel it backwards (rule 7)`);
-          }
-        });
-        if (METRICS.length > 1 && s.metrics) {
-          const total = METRICS[METRICS.length - 1].id, tv = s.metrics[total];
-          const parts = METRICS.slice(0, -1).map((m) => s.metrics[m.id]).filter((v) => typeof v === 'number');
-          const sum = parts.reduce((a, b) => a + b, 0);
-          if (typeof tv === 'number' ? Math.abs(tv - sum) > 1e-9 : parts.length > 0) warn(`step ${n}: metrics.${total} is ${tv} but the other metrics add up to ${sum} (rule 3)`);
-        }
-      });
-      (Array.isArray(w.goals) ? w.goals : []).forEach((g, k) => {
-        if (!Number.isInteger(g.step) || g.step < 0 || g.step >= STEPS.length) warn(`goal ${k + 1} points at step index ${g.step}, which does not exist (rule 1)`);
-      });
-      const ids = Object.keys(NODES).filter((id) => NODES[id].type !== 'zone');
-      for (let a = 0; a < ids.length; a++) {
-        for (let b = a + 1; b < ids.length; b++) {
-          const A = NODES[ids[a]], B = NODES[ids[b]], d = Math.hypot(A.x - B.x, A.y - B.y);
-          if (d < 6) warn(`nodes "${ids[a]}" and "${ids[b]}" are ${n1(d)} grid units apart; keep at least 6 (rule 7)`);
-        }
-      }
     }
 
     /* ================= Navigation ================= */
@@ -1968,12 +2348,15 @@
       if (i !== cur || opt.force) {
         const dir = cur < 0 ? 0 : Math.sign(i - cur);
         cur = i;
+        choice = -1;
         setPaused(false);
         renderGuide(i, opt.instant ? 0 : dir);
         updateMetrics(i, !opt.instant);
         renderNav(i);
         renderGoals(i);
         renderStrip(i);
+        renderTryHint(i);
+        $('tryLive').textContent = '';
         describeScene(i);
         renderPanelInline(i);
         stageTo(i, !!opt.instant);
@@ -1996,10 +2379,18 @@
     $('nextBtn').addEventListener('click', forward);
     $('replayBtn').addEventListener('click', replay);
     $('pauseBtn').addEventListener('click', () => setPaused(!paused));
+    $('guide').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-try]');
+      if (!b) return;
+      if (b.dataset.try !== 'reset') { choose(Number(b.dataset.try)); return; }
+      resetTry();
+      const first = $('guide').querySelector('.try-opt');
+      if (first) first.focus({ preventScroll: true });
+    });
     $('replayBtn').innerHTML = `${iconHtml('replay')}<span>Replay</span>`;
     const onMotion = (e) => {
       reduce = e.matches;
-      stageTo(cur, true);
+      stageTo(sceneNow(), true);
     };
     motionQuery.addEventListener('change', onMotion);
     let resizeQueued = false;
@@ -2029,18 +2420,16 @@
 
     /* ================= Start ================= */
 
-    if (!validated.has(w)) { validated.add(w); validate(); }
     renderHeader();
     renderLegend();
     buildMetrics();
     buildStrip();
-    plans = STEPS.map((_, i) => buildPlan(i));
     layoutStage();
     const start = clamp(Math.floor(Number(opts.start) || 0), 0, STEPS.length - 1);
     setPaused(false);
     if (start === 0) {
       // Opening on the first step lets its objects drop in; deep links open settled.
-      Object.assign(cam, camTargetOf(plans[0].cam), { dirty: true });
+      Object.assign(cam, camTargetOf(cams[0]), { dirty: true });
       go(0);
     } else {
       go(start, { instant: true });
@@ -2051,12 +2440,14 @@
 
     return {
       id: w.id,
+      kind: 'walkthrough',
       get step() { return cur; },
       get stepCount() { return STEPS.length; },
       go: (i) => go(i),
       next: () => go(cur + 1),
       prev: () => go(cur - 1),
       replay,
+      tryKey,
       togglePause: () => setPaused(!paused),
       focusTitle: () => $('title').focus({ preventScroll: true }),
       destroy,
@@ -2069,15 +2460,15 @@
   const pillHtml = (icon, text, tone) => `<span class="pill tone-${tone}">${icon ? iconHtml(icon) : ''}${esc(text)}</span>`;
   const tagHtml = (text, tone) => `<span class="tag tone-${tone}">${esc(text)}</span>`;
 
-  // ←/→ step, R replay, Space pause. Returns true when the key was used.
+  // ←/→ step, R replay, Space pause, and on a try step 1-5 choose, 0 reset. Returns true when the key was used.
   function stepKey(e, view) {
-    if (!view || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || typingIn(e.target)) return false;
+    if (!view || view.kind !== 'walkthrough' || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || typingIn(e.target)) return false;
     if (e.key === 'ArrowRight') view.next();
     else if (e.key === 'ArrowLeft') view.prev();
     else if (e.key === 'r' || e.key === 'R') view.replay();
     // Space always means pause, even on a focused button (Enter still activates buttons).
     else if (e.key === ' ' || e.key === 'Spacebar') view.togglePause();
-    else return false;
+    else if (!/^[0-5]$/.test(e.key) || !view.tryKey(Number(e.key))) return false;
     e.preventDefault();
     return true;
   }
@@ -2108,6 +2499,83 @@
     return app;
   }
 
+  /* ================= Contact sheet ================= */
+  // #/<id>/sheet, a review page that the reader's UI does not link to. Every step and every try
+  // option as a still at the framing a reader gets on the reference stage, with the results of
+  // the automatic checks, so a whole walkthrough can be reviewed from one or two screenshots.
+
+  function mountSheet(host, w, opts) {
+    const M = modelOf(w), LBL = opts.labels;
+    const { STEPS, SCENES, META, METRICS, tries, refView, refCams, checks } = M;
+    const CHAPTER_TONE = { setup: 'gray', problem: 'red', technique: 'violet', solution: 'green', insight: 'amber', tradeoff: 'amber', recap: 'paper' };
+    const order = STEPS.flatMap((_, i) => [i, ...(tries[i] ? tries[i].options.map((o) => o.scene) : [])]);
+    const sources = Array.isArray(w.sources) ? w.sources.filter(isObject) : [];
+    const ofKind = (kind) => sources.filter((s) => s.kind === kind).length;
+    const optionCount = tries.reduce((n, t) => n + (t ? t.options.length : 0), 0);
+    const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+    const counts = [plural(STEPS.length, 'step'), plural(optionCount, 'try option'), `sources: ${ofKind('data')} data, ${ofKind('assumption')} assumption`];
+
+    const findings = checks.warnings.map((m) => ['red', 'warning', m]).concat(checks.notes.map((m) => ['amber', 'note', m]));
+    const checksHtml = (findings.length
+      ? `<ul class="sheet-findings">${findings.map(([tone, kind, m]) => `<li>${tagHtml(kind, tone)}<span>${esc(m)}</span></li>`).join('')}</ul>`
+      : '<p class="sheet-clear">The automatic checks found nothing.</p>')
+      + `<p class="sheet-uncovered">Not checked automatically: whether the facts and the numbers in the text are right, whether each “${esc(LBL.changes)}” line matches the picture, and how the transitions look. Step through the walkthrough for those.</p>`;
+
+    // Word counts against their budget; a count over budget is flagged.
+    const budget = (label, n, max) => (n === null ? `<span>${label} –</span>` : `<span${n > max ? ' class="over"' : ''}>${label} ${n}${n > max ? ` &gt; ${max}` : ''}</span>`);
+
+    function tile(k) {
+      const m = META[k], s = STEPS[m.step], t = tries[m.step], opt = m.opt >= 0 ? t.options[m.opt] : null;
+      const chapter = s.chapter || 'setup';
+      const still = M.stillSvg(k, refCams[k], refView);
+      const vals = SCENES[k].metrics || {};
+      const metrics = METRICS.map((mt) => {
+        const v = vals[mt.id];
+        return `<span class="tile-metric">${esc(mt.label)} <b>${typeof v === 'number' ? `${v.toLocaleString('en-US')}${mt.unit ? ` ${esc(mt.unit)}` : ''}` : '—'}</b></span>`;
+      }).join('');
+      const words = opt
+        ? [budget('verdict', M.wordCount(opt.verdict.text), 4), budget('why', M.wordCount(opt.verdict.why), 20)]
+        : (Array.isArray(s.body) ? s.body : []).map((p, j) => (M.isList(p) ? `<span>¶${j + 1} list ${M.wordCount(p) ?? '–'}</span>` : budget(`¶${j + 1}`, M.wordCount(p), 40)));
+      let extra = '';
+      if (opt) {
+        extra = `<p class="tile-opt"><span>${esc(LBL.try)}: <b>${esc(opt.label)}</b></span><span class="badge tone-${opt.verdict.tone}">${esc(opt.verdict.text || '?')}</span></p>`
+          + (opt.verdict.why ? `<p class="tile-why">${esc(opt.verdict.why)}</p>` : '');
+      } else if (t) {
+        extra = `<p class="tile-opt"><span>${esc(LBL.try)}: the base scene, before choosing (${plural(t.options.length, 'option')})</span></p>`;
+      }
+      return `<li class="tile card${opt ? ' tile-option' : ''}">
+  <p class="tile-head"><span class="tile-id">${esc(m.id)}</span><span>·</span><span>${esc(s.short || '')}</span><span>·</span><span class="badge tone-${CHAPTER_TONE[chapter] || 'gray'}">${esc(LBL.chapters[chapter] || chapter)}</span></p>
+  <h2 class="tile-title"><a href="#/${encodeURIComponent(w.id)}/${m.step + 1}">${esc(s.title || '')}</a></h2>
+  ${extra}
+  <svg class="tile-scene st" viewBox="${still.viewBox}" role="img" aria-label="Still of step ${esc(m.id)}">${still.svg}</svg>
+  ${METRICS.length ? `<p class="tile-metrics">${metrics}</p>` : ''}
+  <p class="tile-words">words ${words.join(' ')}</p>
+</li>`;
+    }
+
+    document.title = opts.docTitle || `${w.title || 'Walkthrough'} · contact sheet`;
+    host.innerHTML = `<div class="sheet">
+  <svg class="sheet-defs" aria-hidden="true" focusable="false"><defs>${defsMarkup()}</defs></svg>
+  <header class="wt-head sheet-head"><div>
+    <p class="crumb">${opts.crumb ? `${esc(opts.crumb)} · ` : ''}Contact sheet</p>
+    <h1 tabindex="-1">${esc(w.title || '')}</h1>
+    ${w.question ? `<p class="question">${esc(w.question)}</p>` : ''}
+    <p class="sheet-counts">${counts.map(esc).join(' · ')}</p>
+  </div></header>
+  <section class="sheet-checks card" aria-labelledby="dio-checks-head">
+    <h2 id="dio-checks-head" class="section-h">Checks · ${plural(checks.warnings.length, 'warning')} · ${plural(checks.notes.length, 'note')}</h2>
+    ${checksHtml}
+  </section>
+  <ol class="sheet-grid" aria-label="Every step and try option">${order.map(tile).join('')}</ol>
+</div>`;
+    return {
+      id: w.id,
+      kind: 'sheet',
+      focusTitle: () => host.querySelector('h1').focus({ preventScroll: true }),
+      destroy: () => { host.innerHTML = ''; },
+    };
+  }
+
   /* ================= Single-file page ================= */
 
   function startSingle(w) {
@@ -2125,18 +2593,30 @@
       return;
     }
     const hashOf = (i) => `#/${encodeURIComponent(w.id)}/${i + 1}`;
+    // A step index (0-based), 'sheet', or null when the hash is not about this walkthrough.
     const parseHash = () => {
-      const m = /^#\/([^/]+)\/(\d+)$/.exec(location.hash);
+      const m = /^#\/([^/]+)\/(\d+|sheet)$/.exec(location.hash);
       if (!m || decodeURIComponent(m[1]) !== w.id) return null;
+      if (m[2] === 'sheet') return 'sheet';
       const n = Number(m[2]);
       return n >= 1 && n <= w.steps.length ? n - 1 : null;
     };
-    const view = mountWalkthrough(main, w, {
-      labels: mergeLabels(w.labels),
-      start: parseHash() ?? 0,
-      onStep: (i) => { if (location.hash !== hashOf(i)) location.replace(hashOf(i)); },
+    const labels = mergeLabels(w.labels);
+    let view = null;
+    const show = (at) => {
+      if (view) view.destroy();
+      main.scrollTop = 0;
+      view = at === 'sheet'
+        ? mountSheet(main, w, { labels })
+        : mountWalkthrough(main, w, { labels, start: at ?? 0, onStep: (i) => { if (location.hash !== hashOf(i)) location.replace(hashOf(i)); } });
+    };
+    show(parseHash());
+    window.addEventListener('hashchange', () => {
+      const at = parseHash();
+      if (at === null) return;
+      if (at === 'sheet' || view.kind === 'sheet') show(at);
+      else view.go(at);
     });
-    window.addEventListener('hashchange', () => { const i = parseHash(); if (i !== null) view.go(i); });
     document.addEventListener('keydown', (e) => stepKey(e, view));
   }
 
@@ -2567,13 +3047,13 @@
       progress.save();
     }
 
-    // step: a 0-based index, 'last', or null for "where the reader left off".
+    // step: a 0-based index, 'last', 'sheet', or null for "where the reader left off".
     async function openItem(id, step, focusNew, focusSame) {
       const e = outline.byId.get(id);
       if (!e || !e.openable) { showUnavailable(id, e); if (focusNew) focusMain(); return; }
-      if (view && view.id === id && currentId === id) {
+      if (view && view.id === id && currentId === id && (view.kind === 'sheet') === (step === 'sheet')) {
         // A bare #/<id> for the open walkthrough keeps the current step (and restores the step in the URL).
-        view.go(step === null ? view.step : step === 'last' ? view.stepCount - 1 : step);
+        if (view.kind === 'walkthrough') view.go(step === null ? view.step : step === 'last' ? view.stepCount - 1 : step);
         if (focusSame) view.focusTitle();
         return;
       }
@@ -2601,10 +3081,16 @@
         if (w.title !== e.title) warn(`collection.js calls "${id}" ${JSON.stringify(e.title)} but ${file} says ${JSON.stringify(w.title)}; keep the titles identical`);
         if (w.summary !== e.summary) warn(`collection.js and ${file} give different summaries for "${id}"; keep them identical`);
       }
+      const labels = mergeLabels(c.labels, w.labels);
+      if (step === 'sheet') {
+        resetScroll();
+        view = mountSheet($('main'), w, { labels, crumb: crumbOf(e), docTitle: `${w.title || e.title} · contact sheet · ${c.title || ''}` });
+        if (focusNew) view.focusTitle();
+        return;
+      }
       const last = w.steps.length - 1;
       let start = step === 'last' ? last : step;
       if (start === null) start = opt.progress && Number.isInteger(P.last[id]) ? P.last[id] : 0;
-      const labels = mergeLabels(c.labels, w.labels);
       const k = outline.open.indexOf(e);
       const prevE = opt.ordered && k > 0 ? outline.open[k - 1] : null;
       const nextE = opt.ordered && k < outline.open.length - 1 ? outline.open[k + 1] : null;
@@ -2621,12 +3107,12 @@
       if (focusNew) view.focusTitle();
     }
 
-    /* ---------- Routing: #/ home, #/<id> where the reader left off, #/<id>/<step> ---------- */
+    /* ---------- Routing: #/ home, #/<id> where the reader left off, #/<id>/<step>, #/<id>/sheet ---------- */
 
     function parseRoute() {
-      const m = /^#\/([^/]+)(?:\/(\d+))?\/?$/.exec(location.hash);
+      const m = /^#\/([^/]+)(?:\/(\d+|sheet))?\/?$/.exec(location.hash);
       if (!m) return { home: true };
-      return { id: decodeURIComponent(m[1]), step: m[2] ? Math.max(0, Number(m[2]) - 1) : null };
+      return { id: decodeURIComponent(m[1]), step: m[2] === 'sheet' ? 'sheet' : m[2] ? Math.max(0, Number(m[2]) - 1) : null };
     }
 
     function route() {

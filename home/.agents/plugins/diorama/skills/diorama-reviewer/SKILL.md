@@ -29,6 +29,9 @@ A review is worth most when the reviewer did not write the walkthrough.
 - The walkthrough: `walkthroughs/<id>.js` in a collection, or a single page.
 - Who the readers are: the collection's `AGENTS.md`, or ask.
 - The sources the facts should match: `sources/`, linked documents, or the code itself.
+- A browser or a tool that can open the rendered walkthrough and its sheet
+  (`#/<id>/sheet`). Without one, do the data-based checks and record that the reader and
+  stage passes were skipped.
 
 ## Procedure
 
@@ -38,16 +41,26 @@ Do the passes in this order. The first one cannot be repeated once you have read
    it once at reading speed as the stated reader. Note the step where you first could say
    what it is about, any step where you had to reread, any term used before it was explained,
    and whether the final scene makes sense without the text.
-2. **Stage pass.** Step through again, slowly, watching each transition. Check every item in
-   the "Stage" part of `references/rubric.md`. Read the browser console for `[diorama]`
-   warnings and errors.
-3. **Data pass.** Now read the data file. Check numbers, word budgets and structure with
-   the "Numbers", "Words" and "Arc" parts of the rubric. Count words; do not estimate.
-4. **Fact pass.** List every factual claim the walkthrough makes about the real subject:
-   in the text, in labels and tags, and implied by the picture (what talks to what, in which
-   order, what happens on failure). Trace each to a source. Mark it verified, unverified or
-   wrong, with where you checked.
-5. **Write the review** to `reviews/<id>.md` using the template in the rubric. For a single
+2. **Stage pass.** Open the sheet (`#/<id>/sheet`; `walkthrough-schema.md` in `diorama-maker`
+   describes it). Read the Checks block: every warning is a blocker, every note becomes a
+   finding at the severity `references/rubric.md` gives it. Look at every tile for objects
+   or labels covering each other, a label covering the thing it names, text that is cut
+   off or too small to read, and numbers that do not match what the picture shows. Then
+   go back to the walkthrough: choose every option of every try step, and step through
+   once more slowly, watching each transition. Check every item in the "Stage" and "Try
+   steps" parts of the rubric.
+3. **Numbers pass.** Now read the data file. Check that every number on the stage, in a
+   counter, in the text and in a verdict is a `sources` claim or follows from those claims
+   by arithmetic, and redo one derivation by hand; write it in the review. Use the
+   "Question" and "Numbers" parts of the rubric.
+4. **Words and arc pass.** Check word budgets and structure with the "Words" and "Arc"
+   parts. Count words; do not estimate.
+5. **Fact pass.** List every factual claim the walkthrough makes about the real subject:
+   in the text, in labels and tags, in `sources`, and implied by the picture (what talks
+   to what, in which order, what happens on failure). Check each `data` entry against what
+   it names as its source, and check that every value with no source is an `assumption`. Mark
+   each claim verified, unverified or wrong, with where you checked.
+6. **Write the review** to `reviews/<id>.md` using the template in the rubric. For a single
    page outside a collection, give the review in the conversation in the same shape.
 
 ## Rules
@@ -59,7 +72,8 @@ Do the passes in this order. The first one cannot be repeated once you have read
   suggested fix. "Step 6: the text says almost half was the round trip; the round trip is
   45 of 130 ms (35%). Say 'the decision' (60 ms) or change the number."
 - **Severity is about the reader:** a blocker misleads or stops them; a should-fix makes
-  them work harder than needed; a could-fix is polish.
+  them work harder than needed; a could-fix is polish. A warning from the page's automatic
+  checks is always a blocker; a note follows the rubric's "Words" and "Arc" severities.
 - **Do not pad.** A clean walkthrough gets a short review. Do not invent findings to look
   thorough, and do not soften a blocker to be agreeable.
 - **Say what you could not judge.** Whether the case is the best one, whether the pacing
@@ -69,7 +83,8 @@ Do the passes in this order. The first one cannot be repeated once you have read
 
 ## Verdict
 
-- **Ready for the owner:** no blockers, facts verified or clearly labelled as unverified.
+- **Ready for the owner:** no blockers, no warnings in Checks, facts verified or clearly
+  labelled as unverified.
 - **Needs changes:** at least one blocker or a wrong fact.
 
 The verdict is yours. The decision to approve is the owner's alone.

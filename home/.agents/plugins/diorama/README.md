@@ -2,15 +2,15 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-Explain something the way a good diagram on a whiteboard does, except it moves: one concrete
-case, one illustrated scene that grows a step at a time, a couple of sentences beside it.
+Diorama is a plugin for coding agents: three skills that have an agent explain a concept, a
+system, an incident or a procedure as a picture that moves step by step, and the HTML page
+that draws it.
 
-A **walkthrough** is one such explanation. A **collection** is a set of them behind one page:
-a course, an onboarding guide, a set of incident reviews, an explainer library.
-
-The format is distilled from Dilum Sanjaya's interactive learning sites
-([x.com/DilumSanjaya](https://x.com/DilumSanjaya)). Diorama reuses the format; it contains
-none of those sites' text, artwork or code.
+The walkthrough format follows Dilum Sanjaya's interactive learning sites
+([x.com/DilumSanjaya](https://x.com/DilumSanjaya)). The method around it (a question with
+one moving part and one number, sourced numbers, try-it steps, review on a sheet) builds on
+[SIMULAB](https://github.com/ecapri-dev/simulab-skill) by @0xKapri (MIT licence). Diorama
+is a separate implementation and contains none of their text, artwork, code or fonts.
 
 ## Skills
 
@@ -18,7 +18,7 @@ none of those sites' text, artwork or code.
 |---|---|---|
 | `diorama-maker` | Make one walkthrough: in chat, as one self-contained HTML page, or inside a collection | Nothing. Works alone |
 | `diorama-planner` | Plan a collection with you, create its folder and run the write → review → approve queue | `diorama-maker` |
-| `diorama-reviewer` | Review a walkthrough before you read it: as a newcomer, then against the format and the sources | `diorama-maker` |
+| `diorama-reviewer` | Review a walkthrough before you read it: as a newcomer, then against the format, the numbers and the sources | `diorama-maker` |
 
 ## How to use it
 
@@ -96,10 +96,37 @@ $diorama-planner Continue this collection.
 The planner runs this step for you inside a collection. Use it directly for a single page,
 or when you want a second opinion from a different model.
 
+## Ideas
+
+A request works best as a question with one thing that moves and one number that answers
+it. These fit the standard stage; you can ask in the words of the first column and the
+agent will propose the rest.
+
+| You ask about | The question | What moves | The number |
+|---|---|---|---|
+| How our login works | Why does the first login of the day take longer? | One login request passing from the browser to the API to the session store | Milliseconds at each stop, added up |
+| Why the job queue backs up | Why do jobs pile up at 9 am? | Jobs entering a queue faster than the workers take them out | Jobs waiting after ten minutes |
+| When the log disk fills | How long until the log disk is full? | Log writes filling a store | Days until it is full |
+| Where a support ticket waits | Why does a ticket take four days to close? | One ticket handed from team to team | Hours spent waiting at each team |
+| What the cache buys us | Why is the second page load faster than the first? | A request that stops at the cache instead of the database | Milliseconds saved per load |
+| What happens in an outage | What happens to orders when the payment service is down? | Orders reaching a broken link, then waiting in a queue | Orders delayed and orders lost |
+| Why we rate-limit | How many requests can one client send before it is refused? | Requests passing or bouncing at a gate | Requests allowed per minute |
+| Your job | [The process you find hardest to explain] | [The thing that moves] | [The number that matters] |
+
 ## What you get
 
 - **A single page:** one HTML file. Open it in any browser; it needs no server and no
   internet. Arrow keys step, `R` replays, Space pauses, and every step has its own link.
+- **For the reader, on every page:**
+  - the question the walkthrough answers, right under the title;
+  - try-it steps, where you pick a value (click, or press `1`–`5`) and the page shows what
+    happens and why; `0` resets;
+  - a "Where this comes from" list that says which facts and numbers have a source and
+    which are assumptions.
+- **For the author and the reviewer:** a sheet at `#/<walkthrough-id>/sheet` that shows
+  every step and every try-it option as a still picture on one page, and automatic checks
+  listed at its top: broken references, totals that do not add up, labels that overlap,
+  text over its word budget. You can open the sheet yourself; the agent gives you the link.
 - **A collection:** a folder you can zip or host as static files.
 
   ```text
@@ -108,7 +135,7 @@ or when you want a second opinion from a different model.
   ├── collection.js      the outline and the status of each walkthrough
   ├── walkthroughs/      one file each
   ├── reviews/           review notes and your decisions
-  ├── sources/           what the facts were checked against
+  ├── sources/           where the facts and numbers come from
   ├── engine/            the stage; shared by all walkthroughs
   └── AGENTS.md          rules and state for any agent that opens the folder
   ```
@@ -199,14 +226,32 @@ Diorama needs nothing else. One set of skills is recommended alongside it:
 
 `diorama-maker` points to them where they apply and works the same without them.
 
+## What to expect
+
+**Yes:** a first walkthrough that really explains something, with numbers you can defend,
+as one file to share.
+
+**No:** it is rarely right at the first request. Expect to ask for corrections, one at a
+time. And it is an illustrated isometric diagram, not photoreal 3D you can spin.
+
+If you remember three things:
+
+1. Ask a question with one moving part and one number, never a topic.
+2. Have the numbers gathered, with their sources, before anything is drawn.
+3. Every number on the page comes from the same small set of values.
+
 ## Limits
 
 - The stage draws machines, stored data, devices, people, crowds, queues and zones, with
   links and moving dots between them. It does not draw charts, timelines, formulas or 3D
   objects. A walkthrough that needs those needs a custom stage; `diorama-maker` describes
   how such stages are built but does not provide one.
-- A model review catches mechanical problems and checks facts against sources. It does not
-  replace your reading: whether a walkthrough clicks for a newcomer is yours to judge.
+- Try-it steps offer preset values only. There is no free input, no open exercise and
+  nothing that brings a reader back to the idea later.
+- The automatic checks catch mechanical problems: broken references, wrong totals,
+  overlapping labels, over-long text. A model review adds a check of facts and numbers
+  against their sources. Neither replaces your reading: whether a walkthrough clicks for a
+  newcomer is yours to judge.
 - Reading progress in a collection is kept in the reader's browser only.
 
 ## Maintaining

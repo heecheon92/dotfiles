@@ -1,9 +1,10 @@
 # Visual and motion craft
 
-Why the source sites look rich, and how to build a stage that does the same. The values are
-what the sites' shipped code uses; treat them as a tested starting point and choose your own
-colours and artwork. Read this before building or changing a stage. `assets/walkthrough.html`
-implements the illustrated diagram stage described in the first half.
+What makes a stage look rich, and how to build one. The values are a tested starting point;
+choose your own colours and artwork. `assets/walkthrough.html` implements the illustrated
+diagram stage described in the first half with these values; the trace and 3D sections are
+reference values for stages you build yourself. Read this before building or changing a
+stage, and when a sheet shows an overlap or a scene that looks lost.
 
 ## What "rich" is made of
 
@@ -88,7 +89,38 @@ wireframe box for something that is gone.
 - A link label is a small pill. Its position is chosen once per step by trying about nine
   places along the line on either side and scoring each: heavy penalties for covering an
   object, another label or a pill; a small penalty for covering the line itself or for being far
-  from the middle. Long labels may wrap to two lines. This search is why labels never collide.
+  from the middle. Long labels may wrap to two lines. The search makes collisions rare, not
+  impossible: when no free place is left, the page reports it (rule 8) and the fix is in
+  the data, below.
+
+### Taste, with numbers
+
+Judge these on the sheet's tiles, which show each step at the framing a reader gets.
+
+- **The scene fills the stage.** Aim for the visible objects to span about two thirds of
+  the stage. One object alone in step 1 looks lost: start with two, 7–9 grid units apart.
+- **Labels stay readable.** The smallest text on the stage is the 9 px line under a node's
+  name; link labels are 9.5 px. When the view has to pull so far out that the smallest text
+  falls under 8 px on screen, the page raises a note. Bring the nodes closer (7–9 units
+  between neighbours, never under 6), or use fewer far-flung ones.
+- **One highlight per step.** The spotlight already marks what is new or changed. Add at
+  most one `heat` glow, on the node the step is about; leave the rest calm or `dim`.
+- **Tags are two or three words.** A longer value belongs in the text.
+
+### Fixing an overlap
+
+A rule 8 warning, or a tile where a label covers an object, another label or the thing it
+names, is fixed in the data with a coordinate or a text. Try in this order:
+
+1. Shorten the text: a link label to the two words that matter, a tag to its value, a
+   summary-card line to its number.
+2. Move a node: change its `x` or `y` by 1–3 units, keeping neighbours 7–9 apart. A node
+   has one position for the whole walkthrough, so look at every tile again afterwards.
+3. Change a link's `route` (`x-first` or `y-first`) so its label has free line to sit on.
+
+Never fix it by deleting the label, tag or card line that carries the information. A link
+label may be hidden with `"label": ""` only in a step where it says nothing new, as on an
+`off` link.
 
 ### Moving dots
 
@@ -117,7 +149,10 @@ The scene for the next step is diffed against the current one by object id.
 - Phases overlap: changes start about halfway through the exits, enters start three-quarters
   through the changes.
 - Text on a tag cross-fades in the middle of the change (out by 42%, in from 55%).
-- "Replay" jumps to the previous step and animates forward again.
+- "Replay" jumps to the previous step and animates forward again; on a try step with an
+  option chosen it replays the move from the base to that option.
+- Choosing an option on a try step runs the same exit, change and enter phases between the
+  base and the option. The explanation text does not slide.
 
 ### Camera
 
@@ -125,6 +160,8 @@ The scene for the next step is diffed against the current one by object id.
   margin, capped at a maximum zoom, and eased to the new framing over 820 ms.
 - All framings are planned when the walkthrough loads. If the next step's content still fits the
   current framing with a small margin, the framing is kept. This avoids a wobble on every step.
+- A try step has one framing that fits its base and all its options, so choosing never
+  moves the camera.
 - A summary card is docked in a corner in screen pixels. The planner tries each corner and
   zooms out in small steps until the card covers no object or label.
 
@@ -139,7 +176,7 @@ The scene for the next step is diffed against the current one by object id.
 
 ### Dark mode
 
-The source computes dark colours from the light ones: light pastels become deep, less
+Dark colours are computed from the light ones: light pastels become deep, less
 saturated versions of the same hue; neutrals invert; ink becomes a warm off-white; shadows
 become black. Hand-picked illustration colours (skin, a laptop lid) are left alone.
 
@@ -222,8 +259,8 @@ documentation.
   soft sky light and one key light, with a faint studio environment for reflections.
 - Shadows: a transparent floor that only receives shadow (warm brown, about 30% opacity,
   heavily blurred), plus a soft dark blob under small props.
-- The floor is a shader grid that fades in an ellipse around the camera target, or, for the
-  outdoor site, a drawn paper map with contour lines.
+- The floor is a shader grid that fades in an ellipse around the camera target, or, for an
+  outdoor scene, a drawn paper map with contour lines.
 
 ### Models are code
 
@@ -275,7 +312,8 @@ values. While powered, `solve` runs every frame to drive the dashes, lamp and me
 - **Stagger, never simultaneous.** 100–200 ms between objects; links after their endpoints.
 - **One clock.** Pause, replay and speed must affect every animation.
 - **Ambient motion is slow and small.** Loops of 1.3–1.5 s, opacity or a few pixels.
-- **Respect reduced motion.** Switch scenes instantly and show a flow as static arrows.
+- **Respect reduced motion.** Switch scenes instantly and show a flow as static arrows. The
+  sheet's stills use the same static arrows.
 
 ## Build order
 

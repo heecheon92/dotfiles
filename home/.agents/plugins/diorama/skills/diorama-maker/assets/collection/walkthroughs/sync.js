@@ -1,10 +1,17 @@
 Diorama.walkthrough({
   "id": "sync",
   "title": "Keeping Copies in Sync",
+  "question": "How long does a cancelled card keep opening doors?",
   "summary": "Follow one cancelled card from the office to every door, and see what decides how long that takes.",
   "minutes": 9,
   "level": "beginner",
   "note": "Times are illustrative round numbers, not measurements of a real product.",
+  "sources": [
+    { "claim": "Card 0412 is cancelled at 09:00, and Lab A last fetched the rules at 08:58.", "kind": "assumption", "source": "Times in the story, chosen for this example." },
+    { "claim": "A polling door asks for changes every 5 minutes.", "kind": "assumption", "source": "Interval chosen for this example." },
+    { "claim": "Sending a change takes about 1 s, and applying it about 1 s.", "kind": "assumption", "source": "Round numbers chosen for this example, not measured." },
+    { "claim": "The lobby door is unplugged from 08:59 until 09:10.", "kind": "assumption", "source": "Times in the story, chosen for this example." }
+  ],
   "goals": [
     { "text": "Why a cancelled card can keep working", "step": 2 },
     { "text": "What polling costs and what pushing saves", "step": 4 },

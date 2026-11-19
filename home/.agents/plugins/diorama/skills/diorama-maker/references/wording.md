@@ -1,30 +1,38 @@
 # Wording
 
-The words are short because the stage does the showing. Numbers below were measured from the
-source sites' lesson data (40 story lessons, 445 steps; 239 part callouts; 270 trace phases;
-117 procedure sub-steps). Treat them as limits, not targets to pad towards.
+The words are short because the stage does the showing. Treat the budgets as limits, not
+targets to pad towards. A typical figure is given where it helps to aim below the limit.
 
 ## Budgets
 
-| Element | Budget | Measured |
+| Element | Budget | Typical |
 |---|---|---|
 | Walkthrough title | 2–5 words | |
+| Question | 1 question, ≤ 15 words | |
 | Walkthrough summary | 1 sentence, 10–20 words | |
-| Step title | about 5 words | median 5 |
-| Step short name | 1–2 words | 60% one word, 36% two |
-| Step body | exactly 2 paragraphs | 388 of 397 steps |
-| Body paragraph | ≤ 40 words | median 29, 90th percentile 41 |
+| Step title | about 5 words, never over 8 | 5 |
+| Step short name | 1–2 words | one word more often than two |
+| Step body | exactly 2 paragraphs | |
+| Body paragraph | ≤ 40 words | about 30 |
 | Callout | 1–2 sentences | |
-| What changed | 1–3 lines | 88% have 2 or 3 |
+| What changed | 1–3 lines | 2 or 3 |
+| Try prompt | 1 sentence, ≤ 12 words | |
+| Option label | 1–3 words: the value with its unit | |
+| Verdict text | ≤ 4 words | |
+| Verdict why | 1 sentence, ≤ 20 words | |
+| Ledger claim | 1 line, ≤ 15 words, one value with its unit | |
 | Goals (teaching material) | 4–6 per walkthrough, 4–8 words each | |
-| Part callout (object lab) | title 1–2 words, body ≤ 2 short lines | body median 7 words |
-| Lede (object lab) | 2 sentences | median 32 words |
-| Feature bullets (object lab) | exactly 3 | 15 of 16 lessons |
-| Phase caption (trace) | about 5 words | median 5 |
-| Phase detail (trace) | 3 sentences | median 44 words |
-| Facts (trace) | 3 label/value pairs | 231 of 309 phases |
-| Field note (trace) | 1 line | median 11 words |
-| Sub-step (procedure) | 1 imperative line | median 7 words |
+| Part callout (object lab) | title 1–2 words, body ≤ 2 short lines | body about 7 words |
+| Lede (object lab) | 2 sentences | about 30 words |
+| Feature bullets (object lab) | exactly 3 | |
+| Phase caption (trace) | about 5 words | |
+| Phase detail (trace) | 3 sentences | about 45 words |
+| Facts (trace) | 3 label/value pairs | |
+| Field note (trace) | 1 line | about 11 words |
+| Sub-step (procedure) | 1 imperative line | about 7 words |
+
+The page reports the budgets it can count as notes (`walkthrough-schema.md`, "What the
+page checks"). Count the rest yourself.
 
 ## Voice
 
@@ -50,7 +58,7 @@ Paragraph 1 says what happens and why. Paragraph 2 gives the number or tells the
 
 ## Titles by chapter
 
-| Chapter | Pattern | Examples from the source |
+| Chapter | Pattern | Examples |
 |---|---|---|
 | `setup` | the starting state, or "put numbers on it" | "One leader, two followers" · "The brief: a link shortener" · "Put numbers on it" |
 | `problem` | a complaint, a failure, or `Case:` + a concrete situation | "Users say the shop feels slow" · "…until Server A dies" · "Case: Bob is in a tunnel" |
@@ -69,16 +77,17 @@ Devices worth copying:
 
 ## Callouts
 
-One per step at most; about three steps in four have one.
+One per step at most. Most steps have one; a step that needs none goes without.
 
-| Kind | Label shown | Use for | Example from the source |
+| Kind | Label shown | Use for | Example |
 |---|---|---|---|
 | `insight` | Key idea | the one sentence to remember from this step | "Round-trip time is set by distance and the network, not by how fast your server is." |
 | `tip` | Good to know | a practical consequence or a pointer to another walkthrough | "Answers are cached for a time-to-live. For the next few minutes, repeat visits skip this step entirely." |
 | `warn` | Watch out | a misconception or a cost | "A compensation is a new action, not a rollback. A refund is not the same as never having charged." |
 | `next` | Next up | recap step only | "Next up: **Napkin Math** — estimating how much capacity you need before you build anything." |
 
-In the source, tips are the most common (183), then insights (112) and warnings (108).
+Reach for a tip first, an insight when the step holds the one sentence to remember, and a
+warning only for a real misconception or cost.
 
 ## What changed
 
@@ -90,12 +99,23 @@ A diff of the stage, in the reader's words. Three markers:
 − Server B                     something was removed or failed
 ```
 
-Changed (`~`) and added (`+`) lines are about equally common; removed (`−`) is rarer.
 Write a line only if the reader can see that difference on the stage.
+
+## Question
+
+The question a newcomer would ask, in their words, answerable with one number. It names or
+implies the thing that moves. Start with Why, How, What happens when, or How many.
+
+- "Why does the door sometimes hesitate?"
+- "Why is the second page load faster than the first?"
+- "What happens to orders when the payment service is down?"
+
+Not a topic ("Door access"), not two questions joined by "and", not a promise ("Learn how
+doors work"). The summary line that follows it says how the walkthrough will answer.
 
 ## Summary line
 
-One sentence that promises a concrete journey or names a tension. Patterns from the source:
+One sentence that promises a concrete journey or names a tension. Patterns:
 
 - Follow one X step by step, and find out Y: "Follow one page load hop by hop — and find out where the time really goes."
 - A predicament, then the choice: "Your one server is melting. Do you buy a bigger one, or more of them?"
@@ -116,6 +136,25 @@ last goal usually names the cases.
 2. Three to five takeaways, each one line, key noun in bold, written as a rule the reader
    can reuse ("Connections cost **round trips** — reuse them.").
 3. A `next` callout: the next walkthrough's name and the question it answers.
+
+## Try step
+
+- **Prompt:** tell the reader what to choose, naming the variable: "Pick how long the
+  server takes to answer." For a prediction, the body asks and the prompt invites: "Choose
+  a delay and see."
+- **Option label:** the value alone, with its unit: "60 ms", "400 ms", "2 s". Not
+  "Fast server".
+- **Verdict text:** the outcome as the reader would say it: "Opens in time", "Door
+  hesitates", "Tap fails". Pick the tone to match: green fine, amber worse, red broken.
+- **Why:** one sentence that names the number that decided it: "110 ms in total, under the
+  300 ms people notice."
+
+## Sources
+
+A ledger claim is one checkable statement with its value and unit: "Reading a card takes
+40 ms", not "Card timing". Name where it comes from precisely enough to find again: a file
+and line, a document and section, a named measurement with its date. For an assumption, say
+in a few words why the value is reasonable or that it is illustrative.
 
 ## Object lab wording
 
@@ -152,6 +191,6 @@ last goal usually names the cases.
 
 ## Translating
 
-The source sites ship 20+ languages from one lesson file per language. If a walkthrough will be
-translated: keep sentences short and literal, avoid idiom, keep identifiers, commands and
-units untranslated, and re-check the word budgets in the target language.
+If a walkthrough will be translated, keep one data file per language: keep sentences short
+and literal, avoid idiom, keep identifiers, commands and units untranslated, and re-check
+the word budgets in the target language.

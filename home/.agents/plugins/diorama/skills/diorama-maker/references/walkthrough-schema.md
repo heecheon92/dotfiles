@@ -14,10 +14,12 @@ how several walkthroughs are put together into one site.
 |---|---|---|
 | `id` | string | kebab-case, used in the deep link and as the file name in a collection |
 | `title` | string | 2–5 words, names the thing followed, not the topic area |
+| `question` | string, optional | the one question the walkthrough answers, shown directly under the title and more prominent than `summary`. Write it first; see `wording.md` |
 | `summary` | string | one sentence, 10–20 words, see `wording.md` |
 | `minutes` | number, optional | honest estimate; 8–15 for 8–14 steps. Omit when a duration means nothing (an incident review) |
 | `level` | string, optional | `beginner` \| `intermediate` \| `advanced`. Omit outside teaching material |
 | `note` | string, optional | one line that labels what is simplified or invented |
+| `sources` | entry[], optional | the ledger: where every fact and number comes from (see below). Give one whenever the walkthrough shows numbers |
 | `goals` | `{text, step}`[], optional | 4–6 things the reader will be able to say afterwards; `step` is the 0-based step index that shows it. Omit to hide the checklist |
 | `labels` | object, optional | override the page's headings (see below) |
 | `metrics` | `{id, label, unit, icon?}`[] | 0–5 running numbers shown above the stage; the last is the total |
@@ -40,9 +42,44 @@ briefing without sounding like the wrong one. Every key is optional.
 | `back` | "Back" | |
 | `restart` | "Start again" | |
 | `chapters` | the chapter names | `{ "problem": "what broke", "solution": "the fix" }` |
+| `sources` | "Where this comes from" | "Evidence" |
+| `sourced` | "sourced" | |
+| `assumed` | "assumption" | |
+| `try` | "Try it" | "Your turn" |
+| `reset` | "Reset" | |
 
 In a collection, labels set in `collection.js` apply to every walkthrough and a
 walkthrough's own `labels` override them.
+
+### Sources
+
+```json
+"sources": [
+  { "claim": "The reader sends only the card number", "kind": "data", "source": "sources/reader-protocol.md §2" },
+  { "claim": "People notice a wait above 300 ms", "kind": "data", "source": "Team UX guideline", "url": "https://example.com/ux-guideline" },
+  { "claim": "Reading a card takes 40 ms", "kind": "assumption", "source": "Illustrative round number" }
+]
+```
+
+| Field | Rule |
+|---|---|
+| `claim` | one fact or one value with its unit, as a short statement |
+| `kind` | `data` (you can name where it comes from) or `assumption` (you cannot; this includes illustrative round numbers) |
+| `source` | required for `data`: a document, a standard, a measurement, or a file path such as `src/auth/login.ts:42`. Optional for `assumption`, where it may hold the reasoning |
+| `url` | optional; shown as a link only when it starts with `http://` or `https://` |
+
+Write the ledger before the steps. Sorting data from assumption before anything is drawn
+shows you whether you understand the subject, and a reader trusts a page that says where
+its numbers come from; that is why the list is on the page and not only in review notes.
+Never invent a number or a source.
+
+The page shows the ledger in the explanation card below the goals list, collapsed, under a
+line with the heading and a count per kind: `Where this comes from · sourced 4 · assumption 2`
+(a kind with no entries is left out). Each row is a tag (the `sourced` label in green for
+`data`, the `assumed` label in amber for `assumption`), the claim, then where it comes from.
+
+`note` stays the one-line label under the title ("Timings are illustrative"). A walkthrough
+that shows numbers needs `sources`; `note` alone does not say which numbers are real.
 
 ### Node
 
@@ -97,6 +134,7 @@ walkthrough's own `labels` override them.
 | `chapter` | `setup` \| `problem` \| `technique` \| `solution` \| `insight` \| `tradeoff` \| `recap` |
 | `title` | about 5 words, a statement of what happens, not a noun phrase |
 | `body` | exactly 2 paragraphs, each ≤ 40 words. Inline `<b>`, `<em>`, `<code>`, `<span class="term">` only |
+| `try` | optional; makes this a step where the reader chooses a value (see "Try step") |
 | `callout` | optional; `kind` is `insight` \| `tip` \| `warn` \| `next`; one or two sentences |
 | `changes` | 1–3 lines, each starting `+ ` (added), `~ ` (changed) or `− ` (removed). Omit on step 1 and on the recap |
 | `metrics` | value per metric id; `null` until that number has been earned on stage |
@@ -110,6 +148,53 @@ The recap step's `body` is one sentence stating the result in numbers, then an H
 `<ul class="takeaways">` of 3–5 bullets with the key noun in `<b>`. Its callout is `kind: "next"`;
 start the text with the name of what comes next, because the page adds the label itself.
 In a collection the shell also links to the next walkthrough, so the callout says why it follows.
+
+### Try step
+
+A step with a `try` field hands one choice to the reader: the page shows a "Try it" block
+after the body with the prompt, one button per option, a Reset control and a verdict card.
+`techniques.md` says when to use one and how to choose the options; `wording.md` has the
+budgets.
+
+```json
+"try": {
+  "prompt": "Pick how long the server takes to answer.",
+  "options": [
+    {
+      "label": "60 ms",
+      "verdict": { "tone": "green", "text": "Opens in time", "why": "110 ms in total, under the 300 ms people notice." },
+      "metrics": { "read": 40, "relay": 10, "decide": 60, "unlock": null, "total": 110 },
+      "scene": { "state": { "server": { "load": 0.3 } }, "flows": [{ "route": ["ask"], "kind": "request", "bounce": true }] }
+    }
+  ]
+}
+```
+
+| Field | Rule |
+|---|---|
+| `prompt` | one sentence telling the reader what to choose |
+| `options` | 2–5 options |
+| `options[].label` | the text on the button: the value, with its unit |
+| `options[].verdict` | `tone` is a tag tone (`green`, `amber`, `red`, `paper`, `violet`, `gray`); `text` is the outcome in a few words; `why` is one sentence |
+| `options[].metrics` | optional; when present it replaces the step's `metrics` as a whole |
+| `options[].scene` | optional; may hold `show`, `state`, `links`, `flows`, `panel`. A key that is present replaces the step's value for that key as a whole; a key that is absent is inherited |
+
+- The step's own `scene` and `metrics` are the **base**: what the reader sees before
+  choosing. Every option, including the right one, must change something on the stage; a tag
+  that names the chosen value is enough. An option identical to the base breaks rule 9.
+- Because a key is replaced as a whole, an option that sets `state` restates the state of
+  every node that has one, as a step does.
+- Choosing an option moves the stage to it with the usual transitions and counts the
+  metrics up; the text beside the stage stays put. The view is framed once for the base and
+  all options, so choosing never moves the camera. Lay out option-only nodes with that in mind.
+- Replay with an option chosen replays the move from the base to that option.
+- Reset appears once something is chosen and returns to the base. Leaving the step and
+  coming back also resets, and the next step starts from its own data, not from the choice.
+- Keys on a try step: `1`–`5` choose an option, `0` resets. The keyboard hint shows them on
+  try steps only, and the step strip marks try steps.
+- The step's link stays `#/<id>/<step>`; the chosen option is not part of it.
+- The verdict is announced to screen readers and the stage's text alternative describes the
+  chosen option.
 
 ### Node state
 
@@ -156,9 +241,62 @@ this step) · `cut` (broken: red, no arrowheads; dots on it die at the break) ·
 5. Each `changes` line corresponds to something that is visibly different on the stage.
 6. Each goal's `step` is the step where that idea is actually shown, not merely mentioned.
 7. No two nodes are closer than 6 grid units, and consecutive flow links share an endpoint.
+8. Nothing overlaps: in a settled step or option, no node label, tag, gauge, link label or
+   summary card covers an object or another of those.
+9. A `try` is well formed: 2–5 options, each with a `label` and a `verdict.text`, a known
+   verdict tone, and no option identical to the base. Rules 1, 2 and 3 also hold for every
+   option after it is merged with its step.
+10. Every number on the stage (metrics, tags, link labels, the summary card, verdicts) is a
+    `sources` claim or follows from those claims by arithmetic the reader could redo.
 
-The page checks rules 1, 2, 3 and 7 when it loads and prints each violation to the browser
-console. Rules 4–6 need a reader.
+## What the page checks
+
+The page checks rules 1, 2, 3, 7, 8 and 9 when it loads. Rules 4, 5, 6 and 10 need a reader.
+It reports at two levels, both printed once to the browser console and listed on the sheet:
+
+| Level | Console line | Meaning | What to do |
+|---|---|---|---|
+| Warning | `[diorama] <id>: …` | a rule above is broken, or a `sources` entry has an unknown `kind` or is `data` with no `source` | fix it; a walkthrough with warnings is not finished |
+| Note | `[diorama] note: <id>: …` | a budget or a craft guideline is exceeded | fix it, or keep it and say why in the handoff |
+
+A rule 8 warning names the step and the two things that overlap; at most four are listed per
+scene, then a count of the rest. Fix it by moving a node or shortening a text
+(`visual-craft.md`, "Fixing an overlap"), never by deleting the label.
+
+Notes are raised for:
+
+- a non-recap step whose body is not exactly 2 paragraphs, or a paragraph over 40 words
+  (tags are not counted, a list such as the recap's takeaways is skipped, and languages
+  written without spaces are not counted at all);
+- `short` over 2 words, a step title over 8 words, `changes` over 3 lines;
+- step 1 showing more than 2 nodes, or a later step adding more than 2 (zones do not count);
+- a last step that is not `recap`;
+- a view so far out that the smallest label is under 8 px on screen at the reference stage
+  size (960×540 px, about a 1440×900 window);
+- more than 2 try steps, a `verdict.text` over 4 words, a `verdict.why` over 20 words;
+- metrics or number tags in a walkthrough that has neither `sources` nor `note`.
+
+The automatic checks do not cover facts, numbers in the prose, whether "what changed"
+matches the picture, or transitions.
+
+## The sheet
+
+`#/<walkthrough-id>/sheet` shows the whole walkthrough as one scrolling page of stills, in
+the single page (`walkthrough.html#/badge-tap/sheet`) and in a collection
+(`index.html#/badge-tap/sheet`). It is a review tool; nothing in the reader's page links to it.
+
+1. **Header:** title, question, and counts of steps, try options and sources by kind.
+2. **Checks:** every warning and note for this walkthrough, or a line saying the automatic
+   checks found nothing, then one line listing what they do not cover.
+3. **Tiles:** one per step and one per try option (`6`, `6a`, `6b`…). A tile shows
+   `n · short · chapter`, the step title, the settled stage as a still at the framing a
+   reader gets (flows as static arrows, summary card included), the metric values, and the
+   word count of each body paragraph, flagged when over budget. An option tile shows the
+   option's label, its verdict and `why`, and their word counts instead.
+
+Open it after every change, at a window about 1440 px wide: tiles are two across and large
+enough to read. One or two screenshots of it replace clicking through every step. It does
+not show transitions; step through once for those.
 
 ## Other families
 

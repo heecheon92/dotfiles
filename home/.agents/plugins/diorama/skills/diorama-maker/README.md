@@ -1,8 +1,9 @@
 # diorama-maker
 
 Guides an agent to explain a concept, system, incident or procedure as a **walkthrough**: one
-concrete case followed step by step on a single illustrated scene, with very few words
-beside it. It works alone; it needs no other skill, no installs and no network.
+question answered by following one concrete case step by step on a single illustrated scene,
+with very few words beside it. It works alone; it needs no other skill, no installs and no
+network.
 
 ## Use
 
@@ -31,14 +32,29 @@ For a single page the agent copies `assets/walkthrough.html` and replaces the wa
 data embedded in it. The page opens in any browser without a server or internet access.
 `assets/example-walkthrough.json` is a complete example.
 
-## The format in six lines
+Add `#/<id>/sheet` to the page's address to see every step as a still picture on one page,
+with the results of the automatic checks. The agent reviews its work there; you can too.
 
-- Follow one concrete case from start to finish.
-- Keep one scene and add one or two objects per step.
+## The format in seven lines
+
+- Start from one question, with one thing that moves and one number that answers it.
+- List the numbers and where each comes from before drawing anything.
+- Follow one concrete case and keep one scene, adding one or two objects per step.
 - Put a number in a total only after the scene has shown it.
 - Each step is a title, two short paragraphs, one callout and a "what changed" list.
-- Once the idea works, break it by changing one value, then show the fix and its cost.
+- Once the idea works, show too little and too much of one value; let the reader choose it.
 - End with the result in numbers, three to five reusable rules and what comes next.
+
+## What a walkthrough is made of
+
+| Part | In the data | What it is |
+|---|---|---|
+| The objects | `nodes`, `links` | The things on the stage and the connections between them |
+| The numbers behind it | `sources` | The ledger: each value and where it comes from |
+| The steps | `steps` | The story, one change at a time |
+| The running numbers | `metrics` | The counters above the stage, filled in as the stage earns them |
+| The practice | `try` | A step where the reader picks a value and gets a verdict |
+| What is real | `kind` in `sources`, `note` | Which values are data and which are assumed |
 
 ## Contents
 
@@ -46,10 +62,10 @@ data embedded in it. The page opens in any browser without a server or internet 
 |---|---|
 | `SKILL.md` | Instructions for the agent |
 | `references/structure.md` | Page regions, the four walkthrough families, arcs, collections |
-| `references/wording.md` | Word budgets, voice, title and callout patterns |
-| `references/techniques.md` | 48 explaining moves with reasons, and what the format lacks |
-| `references/visual-craft.md` | How the stage is drawn and animated |
-| `references/walkthrough-schema.md` | The data format of one walkthrough |
+| `references/wording.md` | Word budgets, voice, question, title, callout and verdict patterns |
+| `references/techniques.md` | The explaining moves with reasons, and what the format lacks |
+| `references/visual-craft.md` | How the stage is drawn and animated; fixing overlaps |
+| `references/walkthrough-schema.md` | The data format of one walkthrough, the automatic checks, the sheet |
 | `references/collection.md` | The collection folder and its shell |
 | `references/checklist.md` | Review list |
 | `references/text-mode.md` | The chat rendering |
@@ -58,6 +74,7 @@ data embedded in it. The page opens in any browser without a server or internet 
 ## Limits
 
 - The template draws step-driven walkthroughs on an isometric stage. A hands-on lab where
-  the reader clicks parts and changes values, or a 3D scene, needs a custom stage.
-- The format is built for first understanding. It has no questions that test the reader and
-  nothing that brings them back later; add those separately when retention matters.
+  the reader clicks parts of an object, or a 3D scene, needs a custom stage.
+- The format is built for first understanding. A try step lets the reader choose among
+  preset values and see what happens. It has no free input, no open practice and nothing
+  that brings the reader back later; add those separately when retention matters.

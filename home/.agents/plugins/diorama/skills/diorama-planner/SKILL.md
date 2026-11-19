@@ -29,18 +29,30 @@ Ask only what you cannot find out, in one message, with your best guess offered 
 
 - **Subject and purpose.** What should a reader understand or be able to do at the end?
 - **Readers.** Who are they and what do they already know?
+- **The confusing part.** "Which part of this confuses newcomers most?" That part gets the
+  most room in the outline.
 - **A list of topics.** "Do you already have a list of the walkthroughs, lessons or topics
   you want, or should I propose one?" Always ask this unless the user already gave a list.
-- **Sources.** Code, documents, logs or links the facts should come from.
+- **Sources.** Code, documents, logs or links the facts and numbers should come from.
 - **Where the folder goes.** Propose two or three concrete paths. Never create it inside a
   skill folder or a dotfiles repository.
 - **Language** of the walkthroughs, if not obvious.
+
+If the subject is too vague to outline ("explain our platform"), do not guess. Offer three
+candidate questions the collection could open with, each with the thing that moves and the
+number that answers it, say which one covers the part newcomers find most confusing, and
+recommend one.
 
 ### 2. Gather the facts
 
 Read the sources before outlining. For a subject you only know from memory, look it up with
 whatever research tools are available and keep what you used. A walkthrough can only be as
 right as what it was checked against.
+
+Keep a ledger as you read: each value the walkthroughs will show, its unit, where it comes
+from, and whether it is data or an assumption. Never invent a number or a source; a value
+you cannot trace is an assumption. Each walkthrough later takes its rows from this ledger
+as its `sources` field.
 
 ### 3. Outline
 
@@ -55,7 +67,8 @@ candidates separately as "later". Three good walkthroughs beat twelve planned on
 
 Present the outline in the conversation as a table (format in `references/outline.md`):
 sections, and for each item its title, the one question it answers, the concrete case it
-follows, and what it needs the reader to have seen before.
+follows, the thing that moves, the number that answers the question, and what it needs the
+reader to have seen before.
 
 **Stop here and wait for the owner to approve or edit the outline.** Create no files first.
 
@@ -71,7 +84,8 @@ After approval:
    read in order, both `false` for a library people dip into. Set `labels` if the default
    teaching wording does not fit.
 4. Fill in "About this collection" in the folder's `AGENTS.md`, including the example world.
-5. Put the sources you used into `sources/`, or a `sources/README.md` listing where they are.
+5. Put the sources you used into `sources/`, or a `sources/README.md` listing where they
+   are, and save the ledger from step 2 as `sources/ledger.md`.
 6. Open `index.html` and confirm the home view shows the outline with no console errors.
 
 Tell the owner the path and how to open it.
@@ -80,16 +94,20 @@ Tell the owner the path and how to open it.
 
 Work through the items in outline order. For each one:
 
-1. **Write** it with `diorama-maker`, as `walkthroughs/<id>.js`. Render it and step through
-   every step. Set its status to `drafted`.
+1. **Write** it with `diorama-maker`, as `walkthroughs/<id>.js`, passing on its question,
+   case, moving thing and number from the outline and its rows of the ledger. Review it on
+   its sheet (`index.html#/<id>/sheet`) and step through it once, as that skill's workflow
+   says. Set its status to `drafted`.
 2. **Review** it with `diorama-reviewer`. The reviewer must not be the author: hand it to a
    fresh agent with no memory of the writing if your tool can start one. If it cannot, do a
    separate review pass yourself and record in the review file that it was a self-review.
 3. **Resolve** the findings: fix blockers and should-fixes, answer the rest, and write the
    "Resolution" section of `reviews/<id>.md`. Set the status to `reviewed`.
-4. **Hand over.** Set `awaiting-approval` and tell the owner: the link
-   (`index.html#/<id>/1`), a two-line summary of what the review found and what changed, and
-   what the reviewer could not judge. Then wait.
+4. **Hand over.** Set `awaiting-approval` and tell the owner: the reading link
+   (`index.html#/<id>/1`) with the sheet link (`index.html#/<id>/sheet`) next to it, a
+   two-line summary of what the review found and what changed, what was checked on the
+   sheet and what was fixed, one hand check of a derived number, which values are
+   assumptions, and what the reviewer could not judge. Then wait.
 5. **Record the decision.** When the owner answers, write it under "Owner decision" in the
    review file. Approved: the owner, or you on their explicit word, sets `approved`.
    Changes wanted: apply them, set `drafted`, and repeat from step 2 if facts or steps changed.

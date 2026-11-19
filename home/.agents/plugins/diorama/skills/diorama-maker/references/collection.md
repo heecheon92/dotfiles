@@ -21,7 +21,7 @@ A single walkthrough does not need a collection: use `assets/walkthrough.html`.
 │   └── <id>.js           one file per walkthrough
 ├── reviews/
 │   └── <id>.md           review notes and the decision for one walkthrough
-├── sources/              material the walkthroughs' facts were checked against
+├── sources/              material the walkthroughs' facts and numbers come from
 └── AGENTS.md             rules and current state for any agent working in the folder
 ```
 
@@ -90,7 +90,7 @@ Each item has one status. It is the single record of where the work stands.
 | Status | Meaning | File exists |
 |---|---|---|
 | `planned` | in the outline, not written | no |
-| `drafted` | written and rendered once by its author | yes |
+| `drafted` | written; its sheet shows no warnings and its author stepped through it once | yes |
 | `reviewed` | an independent review is recorded in `reviews/<id>.md` and its findings are resolved | yes |
 | `awaiting-approval` | ready for the owner to read | yes |
 | `approved` | the owner accepted it | yes |
@@ -107,6 +107,9 @@ steps moves it back to `drafted`.
 - **Walkthrough view** (`#/<walkthrough-id>/<step>`): the same four-region page as the
   single-file template. The walkthrough file is loaded when first opened. `#/<walkthrough-id>`
   without a step opens where the reader left off.
+- **Sheet** (`#/<walkthrough-id>/sheet`): every step and try option of one walkthrough as
+  stills, with the automatic checks (`walkthrough-schema.md`, "The sheet"). It opens for any
+  walkthrough whose walkthrough view opens, and nothing in the shell links to it.
 - **Next and previous**: with `ordered`, the last step's button leads to the next listed
   walkthrough the reader can open, and Back on the first step leads to the last step of the
   previous one. The final walkthrough ends with a button to the overview. Arrow keys stay
@@ -114,7 +117,8 @@ steps moves it back to `drafted`.
 - **Search** (`/` or `Ctrl/⌘ K`): over the titles and summaries of items the reader can
   open, and over their step titles and marked terms. The first search loads walkthrough
   files that have not been opened yet.
-- **Keys**: ← → step, R replay, Space pause, `g` then `h` for the overview.
+- **Keys**: ← → step, R replay, Space pause, `1`–`5` and `0` on a try step, `g` then `h`
+  for the overview.
 - **Problems are shown, not hidden**: a missing file, a file with an error, a file that
   registers another id, and a link to a planned or hidden item each replace the walkthrough
   view with a message naming the file or the reason, and a way to retry or go back.
@@ -129,7 +133,8 @@ listed under `labels` can be renamed.
 folder, with or without this skill installed:
 
 - what the collection is for and who reads it (filled in when the folder is created);
-- that `collection.js` is the source of truth for the outline and status;
+- that `collection.js` is the one record of the outline and status;
+- that every walkthrough is reviewed on its sheet and lists where its numbers come from;
 - the rule that only the owner approves;
 - that `index.html` and `engine/` are not edited here;
 - where the format and wording rules are (this skill), and what to do if it is not installed.
@@ -138,6 +143,8 @@ folder, with or without this skill installed:
 
 `engine/VERSION` holds the version the folder was created with. To update a collection, copy
 `assets/collection/engine/` from this skill over the folder's `engine/` and
-`assets/collection/index.html` over its `index.html`, then open the collection and step
-through one walkthrough per section. Walkthrough and collection data are never rewritten by
-an engine update; if a format change is needed, the engine's changelog says so.
+`assets/collection/index.html` over its `index.html`, then open the sheet of every
+walkthrough and read its Checks block. Walkthrough and collection data are never rewritten
+by an engine update, and data written for an earlier engine renders as before. Engine 0.2.0
+adds the question, the sources list, try steps, the sheet and the automatic checks, so an
+older walkthrough may show warnings or notes it never showed; treat them as review findings.

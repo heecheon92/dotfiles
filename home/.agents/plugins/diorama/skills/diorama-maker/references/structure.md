@@ -7,16 +7,18 @@ subject so that the reader learns the interface once and then spends attention o
 
 ```
 ┌──────────────┬──────────────────────────────────┬───────────────┐
-│ collection   │ title · summary · time/level     │ n / N  chapter│
+│ collection   │ title · question · summary       │ n / N  chapter│
 │ map          ├──────────────────────────────────┤ step title    │
 │              │ running numbers                  │ two short     │
 │ sections     │                                  │ paragraphs    │
-│ walkthroughs │            STAGE                 │ one callout   │
-│ progress     │   one scene that changes         │ what changed  │
+│ walkthroughs │            STAGE                 │ try it        │
+│ progress     │   one scene that changes         │ one callout   │
+│              │                                  │ what changed  │
 │              │                                  │ [Back] [Next:…]│
 │              │ legend                           ├───────────────┤
 │              ├──────────────────────────────────┤ what you'll   │
 │              │ ①──②──③──④──⑤  step strip        │ learn ☑ ☑ ☐   │
+│              │                                  │ ▸ sources     │
 └──────────────┴──────────────────────────────────┴───────────────┘
 ```
 
@@ -39,24 +41,27 @@ picture. If a step needs a third paragraph, it is two steps.
 
 Pick the family from what is being explained, before writing anything.
 
-| Family | Use when the subject is | The stage shows | Reader's action | Seen in |
+| Family | Use when the subject is | The stage shows | Reader's action | Example |
 |---|---|---|---|---|
-| Story | a system that behaves over time; a design decision; a failure | nodes and messages; the scene grows step by step | Next / Back | System design course |
-| Object lab | a thing with parts and a few knobs | the object itself, parts labelled, live readings | click a part, pick a value | Electronics, Arduino, ESP32 |
-| Trace | a real artefact with layers (a packet, a log line, a request, a file) | the artefact travelling, then opened up | play, step, click to drill down | Protocol explorer |
-| Procedure | a physical or manual skill | the workspace filling up as you go | Next; sub-steps tick off | Backcountry skills |
+| Story | a system that behaves over time; a design decision; a failure | nodes and messages; the scene grows step by step | Next / Back; choose a value on a try step | how a page load spends its time |
+| Object lab | a thing with parts and a few knobs | the object itself, parts labelled, live readings | click a part, pick a value | an LED and a resistor on a breadboard |
+| Trace | a real artefact with layers (a packet, a log line, a request, a file) | the artefact travelling, then opened up | play, step, click to drill down | a TLS handshake, message by message |
+| Procedure | a physical or manual skill | the workspace filling up as you go | Next; sub-steps tick off | laying and lighting a campfire |
 
 A subject can use two families in sequence (an object lab to meet the parts, then a story
 that uses them). Do not mix two families inside one walkthrough.
 
 ## Story walkthrough
 
-- 8–14 steps (8–15 minutes when the collection is teaching material). Median in the source course: 11 steps.
+- The header states the question the walkthrough answers; the recap answers it with a number.
+- 8–14 steps (8–15 minutes when the collection is teaching material); about 11 is typical.
 - Step 1 is `problem` or `setup`, half and half. The last step is always `recap`.
 - In between, problem and solution alternate. Typical arcs:
   - `problem → technique ×4 → solution → technique → problem → problem → recap`
   - `setup → problem → solution → technique → problem → solution → insight → recap`
-- After the main idea works, add 1–2 `Case:` steps that break it by changing one number.
+- After the main idea works, show the contrast: too little and too much of one variable,
+  as 1–2 `Case:` steps or as a try step where the reader chooses the value (at most two
+  try steps; `techniques.md`, "Letting the reader try").
 - Step 1 shows one or two objects. Each later step adds at most one or two more.
 - Running numbers above the stage start empty and fill in only when the stage has earned them.
 - Every step after the first has a "what changed" list.
@@ -125,10 +130,13 @@ See [collection.md](collection.md) for the folder layout and shell.
 | Control | Behaviour |
 |---|---|
 | Next button | Labelled with the next step's short name: `Next: Find address` |
-| Keys | ← → step, R replay, Space pause. Shown as a one-line hint under the buttons |
-| Step strip | Click any dot to jump |
+| Keys | ← → step, R replay, Space pause. On a try step also `1`–`5` choose an option and `0` resets. Shown as a one-line hint under the buttons |
+| Step strip | Click any dot to jump. Try steps are marked |
 | Replay / pause / speed | Always on the stage, top right |
+| Try it | On a try step: option buttons, Reset and the verdict, after the body |
+| Sources | A collapsed list under the goals: where the facts and numbers come from |
 | Deep link | `#/<walkthrough-id>/<step>` |
+| Sheet | `#/<walkthrough-id>/sheet`: every step and try option as stills, with the automatic checks. For authors and reviewers; not linked from the page (`walkthrough-schema.md`, "The sheet") |
 | Search | Across walkthroughs and terms, ⌘K |
 | Language, light/dark | In the header |
 
@@ -141,5 +149,6 @@ See [collection.md](collection.md) for the folder layout and shell.
 - Colour is a code that stays fixed for the whole collection: one colour per kind of node, one per
   kind of message, green/amber/red for fine/changed/broken.
 - Labels sit on the object they name, as pills. Values that changed are tinted.
+- One thing is highlighted per step: what changed.
 - Motion shows cause: a dot travels from sender to receiver; a counter flashes when its value
   changes. Nothing moves for decoration, and things that did not change do not move.

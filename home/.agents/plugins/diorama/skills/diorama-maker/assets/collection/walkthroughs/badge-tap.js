@@ -1,10 +1,20 @@
 Diorama.walkthrough({
   "id": "badge-tap",
   "title": "How a Badge Tap Works",
+  "question": "Where do the 130 ms between tapping a card and the lock clicking go?",
   "summary": "Follow one card tap from the reader to the lock, and find out why the door sometimes hesitates.",
   "minutes": 9,
   "level": "beginner",
   "note": "Timings are illustrative round numbers, not measurements of a real product.",
+  "sources": [
+    { "claim": "Reading the card takes about 40 ms.", "kind": "assumption", "source": "Round number chosen for this example, not measured." },
+    { "claim": "The wired hop from the reader to the controller takes about 10 ms.", "kind": "assumption", "source": "Round number chosen for this example, not measured." },
+    { "claim": "Asking the access server takes about 45 ms there and back, and the rules lookup about 15 ms more.", "kind": "assumption", "source": "Round numbers chosen for this example, not measured." },
+    { "claim": "Releasing the lock takes about 20 ms.", "kind": "assumption", "source": "Round number chosen for this example, not measured." },
+    { "claim": "The controller waits up to 3,000 ms for the server before it gives up.", "kind": "assumption", "source": "Round number chosen for this example, not a product setting." },
+    { "claim": "A lookup in the controller's own copy of the rules takes about 5 ms.", "kind": "assumption", "source": "Round number chosen for this example, not measured." },
+    { "claim": "The controller refreshes its copy every 5 minutes.", "kind": "assumption", "source": "Interval chosen for this example." }
+  ],
   "goals": [
     { "text": "What the reader actually reads from a card", "step": 1 },
     { "text": "Who decides whether the door opens", "step": 3 },
@@ -158,6 +168,50 @@ Diorama.walkthrough({
           { "route": ["relay"], "kind": "signal", "rate": 0.6 }
         ],
         "panel": null
+      },
+      "try": {
+        "prompt": "The answer takes 60 ms to come back. How long should the controller wait for it before giving up?",
+        "options": [
+          {
+            "label": "50 ms",
+            "verdict": { "tone": "red", "text": "Locked out", "why": "The answer needs 60 ms, so a 50 ms limit gives up 10 ms too early." },
+            "metrics": { "read": 40, "relay": 10, "decide": 50, "unlock": null, "total": 100 },
+            "scene": {
+              "state": {
+                "controller": { "heat": 0.6, "tags": [{ "text": "gave up at 50 ms", "tone": "red", "icon": "clock" }] },
+                "server": { "load": 0.3 },
+                "db": { "load": 0.35 },
+                "lock": { "tags": [{ "text": "locked", "tone": "red", "icon": "lock" }] }
+              },
+              "links": { "tap": { "style": "dashed" }, "wire": {}, "ask": { "label": "answer at 60 ms" }, "query": {}, "relay": { "style": "off", "label": "" } },
+              "flows": [{ "route": ["ask", "query"], "kind": "request", "bounce": true, "rate": 0.6 }]
+            }
+          },
+          {
+            "label": "500 ms",
+            "verdict": { "tone": "green", "text": "Opens at 130 ms", "why": "The 60 ms answer fits inside 500 ms, and an outage costs at most 500 ms." },
+            "scene": {
+              "state": {
+                "controller": { "tags": [{ "text": "waits up to 500 ms", "tone": "green", "icon": "clock" }] },
+                "server": { "load": 0.3 },
+                "db": { "load": 0.35 },
+                "lock": { "tags": [{ "text": "open · 130 ms", "tone": "green", "icon": "check" }] }
+              }
+            }
+          },
+          {
+            "label": "3,000 ms",
+            "verdict": { "tone": "amber", "text": "Opens, slow to fail", "why": "The door still opens at 130 ms, but in an outage everyone waits the full 3,000 ms." },
+            "scene": {
+              "state": {
+                "controller": { "tags": [{ "text": "waits up to 3,000 ms", "tone": "amber", "icon": "clock" }] },
+                "server": { "load": 0.3 },
+                "db": { "load": 0.35 },
+                "lock": { "tags": [{ "text": "open · 130 ms", "tone": "green", "icon": "check" }] }
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -190,7 +244,7 @@ Diorama.walkthrough({
     {
       "short": "Local copy",
       "chapter": "solution",
-      "title": "Keep a copy of the rules at the door",
+      "title": "Copy the rules to the door",
       "body": [
         "Give the controller its own copy of the rules for its door, refreshed from the server every few minutes. Now it can answer by itself.",
         "A local lookup takes about 5 ms, so the door opens in <b>75 ms</b>, with or without the network."
