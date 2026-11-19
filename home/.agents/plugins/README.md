@@ -46,12 +46,16 @@ alone, by linking just that skill folder:
 ln -s ~/.dotfiles/home/.agents/plugins/diorama/skills/diorama-maker ~/.agents/skills/diorama-maker
 ```
 
-## Install as a packaged plugin elsewhere
+## Install without these dotfiles
 
-Each plugin folder is a complete Agent Plugins package. To use one on a machine without
-these dotfiles, or to publish it to a plugin registry, copy the plugin folder as it is.
-Tools that install plugins through a marketplace make their own copy and keep their own
-install records; use that route for other people, and the links above for your own machine.
+Each plugin folder is a complete Agent Plugins package and each skill inside it is
+self-contained, so a plugin can be installed alone from this public repository. A plugin's
+own README gives the exact commands; see [Diorama's](./diorama/README.md#install) for the
+Skills CLI, git-only and ask-your-agent routes.
+
+To publish a plugin to a plugin registry, copy its folder as it is. Tools that install
+plugins through a marketplace make their own copy and keep their own install records; that
+route needs a marketplace catalog, which this repository does not provide.
 
 ## Plugins
 

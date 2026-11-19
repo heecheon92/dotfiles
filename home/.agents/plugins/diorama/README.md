@@ -1,5 +1,7 @@
 # Diorama
 
+[English](README.md) | [한국어](README.ko.md)
+
 Explain something the way a good diagram on a whiteboard does, except it moves: one concrete
 case, one illustrated scene that grows a step at a time, a couple of sentences beside it.
 
@@ -58,14 +60,100 @@ Each walkthrough in a collection moves through `planned` → `drafted` → `revi
 
 ## Install
 
-Not installed by `./rebuild.sh`. Link it when you want it:
+You do not need the rest of this dotfiles repository. Pick one route.
+
+### Paste this to your agent
+
+The quickest route. Copy the whole block and paste it into your coding agent:
+
+```text
+Install the Diorama agent plugin for me.
+
+Source: https://github.com/heecheon92/dotfiles (public), folder home/.agents/plugins/diorama.
+Its skills/ folder holds three skills: diorama-maker, diorama-planner, diorama-reviewer.
+
+1. Fetch only that folder into a temporary directory:
+   git clone --depth 1 --filter=blob:none --sparse https://github.com/heecheon92/dotfiles.git <tmp>/diorama-src
+   cd <tmp>/diorama-src && git sparse-checkout set home/.agents/plugins/diorama
+2. Copy the three skill folders, unchanged, from home/.agents/plugins/diorama/skills/ into the
+   user-level skills folder that you load skills from. If you are not sure which folder that
+   is, use ~/.agents/skills and tell me.
+3. If a folder with the same name is already there, stop and ask me before replacing it.
+4. Check that each installed folder contains SKILL.md and that
+   diorama-maker/assets/walkthrough.html exists.
+5. Delete the temporary directory.
+6. Tell me where the skills were installed, which commit they came from, and whether I need
+   to start a new session before they load.
+
+Do not install anything else, do not change any other files, and do not run the skills yet.
+```
+
+To install only the part that works alone, change the request to "Install only diorama-maker".
+
+### With the Skills CLI
+
+Needs Node.js. Installs all three skills for your user account and asks which agents to
+install them for:
+
+```bash
+npx skills add https://github.com/heecheon92/dotfiles/tree/main/home/.agents/plugins/diorama --global --skill '*'
+```
+
+Only the maker, which works alone:
+
+```bash
+npx skills add https://github.com/heecheon92/dotfiles/tree/main/home/.agents/plugins/diorama --global --skill diorama-maker
+```
+
+Use the full URL with the path, as above. `npx skills add heecheon92/dotfiles` looks at the
+repository's top-level skills and does not find the plugin.
+
+To remove them later: `npx skills remove --global diorama-maker diorama-planner diorama-reviewer`.
+
+### With git only
+
+Fetches just the plugin folder (about 1 MB) and copies the skills into place:
+
+```bash
+git clone --depth 1 --filter=blob:none --sparse https://github.com/heecheon92/dotfiles.git diorama-src
+cd diorama-src
+git sparse-checkout set home/.agents/plugins/diorama
+
+mkdir -p ~/.agents/skills
+cp -R home/.agents/plugins/diorama/skills/diorama-* ~/.agents/skills/
+
+cd .. && rm -rf diorama-src
+```
+
+Copy into the skills folder your agent reads. `~/.agents/skills` is the shared location;
+Claude Code reads `~/.claude/skills` and Codex reads `~/.codex/skills`. To remove the
+plugin, delete the three `diorama-*` folders from there. To update, repeat the steps.
+
+### With Codex's bundled installer
+
+```bash
+python3 "${CODEX_HOME:-$HOME/.codex}/skills/.system/skill-installer/scripts/install-skill-from-github.py" \
+  --repo heecheon92/dotfiles \
+  --path home/.agents/plugins/diorama/skills/diorama-maker \
+         home/.agents/plugins/diorama/skills/diorama-planner \
+         home/.agents/plugins/diorama/skills/diorama-reviewer
+```
+
+### If you use these dotfiles
+
+`./rebuild.sh` does not install the plugin. Link it when you want it:
 
 ```bash
 ~/.dotfiles/home/.agents/plugins/install.sh diorama
 ```
 
-See the [plugins README](../README.md) for removal, for installing `diorama-maker` alone and
-for using the plugin on a machine without these dotfiles.
+The links point at the repository, so edits take effect without reinstalling. See the
+[plugins README](../README.md) for removal and for linking `diorama-maker` alone.
+
+### After installing
+
+Start a new agent session so the skills are discovered, then try one of the prompts above.
+Nothing else needs to be installed: the pages the skills produce open in any browser.
 
 ## Optional companions
 
