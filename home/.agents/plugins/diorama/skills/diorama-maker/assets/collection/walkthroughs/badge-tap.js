@@ -1,0 +1,264 @@
+Diorama.walkthrough({
+  "id": "badge-tap",
+  "title": "How a Badge Tap Works",
+  "summary": "Follow one card tap from the reader to the lock, and find out why the door sometimes hesitates.",
+  "minutes": 9,
+  "level": "beginner",
+  "note": "Timings are illustrative round numbers, not measurements of a real product.",
+  "goals": [
+    { "text": "What the reader actually reads from a card", "step": 1 },
+    { "text": "Who decides whether the door opens", "step": 3 },
+    { "text": "Where the time between tap and click goes", "step": 5 },
+    { "text": "Why a network fault can lock everyone out", "step": 6 },
+    { "text": "What a local copy of the rules buys and costs", "step": 8 }
+  ],
+  "metrics": [
+    { "id": "read", "label": "Read card", "unit": "ms", "icon": "card" },
+    { "id": "relay", "label": "To controller", "unit": "ms", "icon": "bolt" },
+    { "id": "decide", "label": "Decision", "unit": "ms", "icon": "shield" },
+    { "id": "unlock", "label": "Unlock", "unit": "ms", "icon": "lock" },
+    { "id": "total", "label": "Total", "unit": "ms", "icon": "clock" }
+  ],
+  "legend": [
+    { "kind": "request", "label": "request" },
+    { "kind": "response", "label": "answer" },
+    { "kind": "signal", "label": "signal" }
+  ],
+  "nodes": {
+    "card": { "type": "actor", "x": 0, "y": -17, "color": "gray", "label": "You", "sub": "card 0412" },
+    "reader": { "type": "device", "form": "reader", "x": 0, "y": -9, "color": "yellow", "label": "Reader", "sub": "on the wall" },
+    "controller": { "type": "block", "x": 0, "y": 0, "color": "blue", "glyph": "chip", "label": "Controller", "sub": "at the door" },
+    "server": { "type": "block", "x": 0, "y": 10, "color": "orange", "glyph": "server", "label": "Access server", "sub": "in the office" },
+    "db": { "type": "db", "x": 9, "y": 10, "color": "violet", "glyph": "database", "label": "Rules", "sub": "who may enter" },
+    "lock": { "type": "block", "x": 9, "y": 0, "size": 3, "height": 30, "color": "green", "glyph": "lock", "label": "Door lock" }
+  },
+  "links": {
+    "tap": { "from": "card", "to": "reader", "label": "tap" },
+    "wire": { "from": "reader", "to": "controller", "label": "card number" },
+    "ask": { "from": "controller", "to": "server", "label": "may 0412 enter?" },
+    "query": { "from": "server", "to": "db", "label": "look up 0412" },
+    "relay": { "from": "controller", "to": "lock", "label": "unlock" }
+  },
+  "steps": [
+    {
+      "short": "Tap",
+      "chapter": "problem",
+      "title": "The door takes a moment to open",
+      "body": [
+        "You hold your card to the reader. A moment later the lock clicks. Most days you never notice the gap; some days it feels like the door is thinking.",
+        "To see why, follow <b>one tap</b> from the card to the lock and add up what each stop costs."
+      ],
+      "callout": { "kind": "insight", "text": "Opening a door is a short conversation between several devices. Each one adds a little time." },
+      "metrics": { "read": null, "relay": null, "decide": null, "unlock": null, "total": null },
+      "scene": {
+        "show": ["card", "reader"],
+        "state": {},
+        "links": { "tap": { "style": "dashed" } },
+        "flows": [],
+        "panel": null
+      }
+    },
+    {
+      "short": "Read",
+      "chapter": "technique",
+      "title": "The reader reads a number",
+      "body": [
+        "The card holds no door rules. It holds a <span class=\"term\">card number</span>, here <code>0412</code>, which the reader picks up over a few centimetres of radio.",
+        "Powering the card and reading the number takes about 40 ms."
+      ],
+      "callout": { "kind": "tip", "text": "The reader does not know who you are. It only knows which number it just saw." },
+      "changes": ["+ Card number 0412", "+ Read: 40 ms"],
+      "metrics": { "read": 40, "relay": null, "decide": null, "unlock": null, "total": 40 },
+      "scene": {
+        "show": ["card", "reader"],
+        "state": { "reader": { "tags": [{ "text": "0412", "tone": "amber", "icon": "card" }] } },
+        "links": { "tap": {} },
+        "flows": [{ "route": ["tap"], "kind": "signal", "bounce": true, "rate": 1.1 }],
+        "panel": null
+      }
+    },
+    {
+      "short": "Pass on",
+      "chapter": "technique",
+      "title": "The reader passes it to the controller",
+      "body": [
+        "The reader cannot open anything. It sends the number down a cable to the <span class=\"term\">controller</span>, the small computer that owns this door.",
+        "That hop is short and wired, so it costs about 10 ms."
+      ],
+      "changes": ["+ Controller", "+ Reader → controller: 10 ms"],
+      "metrics": { "read": 40, "relay": 10, "decide": null, "unlock": null, "total": 50 },
+      "scene": {
+        "show": ["card", "reader", "controller"],
+        "state": { "reader": { "tags": [{ "text": "0412", "tone": "amber", "icon": "card" }] } },
+        "links": { "tap": { "style": "dashed" }, "wire": {} },
+        "flows": [{ "route": ["wire"], "kind": "signal", "rate": 1.2 }],
+        "panel": null
+      }
+    },
+    {
+      "short": "Ask",
+      "chapter": "technique",
+      "title": "The controller asks the server",
+      "body": [
+        "The controller does not hold the rules either. It asks the <span class=\"term\">access server</span> over the office network: <em>may 0412 enter this door now?</em>",
+        "The question and its answer are one round trip, about 45 ms."
+      ],
+      "callout": { "kind": "insight", "text": "The decision is made far from the door. That is what lets one change in the office apply to every door at once." },
+      "changes": ["+ Access server", "+ Round trip: 45 ms"],
+      "metrics": { "read": 40, "relay": 10, "decide": 45, "unlock": null, "total": 95 },
+      "scene": {
+        "show": ["card", "reader", "controller", "server"],
+        "state": { "server": { "load": 0.2 } },
+        "links": { "tap": { "style": "dashed" }, "wire": {}, "ask": {} },
+        "flows": [{ "route": ["ask"], "kind": "request", "bounce": true, "rate": 0.9 }],
+        "panel": null
+      }
+    },
+    {
+      "short": "Check",
+      "chapter": "technique",
+      "title": "The server checks the rules",
+      "body": [
+        "The server looks the number up: is the card active, does it belong to a group allowed through this door, and is it within the permitted hours?",
+        "The lookup adds about 15 ms. Watch the question go all the way in and the answer come all the way back."
+      ],
+      "changes": ["+ Rules database", "~ Decision 45 → 60 ms"],
+      "metrics": { "read": 40, "relay": 10, "decide": 60, "unlock": null, "total": 110 },
+      "scene": {
+        "show": ["card", "reader", "controller", "server", "db"],
+        "state": {
+          "server": { "load": 0.3 },
+          "db": { "load": 0.35, "tags": [{ "text": "0412 · allowed", "tone": "green", "icon": "check" }] }
+        },
+        "links": { "tap": { "style": "dashed" }, "wire": {}, "ask": {}, "query": {} },
+        "flows": [{ "route": ["ask", "query"], "kind": "request", "bounce": true, "rate": 0.9 }],
+        "panel": null
+      }
+    },
+    {
+      "short": "Unlock",
+      "chapter": "solution",
+      "title": "The lock clicks",
+      "body": [
+        "The answer is yes. The controller switches a relay and the lock releases, which takes about 20 ms.",
+        "From tap to click: <b>130 ms</b>. Almost half of it, 60 ms, was the decision made in the office."
+      ],
+      "changes": ["+ Door lock", "+ Unlock: 20 ms", "~ Door open after 130 ms"],
+      "metrics": { "read": 40, "relay": 10, "decide": 60, "unlock": 20, "total": 130 },
+      "scene": {
+        "show": ["card", "reader", "controller", "server", "db", "lock"],
+        "state": {
+          "server": { "load": 0.3 },
+          "db": { "load": 0.35 },
+          "lock": { "tags": [{ "text": "open · 130 ms", "tone": "green", "icon": "check" }] }
+        },
+        "links": { "tap": { "style": "dashed" }, "wire": {}, "ask": { "label": "yes" }, "query": {}, "relay": {} },
+        "flows": [
+          { "route": ["ask", "query"], "kind": "request", "bounce": true, "rate": 0.6 },
+          { "route": ["relay"], "kind": "signal", "rate": 0.6 }
+        ],
+        "panel": null
+      }
+    },
+    {
+      "short": "Outage",
+      "chapter": "problem",
+      "title": "Case: the network is down",
+      "body": [
+        "A switch in the office fails. The card, reader, controller and lock are all fine, but the question never reaches the server.",
+        "The controller waits <b>3,000 ms</b> for an answer, gives up and keeps the door locked. Everyone is stuck outside."
+      ],
+      "callout": { "kind": "warn", "text": "A door that depends on a distant server is only as available as the network between them." },
+      "changes": ["− Path to the server", "~ Decision 60 → 3,000 ms", "~ Door stays locked"],
+      "metrics": { "read": 40, "relay": 10, "decide": 3000, "unlock": null, "total": 3050 },
+      "scene": {
+        "show": ["card", "reader", "controller", "server", "db", "lock"],
+        "state": {
+          "controller": { "heat": 0.8, "tags": [{ "text": "waiting 3,000 ms", "tone": "red", "icon": "clock" }] },
+          "server": { "dim": true },
+          "db": { "dim": true, "load": 0.35 },
+          "lock": { "tags": [{ "text": "locked", "tone": "red", "icon": "lock" }] }
+        },
+        "links": { "tap": { "style": "dashed" }, "wire": {}, "ask": { "label": "no answer", "style": "cut" }, "query": { "style": "off", "label": "" }, "relay": { "style": "off", "label": "" } },
+        "flows": [
+          { "route": ["wire"], "kind": "signal", "rate": 1.2 },
+          { "route": ["ask"], "kind": "request", "rate": 0.9, "fail": 1 }
+        ],
+        "panel": null
+      }
+    },
+    {
+      "short": "Local copy",
+      "chapter": "solution",
+      "title": "Keep a copy of the rules at the door",
+      "body": [
+        "Give the controller its own copy of the rules for its door, refreshed from the server every few minutes. Now it can answer by itself.",
+        "A local lookup takes about 5 ms, so the door opens in <b>75 ms</b>, with or without the network."
+      ],
+      "callout": { "kind": "tip", "text": "Decide where the answer is needed, then keep a copy of what it depends on there." },
+      "changes": ["+ Rule copy in the controller", "~ Decision 3,000 → 5 ms", "~ Door open after 75 ms"],
+      "metrics": { "read": 40, "relay": 10, "decide": 5, "unlock": 20, "total": 75 },
+      "scene": {
+        "show": ["card", "reader", "controller", "server", "db", "lock"],
+        "state": {
+          "controller": { "tags": [{ "text": "local copy · 5 ms", "tone": "green", "icon": "database" }] },
+          "server": { "load": 0.1 },
+          "db": { "load": 0.35 },
+          "lock": { "tags": [{ "text": "open · 75 ms", "tone": "green", "icon": "check" }] }
+        },
+        "links": { "tap": { "style": "dashed" }, "wire": {}, "ask": { "label": "sync every 5 min", "style": "dashed" }, "query": { "style": "dashed" }, "relay": {} },
+        "flows": [{ "route": ["wire", "relay"], "kind": "signal", "rate": 1.2 }],
+        "panel": null
+      }
+    },
+    {
+      "short": "Stale",
+      "chapter": "tradeoff",
+      "title": "A copy can be out of date",
+      "body": [
+        "At 09:00 someone's card is cancelled on the server. The controller last synced at 08:58 and will not sync again until 09:03.",
+        "For those minutes the cancelled card <b>still opens the door</b>. Speed and independence were bought with freshness."
+      ],
+      "callout": { "kind": "warn", "text": "Every copy asks the same question: how stale can this be before it matters? For a cancelled card, push the change at once and do not wait for the next sync." },
+      "changes": ["~ Card 0412 cancelled on the server", "~ Controller copy is 2 min old"],
+      "metrics": { "read": 40, "relay": 10, "decide": 5, "unlock": 20, "total": 75 },
+      "scene": {
+        "show": ["card", "reader", "controller", "server", "db", "lock"],
+        "state": {
+          "controller": { "tags": [{ "text": "copy from 08:58", "tone": "amber", "icon": "clock" }] },
+          "server": { "load": 0.1 },
+          "db": { "load": 0.35, "tags": [{ "text": "0412 · cancelled", "tone": "red" }] },
+          "lock": { "tags": [{ "text": "open", "tone": "amber" }] }
+        },
+        "links": { "tap": { "style": "dashed" }, "wire": {}, "ask": { "label": "next sync 09:03", "style": "dashed" }, "query": { "style": "dashed" }, "relay": {} },
+        "flows": [{ "route": ["wire", "relay"], "kind": "signal", "rate": 1.2 }],
+        "panel": null
+      }
+    },
+    {
+      "short": "Recap",
+      "chapter": "recap",
+      "title": "Where the moment went",
+      "body": [
+        "Of 130 ms, <b>60 ms</b> was the decision; moving it to the door cut the total to 75 ms and took the network out of the path.",
+        "<ul class=\"takeaways\"><li>The card carries a <b>number</b>, not permission.</li><li>The <b>decision</b> is the slowest and most fragile stop when it is far away.</li><li>A <b>local copy</b> makes the door fast and independent.</li><li>Every copy has an <b>age</b>; decide how old is acceptable.</li></ul>"
+      ],
+      "callout": { "kind": "next", "text": "<b>Keeping Copies in Sync</b>: how a cancelled card reaches every door in seconds." },
+      "metrics": { "read": 40, "relay": 10, "decide": 5, "unlock": 20, "total": 75 },
+      "scene": {
+        "show": ["card", "reader", "controller", "server", "db", "lock"],
+        "state": {
+          "server": { "load": 0.1 },
+          "db": { "load": 0.35 },
+          "lock": { "tags": [{ "text": "open · 75 ms", "tone": "green", "icon": "check" }] }
+        },
+        "links": { "tap": { "style": "dashed" }, "wire": { "label": "10 ms" }, "ask": { "label": "sync", "style": "dashed" }, "query": { "style": "dashed" }, "relay": { "label": "20 ms" } },
+        "flows": [{ "route": ["wire", "relay"], "kind": "signal", "rate": 1.2 }],
+        "panel": {
+          "title": "Where the moment went",
+          "lines": ["Read card            40 ms", "Reader → controller  10 ms", "Decision (local)      5 ms", "Unlock               20 ms", "= total              75 ms", "# was 130 ms with the server in the path"]
+        }
+      }
+    }
+  ]
+});
