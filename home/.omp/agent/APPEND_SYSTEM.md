@@ -1,3 +1,10 @@
+# Browser preference
+
+When a task needs an interactive web browser, prefer `ego-browser` over other
+browser tools. Read `skill://ego-browser` before the first browser action.
+This applies whether you do the work yourself or delegate it to a subagent.
+For static pages, use `read` or `web_search`; no browser is needed.
+
 # Autonomous subagent model selection
 
 These instructions govern the main OMP agent's delegation choices, not the model

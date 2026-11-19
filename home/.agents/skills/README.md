@@ -15,6 +15,7 @@ home/.agents/skills/
 │       └── react-ui-ux/
 └── external/
     ├── cathrynlavery/diagram-design/
+    ├── cloudai-x/<skill>/
     ├── jakubkrehel/<skill>/
     ├── emilkowalski/<skill>/
     └── github-awesome-copilot/create-readme/
@@ -47,7 +48,7 @@ The eleven defaults are:
 - `termaid` → `handmade/termaid`
 - `create-readme` → `external/github-awesome-copilot/create-readme`
 
-The remaining 34 skills stay available in this registry for deliberate standalone
+The remaining 49 skills stay available in this registry for deliberate standalone
 or project installation, but are not globally linked by Home Manager. Adding a
 source to the registry does not install it automatically, even after a rebuild.
 To change the default set, add or remove entries in `selectedAgentSkills`, then
@@ -66,7 +67,7 @@ nor rewrites that lock, so it cannot reintroduce a removed standalone skill.
 
 This is the human-maintained source registry for the skills checked into this
 repository, not an inventory of every skill installed on a machine. The lists
-below cover all 45 registered skills: 12 handmade and 33 externally imported.
+below cover all 60 registered skills: 12 handmade and 48 externally imported.
 
 ### Handmade skills
 
@@ -98,6 +99,7 @@ adopt changes into individual projects deliberately.
 | --- | --- | --- | --- |
 | [Jakub Krehel's 13 skills](#jakub-krehels-interface-skills) | [`jakubkrehel/skills`](https://github.com/jakubkrehel/skills), `skills/<name>/` | Commit-pinned entries in `home/skills-lock.json` | [Stage the collection](#jakub-krehel), then [review and apply](#review-and-apply-the-staged-import) |
 | [Emil Kowalski's 20 skills](#emil-kowalskis-design-and-animation-skills) | [`emilkowalski/skills`](https://github.com/emilkowalski/skills), `skills/<name>/`; linked from [the author's skill page](https://emilkowal.ski/skill) | Commit-pinned entries in `home/skills-lock.json` | [Stage the collection](#emil-kowalski), then [review and apply](#review-and-apply-the-staged-import) |
+| [CloudAI-X's 13 Three.js skills](#cloudai-x-threejs-skills) | [`CloudAI-X/threejs-skills`](https://github.com/CloudAI-X/threejs-skills), `skills/<name>/` | Commit-pinned entries in `home/skills-lock.json` | [Stage the collection](#cloudai-x), then [review and apply](#review-and-apply-the-staged-import) |
 | [`diagram-design`](#diagram-design) | [`cathrynlavery/diagram-design`](https://github.com/cathrynlavery/diagram-design), `skills/diagram-design/` | Commit-pinned entry in `home/skills-lock.json` | [Stage this skill only](#cathryn-lavery), then [review and apply](#review-and-apply-the-staged-import) |
 | [`create-readme`](#create-readme) | [`github/awesome-copilot`](https://github.com/github/awesome-copilot) | Source, path, and content hash in `home/skills-lock.json`; no commit recorded | [Update this skill only](#create-readme) |
 
@@ -524,6 +526,17 @@ Harnesses differ in how they enforce invocation metadata. In particular,
 `animate` suggests calling `pick-ui-library`, but the latter is explicit-only:
 do not treat a cross-skill suggestion as permission to bypass that restriction.
 
+### CloudAI-X Three.js skills
+
+These are opt-in references for Three.js r186, not a Three.js installation.
+Start with `threejs-fundamentals` for a new scene or `threejs-react-three-fiber`
+for React. Select the relevant [skill directory](external/cloudai-x/) for a project:
+
+- Scene content: `threejs-geometry`, `threejs-materials`, `threejs-lighting`, `threejs-textures`.
+- Motion and input: `threejs-animation`, `threejs-interaction`.
+- Rendering: `threejs-shaders`, `threejs-postprocessing`, `threejs-performance`.
+- Assets: `threejs-loaders`, `threejs-asset-pipeline`.
+
 ### Updating external skills
 
 Skills CLI 1.7.0 writes to `<cwd>/.agents/skills/<name>` and keeps one
@@ -563,6 +576,16 @@ Destination: `home/.agents/skills/external/jakubkrehel/<name>/`.
 
 Destination: `home/.agents/skills/external/emilkowalski/<name>/`.
 
+#### CloudAI-X
+
+```bash
+(cd "$stage" && npx --yes skills@1.7.0 add \
+  https://github.com/CloudAI-X/threejs-skills/tree/0e181866f095b5f06d005133876e926515390d95 \
+  --skill '*' --agent codex --yes)
+```
+
+Destination: `home/.agents/skills/external/cloudai-x/<name>/`.
+
 #### Cathryn Lavery
 
 ```bash
@@ -593,7 +616,7 @@ source URL instead when a pinned revision is desired.
 1. Inspect `$stage/.agents/skills/` and the generated `$stage/skills-lock.json`.
    Confirm only the intended source's entries changed and unrelated lock entries
    remain intact. Do not merge generated lock fragments or hand-edit their hashes.
-2. For Jakub and Emil, restore the repository-root MIT `LICENSE` from the selected
+2. For Jakub, Emil, and CloudAI-X, restore the repository-root MIT `LICENSE` from the selected
    upstream revision into **every** staged skill directory. These redistribution
    copies are additional to the upstream skill contents covered by the lock hash.
 3. Replace only the reviewed skill directories in the appropriate destination
