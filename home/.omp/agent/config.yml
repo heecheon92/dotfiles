@@ -31,6 +31,9 @@ modelRoles:
   # 2026-11-18; gpt-6.2-sol/astra are standard-only). Do not bump it with the
   # other GPT roles without checking; see docs/agents.md, Daybreak section.
   daybreak: openai-codex/gpt-6-sol:max
+systemPromptTemplates:
+  openai-codex/gpt-6.2-sol: ~/.omp/agent/system-templates/gpt-6.2.md
+  openai-codex/gpt-6.2-astra: ~/.omp/agent/system-templates/gpt-6.2.md
 prewalk:
   # Opt in with /prewalk: plan on the current model, then hand off to @task.
   enabled: false

@@ -407,6 +407,9 @@ in
   home.file.".omp/agent/MODEL-ROUTING.md".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/MODEL-ROUTING.md";
+  home.file.".omp/agent/system-templates/gpt-6.2.md".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/agent/system-templates/gpt-6.2.md";
   home.file.".omp/agent/models.yml".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/agent/models.yml";
   home.file.".omp/agent/config-budget.yml".source =

@@ -309,6 +309,14 @@ start and on retry fallback, overriding inherited tiers and manual `/fast`
 choices for these two models. OMP still omits tiers the selected model doesn't
 advertise. This does not change reasoning effort or advisor tier settings.
 
+### Writing style for Codex GPT-6.2 Sol and Astra
+
+Both selectors use [one system prompt template](system-templates/gpt-6.2.md).
+It is the [OMP 19.0.0 baseline](https://github.com/can1357/oh-my-pi/blob/v19.0.0/packages/coding-agent/src/prompts/system/system-prompt.md)
+with one added section, **Writing for the user**. When updating OMP, compare
+the new bundled template and carry that section forward so these models also
+receive upstream prompt fixes. Other models keep using OMP's bundled prompt.
+
 ## Background execution and context
 
 ### Ordinary subagents
