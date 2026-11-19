@@ -33,7 +33,7 @@ Diorama.walkthrough({
     "admin": { "type": "device", "x": 0, "y": -16, "color": "gray", "label": "Mina", "sub": "front desk" },
     "server": { "type": "block", "x": 0, "y": -6, "color": "orange", "glyph": "server", "label": "Access server", "sub": "in the office" },
     "rules": { "type": "db", "x": -9, "y": -6, "color": "violet", "glyph": "database", "label": "Rules", "sub": "who may enter" },
-    "building": { "type": "zone", "x": 4.5, "y": 7, "w": 19, "h": 13, "color": "gray", "label": "Building 1" },
+    "building": { "type": "zone", "x": 4.5, "y": 8, "w": 19, "h": 15, "color": "gray", "label": "Building 1" },
     "labA": { "type": "block", "x": 0, "y": 5, "color": "blue", "glyph": "door", "label": "Lab A", "sub": "door controller" },
     "lobby": { "type": "block", "x": 9, "y": 5, "color": "blue", "glyph": "door", "label": "Lobby", "sub": "door controller" },
     "backlog": { "type": "queue", "x": 8, "y": -6, "color": "yellow", "label": "Kept for later" }

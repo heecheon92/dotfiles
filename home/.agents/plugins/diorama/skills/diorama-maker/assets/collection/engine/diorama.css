@@ -217,6 +217,7 @@ button { font-family: inherit; }
 .legend li { display: inline-flex; align-items: center; gap: 6px; }
 .legend svg { width: 16px; height: 16px; overflow: visible; }
 .panel-inline { margin: 10px 2px 0; padding: 10px 12px; border: 1.3px solid var(--ink); border-radius: 10px; background: var(--card); box-shadow: 0 2.5px 0 var(--drop); font-size: 12px; }
+.panel-inline.swap { animation: value-in .42s cubic-bezier(.2, .7, .2, 1); }
 .panel-inline .pi-title { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-bottom: 4px; }
 .panel-inline .pi-row { white-space: pre; font-weight: 600; color: var(--ink-2); overflow-x: auto; }
 .panel-inline .pi-row.sum { background: var(--green-b); color: var(--green-f); font-weight: 800; border-radius: 5px; margin-top: 4px; }

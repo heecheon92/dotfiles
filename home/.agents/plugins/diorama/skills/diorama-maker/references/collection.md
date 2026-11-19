@@ -148,3 +148,4 @@ walkthrough and read its Checks block. Walkthrough and collection data are never
 by an engine update, and data written for an earlier engine renders as before. Engine 0.2.0
 adds the question, the sources list, try steps, the sheet and the automatic checks, so an
 older walkthrough may show warnings or notes it never showed; treat them as review findings.
+Engine 0.2.1 is a bug-fix release with no change to the data format.

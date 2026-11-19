@@ -14,7 +14,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '0.2.0';
+  const VERSION = '0.2.1';
   const NS = 'http://www.w3.org/2000/svg';
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
   const phoneQuery = matchMedia('(max-width: 600px)');
@@ -34,6 +34,9 @@
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const hash2 = (i, j) => { const s = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453; return s - Math.floor(s); };
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  // A metric value as the reader and the sheet show it: up to two decimals, thousands separated.
+  const decimalsOf = (v) => Math.min(2, (String(v).split('.')[1] || '').length);
+  const fmtNum = (v, dec = decimalsOf(v)) => v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 
   function svgEl(tag, attrs = {}, parent = null) {
     const node = document.createElementNS(NS, tag);
@@ -207,22 +210,21 @@
     return inside;
   }
 
-  // Separating-axis test between a convex polygon and an axis-aligned box.
-  function polyBoxOverlap(poly, b) {
-    const rect = boxCorners(b);
-    const axes = [[1, 0], [0, 1]];
-    for (let i = 0; i < poly.length; i++) {
-      const a = poly[i], c = poly[(i + 1) % poly.length];
-      axes.push([a[1] - c[1], c[0] - a[0]]);
-    }
-    for (const ax of axes) {
-      let p0 = Infinity, p1 = -Infinity, r0 = Infinity, r1 = -Infinity;
-      for (const q of poly) { const d = q[0] * ax[0] + q[1] * ax[1]; p0 = Math.min(p0, d); p1 = Math.max(p1, d); }
-      for (const q of rect) { const d = q[0] * ax[0] + q[1] * ax[1]; r0 = Math.min(r0, d); r1 = Math.max(r1, d); }
-      if (p1 <= r0 || r1 <= p0) return false;
+  // Separating-axis test between two convex polygons; polyBoxOverlap takes an axis-aligned box as the second.
+  function convexOverlap(pa, pb) {
+    for (const poly of [pa, pb]) {
+      for (let i = 0; i < poly.length; i++) {
+        const a = poly[i], c = poly[(i + 1) % poly.length], ax = [a[1] - c[1], c[0] - a[0]];
+        if (!ax[0] && !ax[1]) continue;
+        let p0 = Infinity, p1 = -Infinity, r0 = Infinity, r1 = -Infinity;
+        for (const q of pa) { const d = q[0] * ax[0] + q[1] * ax[1]; p0 = Math.min(p0, d); p1 = Math.max(p1, d); }
+        for (const q of pb) { const d = q[0] * ax[0] + q[1] * ax[1]; r0 = Math.min(r0, d); r1 = Math.max(r1, d); }
+        if (p1 <= r0 || r1 <= p0) return false;
+      }
     }
     return true;
   }
+  const polyBoxOverlap = (poly, b) => convexOverlap(poly, boxCorners(b));
 
   /* ================= Palette and SVG defs ================= */
 
@@ -356,8 +358,8 @@
     return { shadow, body, outline, sil, T, R, B, L, Rd, Bd, Ld, hull: silPts, topC: P((x0 + x1) / 2, (y0 + y1) / 2, zt) };
   }
 
-  function faceLabel(cx, cy, t, maxW) {
-    if (t.a <= .01 || (!t.label && !t.sub)) return '';
+  // The name on a block's front face: the size chosen to fit, the rows, and the box they cover.
+  function faceRows(cx, cy, t, maxW) {
     let size = 13.5;
     while (size > 11.5 && textW(t.label, size, 800) > maxW) size -= .5;
     let lines = [t.label];
@@ -375,11 +377,21 @@
     if (t.sub) rows.push({ t: t.sub, size: rows.length ? 10 : 12, cls: 'face-s', w: 600 });
     const lh = (r) => r.size * 1.2;
     let y = cy - rows.reduce((a, r) => a + lh(r), 0) / 2;
-    let s = `<g class="deco"${t.a < .99 ? ` opacity="${n2(t.a)}"` : ''}>`;
+    const box = { x0: Infinity, y0: y, x1: -Infinity, y1: y };
     for (const r of rows) {
-      s += `<text class="${r.cls}" x="${n1(cx)}" y="${n1(y + r.size * .92)}" style="font-size:${r.size}px">${esc(r.t)}</text>`;
+      const hw = textW(r.t, r.size, r.w) / 2;
+      box.x0 = Math.min(box.x0, cx - hw); box.x1 = Math.max(box.x1, cx + hw);
+      r.y = y + r.size * .92;
       y += lh(r);
     }
+    box.y1 = y;
+    return { rows, box, size: Math.min(...rows.map((r) => r.size)) };
+  }
+
+  function faceLabel(cx, t, L) {
+    if (t.a <= .01 || !L.rows.length) return '';
+    let s = `<g class="deco"${t.a < .99 ? ` opacity="${n2(t.a)}"` : ''}>`;
+    for (const r of L.rows) s += `<text class="${r.cls}" x="${n1(cx)}" y="${n1(r.y)}" style="font-size:${r.size}px">${esc(r.t)}</text>`;
     return s + '</g>';
   }
 
@@ -394,9 +406,15 @@
     const k = s >= 6 ? 1.15 : s < 3.5 ? .8 : 1;
     let deco = '';
     if (p.dead < .99) deco += `<g class="deco"${p.dead > .01 ? ` opacity="${n2(1 - p.dead)}"` : ''}>${glyph(n.glyph || 'server', pr.topC[0], pr.topC[1], 24 * k)}</g>`;
-    const ly = pr.topC[1] + (7 * s + h) * .4;
-    for (const t of p.texts) deco += faceLabel(pr.topC[0], ly, t, 28 * s * .86);
-    return { shadow: pr.shadow, body: pr.body, outline: pr.outline, deco, wash: pr.sil, hull: pr.hull, crossAt: pr.topC };
+    const ly = pr.topC[1] + (7 * s + h) * .4, texts = [];
+    for (const t of p.texts) {
+      if (t.a <= .01 || (!t.label && !t.sub)) continue;
+      const L = faceRows(pr.topC[0], ly, t, 28 * s * .86);
+      if (!L.rows.length) continue;
+      deco += faceLabel(pr.topC[0], t, L);
+      texts.push({ box: L.box, size: L.size });
+    }
+    return { shadow: pr.shadow, body: pr.body, outline: pr.outline, deco, wash: pr.sil, hull: pr.hull, crossAt: pr.topC, texts };
   }
 
   function cylinderPath(cx, ty, by, rx, ry) {
@@ -515,13 +533,17 @@
     const x0 = n.x - w / 2, x1 = n.x + w / 2, y0 = n.y - h / 2, y1 = n.y + h / 2;
     const corners = [P(x0, y1), P(x1, y1), P(x1, y0), P(x0, y0)];
     let s = `<path class="zone" d="${roundPoly(corners, 8)}"/>`;
+    const texts = [];
     for (const t of p.texts) {
       if (!t.label || t.a <= .01) continue;
-      const o = P(x0 + 1.2, y1 - .5);
+      const o = P(x0 + 1.2, y1 - .5), text = String(t.label).toUpperCase();
       // The floor matrix lays text flat on the grid, reading along +x.
-      s += `<text class="zone-t" transform="matrix(1 .5 -1 .5 ${n1(o[0])} ${n1(o[1])})"${t.a < .99 ? ` opacity="${n2(t.a)}"` : ''}>${esc(String(t.label).toUpperCase())}</text>`;
+      s += `<text class="zone-t" transform="matrix(1 .5 -1 .5 ${n1(o[0])} ${n1(o[1])})"${t.a < .99 ? ` opacity="${n2(t.a)}"` : ''}>${esc(text)}</text>`;
+      // Its outline on screen (10.5 px, 1.6 px letter spacing as in the stylesheet), for the overlap check.
+      const len = textW(text, 10.5, 800) + 1.6 * text.length, flat = (u, v) => [o[0] + u - v, o[1] + .5 * u + .5 * v];
+      texts.push({ poly: [flat(0, -8.5), flat(len, -8.5), flat(len, 2.5), flat(0, 2.5)], size: 10.5 });
     }
-    return { floor: s, extent: corners, hull: null };
+    return { floor: s, extent: corners, hull: null, texts };
   }
 
   function drawLaptop(e, n, p) {
@@ -634,6 +656,8 @@
   function unusable(w) {
     if (!w || typeof w !== 'object' || Array.isArray(w)) return 'it is missing or is not a JSON object';
     if (!Array.isArray(w.steps) || !w.steps.length) return 'it has no steps';
+    const k = w.steps.findIndex((s) => !isObject(s));
+    if (k >= 0) return `step ${k + 1} is not an object`;
     if (w.nodes !== undefined && (typeof w.nodes !== 'object' || Array.isArray(w.nodes))) return '"nodes" is not an object';
     return null;
   }
@@ -719,7 +743,7 @@
   const OPTION_LETTERS = 'abcde';
   // The stage size the checks and the contact sheet assume: about what a 1440 × 900 window leaves for the stage.
   const REF = { W: 960, H: 540 };
-  const UNSPACED = /\p{Script=Han}|\p{Script=Hiragana}|\p{Script=Katakana}|\p{Script=Thai}/u;
+  const UNSPACED = /\p{Script=Han}|\p{Script=Hiragana}|\p{Script=Katakana}|\p{Script=Thai}/gu;
 
   // Camera limits for a stage of W × H px. A bigger stage may zoom further in, so the scene grows
   // with the window instead of floating in empty space.
@@ -739,10 +763,111 @@
   }
 
   function buildModel(w) {
-    const NODES = w.nodes || {};
-    const LINKS = w.links || {};
-    const STEPS = w.steps;
-    const METRICS = Array.isArray(w.metrics) ? w.metrics : [];
+    /* ================= Shapes ================= */
+    // Everything below reads cleaned copies of the data. A field of the wrong type is reported here,
+    // naming the step, the option and the field, and is then treated as absent, so one malformed
+    // field never stops a walkthrough from drawing. These reports open the list of warnings.
+
+    const shapes = [];
+    const bad = (where, field, what, end = 'so it is ignored') => shapes.push(`${where}: ${field} ${what}, ${end}`);
+    const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
+
+    const NODES = {};
+    for (const [id, n] of Object.entries(isObject(w.nodes) ? w.nodes : {})) {
+      if (!isObject(n)) bad(`node "${id}"`, 'the entry', 'is not an object', 'so the node is left out');
+      else if (!isNum(n.x) || !isNum(n.y)) bad(`node "${id}"`, '"x" or "y"', 'is not a number', 'so the node is left out');
+      else NODES[id] = n;
+    }
+    const LINKS = {};
+    if (w.links != null && !isObject(w.links)) bad('the walkthrough', '"links"', 'is not an object', 'so no links are drawn');
+    for (const [id, L] of Object.entries(isObject(w.links) ? w.links : {})) {
+      if (isObject(L) && typeof L.from === 'string' && typeof L.to === 'string') LINKS[id] = L;
+      else bad(`link "${id}"`, 'the entry', 'is not an object with a "from" and a "to"', 'so the link is left out');
+    }
+    const listOf = (key, keep, what) => {
+      if (w[key] == null) return [];
+      if (!Array.isArray(w[key])) { bad('the walkthrough', `"${key}"`, 'is not a list', 'so it is ignored'); return []; }
+      return w[key].filter((x, k) => keep(x) || (bad(`${key} entry ${k + 1}`, 'the entry', what, 'so it is left out'), false));
+    };
+    const METRICS = listOf('metrics', (m) => isObject(m) && typeof m.id === 'string', 'is not an object with an "id"');
+    const GOALS = listOf('goals', isObject, 'is not an object');
+    const LEGEND = listOf('legend', isObject, 'is not an object');
+
+    // A scene's keys; for an option (inherit), a key that is malformed falls back to the step's value.
+    function cleanScene(raw, where, inherit) {
+      const out = {};
+      if (raw == null) return out;
+      const end = inherit ? "so it is ignored and the step's value is used" : 'so it is ignored';
+      if (!isObject(raw)) { bad(where, 'scene', 'is not an object', end); return out; }
+      if ('show' in raw) {
+        const v = raw.show ?? [];
+        if (!Array.isArray(v)) bad(where, 'scene.show', 'is not a list of node ids', end);
+        else {
+          out.show = v.filter((id) => typeof id === 'string');
+          if (out.show.length < v.length) bad(where, 'scene.show', 'has an entry that is not a node id', 'so that entry is ignored');
+        }
+      }
+      if ('state' in raw) {
+        const v = raw.state ?? {};
+        if (!isObject(v)) bad(where, 'scene.state', 'is not an object', end);
+        else {
+          out.state = {};
+          for (const [id, st] of Object.entries(v)) {
+            if (!isObject(st)) { bad(where, `scene.state.${id}`, 'is not an object'); continue; }
+            const s = { ...st };
+            if (st.tags != null && !Array.isArray(st.tags)) { bad(where, `scene.state.${id}.tags`, 'is not a list'); delete s.tags; }
+            else if (st.tags) {
+              s.tags = st.tags.filter(isObject);
+              if (s.tags.length < st.tags.length) bad(where, `scene.state.${id}.tags`, 'has an entry that is not an object', 'so that entry is ignored');
+            }
+            out.state[id] = s;
+          }
+        }
+      }
+      if ('links' in raw) {
+        const v = raw.links ?? {};
+        if (!isObject(v)) bad(where, 'scene.links', 'is not an object', end);
+        else {
+          out.links = {};
+          for (const [id, l] of Object.entries(v)) {
+            if (l != null && !isObject(l)) bad(where, `scene.links.${id}`, 'is not an object', 'so the link is drawn without its label or style');
+            out.links[id] = isObject(l) ? l : {};
+          }
+        }
+      }
+      if ('flows' in raw) {
+        const v = raw.flows ?? [];
+        if (!Array.isArray(v)) bad(where, 'scene.flows', 'is not a list', end);
+        else out.flows = v.filter((f, j) => (isObject(f) && Array.isArray(f.route)) || (bad(where, `flow ${j + 1}`, 'is not an object with a "route" list'), false));
+      }
+      if ('panel' in raw) {
+        const v = raw.panel;
+        if (v == null) out.panel = null;
+        else if (!isObject(v) || !Array.isArray(v.lines)) bad(where, 'scene.panel', 'is not an object with a "lines" list', end);
+        else out.panel = v;
+      }
+      return out;
+    }
+
+    // Metrics of a step (null stays null) or of an option (absent or null inherits the step's).
+    function cleanMetrics(raw, where, inherit) {
+      if (raw == null) return inherit ? undefined : raw;
+      if (!isObject(raw)) { bad(where, 'metrics', 'is not an object', inherit ? "so it is ignored and the step's metrics are used" : 'so it is ignored'); return undefined; }
+      const out = {};
+      for (const [id, v] of Object.entries(raw)) {
+        if (v === null || isNum(v)) out[id] = v;
+        else bad(where, `metrics.${id}`, 'is not a number or null', 'so it is shown as —');
+      }
+      return out;
+    }
+
+    const STEPS = w.steps.map((s, i) => {
+      const where = `step ${i + 1}`;
+      const out = { ...s, scene: cleanScene(s.scene, where, false), metrics: cleanMetrics(s.metrics, where, false) };
+      for (const key of ['body', 'changes']) if (s[key] != null && !Array.isArray(s[key])) { bad(where, key, 'is not a list'); delete out[key]; }
+      if (s.callout != null && !isObject(s.callout)) { bad(where, 'callout', 'is not an object'); delete out.callout; }
+      return out;
+    });
 
     /* ================= Scenes: steps and try options ================= */
     // SCENES[i] is step i. Each try option adds one scene after the steps: its step with the
@@ -754,13 +879,14 @@
       const t = s.try;
       if (!isObject(t) || !Array.isArray(t.options) || !t.options.length) return null;
       const options = t.options.slice(0, 5).map((raw, k) => {
-        const o = isObject(raw) ? raw : {}, v = isObject(o.verdict) ? o.verdict : {}, os = isObject(o.scene) ? o.scene : {};
+        const o = isObject(raw) ? raw : {}, v = isObject(o.verdict) ? o.verdict : {};
         const label = typeof o.label === 'string' && o.label.trim() ? o.label : `Option ${k + 1}`;
-        const scene = { ...(s.scene || {}) };
+        const index = SCENES.length, id = `${i + 1}${OPTION_LETTERS[k]}`, name = `step ${id} (option ${JSON.stringify(label)})`;
+        const os = cleanScene(o.scene, name, true), om = cleanMetrics(o.metrics, name, true);
+        const scene = { ...s.scene };
         for (const key of SCENE_KEYS) if (key in os) scene[key] = os[key];
-        const index = SCENES.length, id = `${i + 1}${OPTION_LETTERS[k]}`;
-        SCENES.push({ ...s, scene, metrics: isObject(o.metrics) ? o.metrics : s.metrics });
-        META.push({ step: i, opt: k, id, name: `step ${id} (option ${JSON.stringify(label)})`, raw: o });
+        SCENES.push({ ...s, scene, metrics: om === undefined ? s.metrics : om });
+        META.push({ step: i, opt: k, id, name, raw: o });
         return { label, scene: index, verdict: { tone: toneOf(v.tone), text: String(v.text ?? ''), why: String(v.why ?? '') } };
       });
       return { prompt: String(t.prompt ?? ''), options };
@@ -779,7 +905,7 @@
         count: typeof st.count === 'number' ? st.count : (typeof n.count === 'number' ? n.count : dflt),
         label: String(st.label ?? n.label ?? ''),
         sub: String(st.sub ?? n.sub ?? ''),
-        tags: Array.isArray(st.tags) ? st.tags : [],
+        tags: (st.tags || []).map((t) => ({ text: String(t.text ?? ''), tone: toneOf(t.tone), icon: typeof t.icon === 'string' ? t.icon : '' })),
       };
     }
 
@@ -990,10 +1116,21 @@
         plan.ents[id].labelAt = best.entLabels[id] || null;
       }
       plan.labels = best.linkLabels;
+      // Text drawn on an object (a block's name on its face, a zone's name on the floor) is checked
+      // for overlaps as well, against everything except its own object.
+      const texts = [];
+      for (const id of show) {
+        for (const t of plan.ents[id].d.texts || []) {
+          const what = `the ${NODES[id].type === 'zone' ? 'zone name' : 'name'} ${JSON.stringify(plan.props[id].label || id)}`;
+          texts.push(t.box ? { box: t.box, what, own: id, size: t.size } : { poly: t.poly, what, own: id, size: t.size });
+          pts.push(...(t.box ? boxCorners(t.box) : t.poly));
+        }
+      }
       for (const b of best.ctx.pills.concat(best.ctx.labels)) pts.push(...boxCorners(b));
       plan.bounds = pts.length ? bboxOf(pts) : { x0: -100, y0: -60, x1: 100, y1: 60 };
       plan.ctx = best.ctx;
-      plan.items = best.items;
+      plan.items = best.items.concat(texts);
+      plan.texts = texts;
       return plan;
     }
 
@@ -1024,14 +1161,14 @@
 
     function cardHits(r, ctx) {
       const pr = inflate(r, 4);
-      return ctx.hulls.some((h) => polyBoxOverlap(h, pr)) || ctx.pills.concat(ctx.labels).some((b) => overlapArea(pr, b) > 0);
+      return ctx.hulls.some((h) => polyBoxOverlap(h, pr)) || ctx.pills.concat(ctx.labels).some((b) => overlapArea(pr, b) > 0)
+        || (ctx.texts || []).some((t) => (t.box ? overlapArea(pr, t.box) > 0 : polyBoxOverlap(t.poly, pr)));
     }
 
-    // Finds the largest zoom at which the card fits in a corner, sliding the content away from
-    // that corner within the free margin before zooming out further. `at` is { panel, bounds, ctx }.
-    function dockPanel(at, cam, prevCorner, V) {
-      const L = panelLayout(at.panel);
-      const cw = L.w * V.hud, ch = L.h * V.hud, b = at.bounds;
+    // Docks the summary card in a corner: the largest zoom at which, in one corner, every card of the
+    // step (a try step's base and each option show their own) clears its own scene. The content slides
+    // away from the corner within the free margin before the zoom drops. `cards` is [{ L, ctx }].
+    function dockPanel(cards, b, cam, prevCorner, V) {
       const order = [prevCorner, 'tr', 'br', 'tl', 'bl'].filter((c, k, a) => c && a.indexOf(c) === k);
       const shifts = [[0, 0], [.5, 0], [0, .5], [.5, .5], [1, 0], [0, 1], [1, .5], [.5, 1], [1, 1]];
       for (let z = cam.z; z >= V.zMin - 1e-6; z -= .025) {
@@ -1040,7 +1177,7 @@
         for (const [fx, fy] of shifts) {
           for (const corner of order) {
             const c = { cx: (b.x0 + b.x1) / 2 + (corner[1] === 'r' ? 1 : -1) * fx * sx, cy: (b.y0 + b.y1) / 2 + (corner[0] === 'b' ? 1 : -1) * fy * sy, z };
-            if (!cardHits(cardWorldRect(c, corner, cw, ch, V), at.ctx)) return { ...c, corner };
+            if (cards.every((d) => !cardHits(cardWorldRect(c, corner, d.L.w * V.hud, d.L.h * V.hud, V), d.ctx))) return { ...c, corner };
           }
         }
       }
@@ -1053,18 +1190,11 @@
       const cams = [];
       let prev = null;
       STEPS.forEach((_, i) => {
-        const group = [plans[i], ...(tries[i] ? tries[i].options.map((o) => plans[o.scene]) : [])];
-        const one = group.length === 1;
-        const bounds = one ? group[0].bounds : bboxOf(group.flatMap((p) => boxCorners(p.bounds)));
+        const group = groupOf(i), bounds = stepBounds[i];
         let cam = fitCamera(bounds, V);
         if (keepsPrevious(prev, cam, bounds, V)) cam = { cx: prev.cx, cy: prev.cy, z: prev.z };
-        const docked = V.inlinePanel ? [] : group.filter((p) => p.panel);
-        if (docked.length) {
-          const area = (p) => { const L = panelLayout(p.panel); return L.w * L.h; };
-          const panel = docked.reduce((a, p) => (area(p) > area(a) ? p : a)).panel;
-          const ctx = one ? group[0].ctx : { hulls: group.flatMap((p) => p.ctx.hulls), pills: group.flatMap((p) => p.ctx.pills), labels: group.flatMap((p) => p.ctx.labels) };
-          cam = dockPanel({ panel, bounds, ctx }, cam, prev && prev.corner, V);
-        }
+        const cards = V.inlinePanel ? [] : group.filter((p) => p.panel).map((p) => ({ L: panelLayout(p.panel), ctx: { ...p.ctx, texts: p.texts } }));
+        if (cards.length) cam = dockPanel(cards, bounds, cam, prev && prev.corner, V);
         for (const p of group) cams[p.i] = cam;
         prev = cam;
       });
@@ -1072,6 +1202,9 @@
     }
 
     const plans = SCENES.map((_, k) => buildPlan(k));
+    // The plans a step's framing must hold, and their bounds: a try step's base and every option.
+    const groupOf = (i) => [plans[i], ...(tries[i] ? tries[i].options.map((o) => plans[o.scene]) : [])];
+    const stepBounds = STEPS.map((_, i) => bboxOf(groupOf(i).flatMap((p) => boxCorners(p.bounds))));
 
     /* ================= Recap panel (HUD card in screen pixels) ================= */
 
@@ -1163,9 +1296,23 @@
       })).filter((fl) => fl.legs.length);
     }
 
-    // Reduced motion and the stills: each flow becomes still chevrons along its links.
-    // legOf(leg) gives the length a dot travels on that leg and the point at a distance along it.
-    function chevronsSvg(list, legOf) {
+    // How far a moving dot really gets, as the stage animates it: along the route up to the first
+    // broken (cut) link, where it dies halfway; back again only when the flow bounces, no link on
+    // the way is broken and not every dot fails on arrival (fail: 1).
+    function reachOf(fl, isCut) {
+      const legs = [];
+      for (const leg of fl.legs) {
+        if (isCut(leg.id)) return { legs: legs.concat({ ...leg, upTo: .5 }), back: [], broken: leg };
+        legs.push({ ...leg, upTo: 1 });
+      }
+      const back = fl.f.bounce && (Number(fl.f.fail) || 0) < 1 ? fl.legs.slice().reverse().map((l) => ({ id: l.id, rev: !l.rev, upTo: 1 })) : [];
+      return { legs, back, broken: null };
+    }
+
+    // Reduced motion and the stills: each flow becomes still chevrons along the part of its route
+    // that a dot reaches. legOf(leg) gives the length a dot travels on that leg and the point at a
+    // distance along it; isCut(id) says whether that link is broken.
+    function chevronsSvg(list, legOf, isCut) {
       let s = '';
       const chev = (leg, t, kind, side) => {
         const { L, at } = legOf(leg);
@@ -1174,16 +1321,14 @@
         const ox = -Math.sin(ang) * side, oy = Math.cos(ang) * side;
         return `<path class="chev chev-${kind}" transform="translate(${n1(a[0] + ox)} ${n1(a[1] + oy)}) rotate(${n1(ang * 180 / Math.PI)})" d="M-3-4.5 2 0-3 4.5"/>`;
       };
+      const run = (leg, kind, side) => {
+        const count = clamp(Math.floor(legOf(leg).L * leg.upTo / 30), 1, 5), hi = leg.upTo < 1 ? leg.upTo - .08 : .88;
+        for (let k = 0; k < count; k++) s += chev(leg, .12 + (hi - .12) * (k + .5) / count, kind, side);
+      };
       for (const fl of list) {
-        const side = fl.f.bounce ? -5 : 0;
-        for (const leg of fl.legs) {
-          const count = clamp(Math.floor(legOf(leg).L / 30), 1, 5);
-          for (let k = 0; k < count; k++) {
-            const t = .12 + .76 * (k + .5) / count;
-            s += chev(leg, t, fl.kind, side);
-            if (fl.f.bounce) s += chev({ ...leg, rev: !leg.rev }, 1 - t, 'response', side);
-          }
-        }
+        const r = reachOf(fl, isCut), side = r.back.length ? -5 : 0;
+        for (const leg of r.legs) run(leg, fl.kind, side);
+        for (const leg of r.back) run(leg, 'response', side);
       }
       return s;
     }
@@ -1194,8 +1339,7 @@
       const plan = plans[k], v = viewRect(cam, V);
       let floor = '', links = '', body = '', over = '', hudCard = '';
       for (const id of plan.show.slice().sort((a, b) => depthOf(NODES[a]) - depthOf(NODES[b]))) {
-        const n = NODES[id], pr = plan.props[id], info = plan.ents[id], p = restParams(pr);
-        const d = drawEntity(shell(id), n, p);
+        const n = NODES[id], pr = plan.props[id], info = plan.ents[id], p = restParams(pr), d = info.d;
         if (d.floor) { floor += d.floor; continue; }
         body += composeEntity(d, p);
         over += overlayFor({ n, c: { swap: 1, load: pr.load ?? 0 }, from: null, to: pr, side: info.side, labelPos: info.labelAt }, d, p);
@@ -1210,7 +1354,7 @@
       const chevrons = chevronsSvg(flowList(k, (id) => plan.linkIds.includes(id)), (leg) => {
         const g = linkGeom(leg.id), hi = Math.max(4, g.len - (hasHead(linkStyle(k, leg.id)) ? 10 : 2));
         return { L: hi - 2, at: (s) => pointAt(g.pts, leg.rev ? hi - s : 2 + s).p };
-      });
+      }, (id) => linkStyle(k, id) === 'cut');
       if (plan.panel && !V.inlinePanel && cam.corner) {
         const L = panelLayout(plan.panel), m = 12;
         const sx = cam.corner[1] === 'r' ? V.W - m - L.w * V.hud : m;
@@ -1224,6 +1368,42 @@
       };
     }
 
+    // Scene k in words, for the stage's text alternative and the sheet's stills: a title such as
+    // "step 6: The lock clicks (Try it: 50 ms)" and one line per object, link, flow and summary card.
+    function describe(k, tryWord) {
+      const plan = plans[k], sc = SCENES[k].scene || {}, m = META[k];
+      const name = (id) => (NODES[id] ? propsFor(id, k).label || id : id);
+      const items = [];
+      for (const id of plan.show) {
+        const n = NODES[id], pr = plan.props[id], bits = [];
+        if (pr.load !== null) bits.push(n.type === 'db' ? `${Math.round(pr.load * 100)}% full` : `${Math.round(pr.load * 100)}% busy`);
+        if (pr.heat > 0) bits.push('under strain');
+        if (pr.dead) bits.push('failed');
+        if (pr.dim) bits.push('not involved in this step');
+        if (n.type === 'crowd') bits.push(`${pr.count} people`);
+        if (n.type === 'queue') bits.push(`${pr.count} waiting`);
+        for (const t of pr.tags) bits.push(`“${t.text}”`);
+        items.push(`${pr.label || id}${pr.sub ? ` (${pr.sub})` : ''}${bits.length ? `: ${bits.join(', ')}` : ''}`);
+      }
+      const styleWord = { dashed: 'occasional', off: 'unused', cut: 'broken', beat: 'health check' };
+      for (const id of plan.linkIds) {
+        const L = LINKS[id], st = linkStyle(k, id), text = linkText(k, id);
+        items.push(`Link ${name(L.from)} → ${name(L.to)}${text ? ` “${text}”` : ''}${styleWord[st] ? ` (${styleWord[st]})` : ''}`);
+      }
+      for (const f of sc.flows || []) {
+        const legs = f.route.map((r) => ({ id: String(r).replace(/^~/, ''), rev: String(r).startsWith('~') })).filter((l) => LINKS[l.id]);
+        if (!legs.length) continue;
+        const from = (l) => (l.rev ? LINKS[l.id].to : LINKS[l.id].from), to = (l) => (l.rev ? LINKS[l.id].from : LINKS[l.id].to);
+        const r = reachOf({ f, legs }, (id) => linkStyle(k, id) === 'cut'), fail = Number(f.fail) || 0;
+        const stops = [from(legs[0]), ...(r.broken ? r.legs.slice(0, -1) : r.legs).map(to)].map(name);
+        const end = r.broken ? `, dying at the broken link to ${name(to(r.broken))}` : `${r.back.length ? ' and back' : ''}${fail ? (fail >= 1 ? ', every one fails' : ', some fail') : ''}`;
+        items.push(`Moving: ${f.kind || 'request'} dots ${stops.join(' → ')}${end}`);
+      }
+      if (plan.panel) items.push(`${plan.panel.title || 'Summary'}: ${plan.panel.lines.map((l) => String(l).replace(/^[=!#] /, '').replace(/\s+/g, ' ')).join('; ')}`);
+      const opt = m.opt >= 0 ? tries[m.step].options[m.opt] : null;
+      return { title: `step ${m.step + 1}: ${SCENES[k].title || ''}${opt ? ` (${tryWord}: ${opt.label})` : ''}`, items };
+    }
+
     /* ================= Automatic checks ================= */
     // Warnings: the data breaks a rule of the format (rules 1, 2, 3, 7, 8, 9, sources).
     // Notes: text or layout over its budget. Both are listed on the contact sheet and printed to
@@ -1231,12 +1411,19 @@
 
     const q = (s) => JSON.stringify(String(s ?? ''));
     const isList = (para) => /^\s*<(ul|ol)\b/i.test(String(para));
-    // Words in a piece of inline HTML; null for text written without spaces (Chinese, Japanese, Thai).
-    function wordCount(html) {
-      const t = plainText(String(html ?? ''));
-      if (UNSPACED.test(t)) return null;
-      return t ? t.split(' ').length : 0;
+    // Words as a reader sees them; null for text written mostly without spaces (Chinese, Japanese, Thai).
+    // Plain-text fields are shown exactly as written, so nothing in them is markup. Body HTML loses its
+    // tags, but a paragraph, list item or line break still separates the words on either side.
+    function countWords(t) {
+      t = t.replace(/\s+/g, ' ').trim();
+      if (!t) return 0;
+      const chars = t.replace(/ /g, ''), unspaced = (chars.match(UNSPACED) || []).length;
+      return unspaced * 2 > chars.length ? null : t.split(' ').length;
     }
+    const words = {
+      text: (s) => countWords(String(s ?? '')),
+      html: (h) => countWords(plainText(String(h ?? '').replace(/<\/?(?:p|li|ul|ol|div|br|h[1-6])\b[^>]*>/gi, ' '))),
+    };
 
     // Rules 1, 2 and 3 for one scene.
     function checkScene(k, warn) {
@@ -1272,37 +1459,61 @@
       }
     }
 
-    // Rule 8 for one scene: pills, labels and the summary card that cover an object or each other.
+    // Rule 8 for one scene: pills, labels, text drawn on objects and the summary card that cover an
+    // object or each other. Text drawn on an object is not tested against that object.
     function overlapsIn(k, cam, V) {
       const plan = plans[k], items = plan.items.slice(), out = [];
       if (plan.panel && !V.inlinePanel && cam.corner) {
         const L = panelLayout(plan.panel);
         items.push({ box: cardWorldRect(cam, cam.corner, L.w * V.hud, L.h * V.hud, V), what: 'the summary card' });
       }
+      const shape = (a, d) => (a.box ? boxCorners(inflate(a.box, d)) : a.poly);
       items.forEach((a, x) => {
-        const inner = inflate(a.box, -1.5);
+        const inner = shape(a, -1.5);
         plan.hullIds.forEach((id, h) => {
-          if (polyBoxOverlap(plan.ctx.hulls[h], inner)) out.push(`${a.what} overlaps the ${q(plan.props[id].label || id)} object`);
+          if (id !== a.own && convexOverlap(plan.ctx.hulls[h], inner)) out.push(`${a.what} overlaps the ${q(plan.props[id].label || id)} object`);
         });
-        for (let y = x + 1; y < items.length; y++) if (overlapArea(a.box, items[y].box) > 4) out.push(`${a.what} overlaps ${items[y].what}`);
+        for (let y = x + 1; y < items.length; y++) {
+          const b = items[y];
+          if (a.box && b.box ? overlapArea(a.box, b.box) > 4 : convexOverlap(shape(a, -1), shape(b, -1))) out.push(`${a.what} overlaps ${b.what}`);
+        }
       });
       return out;
     }
 
-    // The smallest text size (in stage units) that scene k draws, for the label-size note.
+    // The smallest text size (in stage units) that scene k draws, for the label-size note. Text on
+    // objects is measured at the size the drawing chose for it.
     function smallestText(k) {
       const plan = plans[k];
       let min = Infinity;
+      for (const t of plan.texts) min = Math.min(min, t.size);
       for (const id of plan.show) {
         const n = NODES[id], pr = plan.props[id];
-        if (n.type === 'zone') { if (pr.label) min = Math.min(min, 10.5); continue; }
-        if (LABEL_ON_FACE.has(n.type)) { if (pr.sub) min = Math.min(min, pr.label ? 10 : 12); else if (pr.label) min = Math.min(min, 11.5); }
-        else if (pr.sub) min = Math.min(min, 9);
-        else if (pr.label) min = Math.min(min, 10.5);
+        if (n.type === 'zone') continue;
+        if (!LABEL_ON_FACE.has(n.type)) {
+          if (pr.sub) min = Math.min(min, 9);
+          else if (pr.label) min = Math.min(min, 10.5);
+        }
         if (stackOf(n, pr).length) min = Math.min(min, 10.5);
       }
       if (Object.keys(plan.labels).length) min = Math.min(min, 9.5);
       return min;
+    }
+
+    // What scene k puts on the stage, in a fixed form for rule 9: the same picture gives the same
+    // string whatever the key order of the data and whether a default value is written out.
+    function signature(k) {
+      const plan = plans[k], num = (v, d) => (typeof v === 'number' ? v : d);
+      const props = plan.show.slice().sort().map((id) => {
+        const n = NODES[id], pr = plan.props[id];
+        return [id, { ...pr, load: n.type === 'db' ? pr.load ?? 0 : pr.load, count: n.type === 'crowd' || n.type === 'queue' ? pr.count : null }];
+      });
+      const links = plan.linkIds.slice().sort().map((id) => [id, linkStyle(k, id), linkText(k, id)]);
+      const flows = flowList(k, (id) => plan.linkIds.includes(id)).map((fl) => JSON.stringify([fl.kind, fl.legs.map((l) => (l.rev ? '~' : '') + l.id),
+        !!fl.f.bounce, num(fl.f.rate, .8), num(fl.f.speed, 1), clamp(Number(fl.f.fail) || 0, 0, 1), Number(fl.f.hold) || 0])).sort();
+      const panel = plan.panel ? [String(plan.panel.title || ''), plan.panel.lines.map(String)] : null;
+      const metrics = METRICS.map((m) => num((SCENES[k].metrics || {})[m.id], null));
+      return JSON.stringify({ props, links, flows, panel, metrics });
     }
 
     function runChecks() {
@@ -1320,12 +1531,13 @@
         }
       };
 
+      shapes.forEach(warn);
       if (typeof w.id !== 'string' || !KEBAB.test(w.id)) warn(`id ${JSON.stringify(w.id)} should be a kebab-case string`);
       for (const [id, L] of Object.entries(LINKS)) {
         if (!NODES[L.from] || !NODES[L.to]) warn(`link "${id}" joins a node that does not exist (rule 1)`);
       }
       perScene(checkScene);
-      (Array.isArray(w.goals) ? w.goals : []).forEach((g, k) => {
+      GOALS.forEach((g, k) => {
         if (!Number.isInteger(g.step) || g.step < 0 || g.step >= STEPS.length) warn(`goal ${k + 1} points at step index ${g.step}, which does not exist (rule 1)`);
       });
       const ids = Object.keys(NODES).filter((id) => NODES[id].type !== 'zone');
@@ -1347,13 +1559,14 @@
         if (!isObject(t) || !Array.isArray(t.options)) { warn(`${n}: "try" needs an "options" array with 2 to 5 options (rule 9)`); return; }
         const count = t.options.length;
         if (count < 2 || count > 5) warn(`${n}: the try has ${count} option${count === 1 ? '' : 's'}; give it 2 to 5${count > 5 ? ' (only the first 5 are shown)' : ''} (rule 9)`);
-        const base = { scene: s.scene || {}, metrics: s.metrics ?? null };
+        const base = signature(i);
         (tries[i] ? tries[i].options : []).forEach((opt) => {
           const m = META[opt.scene], o = m.raw, v = isObject(o.verdict) ? o.verdict : {};
           if (typeof o.label !== 'string' || !o.label.trim()) warn(`${m.name}: the option has no "label" (rule 9)`);
           if (typeof v.text !== 'string' || !v.text.trim()) warn(`${m.name}: the option has no verdict.text (rule 9)`);
-          if (v.tone !== undefined && !TONES.includes(v.tone)) warn(`${m.name}: verdict.tone ${JSON.stringify(v.tone)} is not one of ${TONES.join(', ')} (rule 9)`);
-          if (same({ scene: SCENES[opt.scene].scene, metrics: SCENES[opt.scene].metrics ?? null }, base)) warn(`${m.name}: the option is identical to the base scene, so choosing it changes nothing; give it its own value of the variable (rule 9)`);
+          if (v.tone === undefined) warn(`${m.name}: the option has no verdict.tone; give it one of ${TONES.join(', ')} (rule 9)`);
+          else if (!TONES.includes(v.tone)) warn(`${m.name}: verdict.tone ${JSON.stringify(v.tone)} is not one of ${TONES.join(', ')} (rule 9)`);
+          if (signature(opt.scene) === base) warn(`${m.name}: the option is identical to the base scene, so choosing it changes nothing; give it its own value of the variable (rule 9)`);
         });
       });
 
@@ -1375,10 +1588,10 @@
         const n = `step ${i + 1}`, body = Array.isArray(s.body) ? s.body : [];
         if (!isRecap(s) && body.length !== 2) note(`${n}: the body has ${body.length} paragraph${body.length === 1 ? '' : 's'}; a step has exactly 2`);
         body.forEach((para, k) => {
-          const c = isList(para) ? null : wordCount(para);
+          const c = isList(para) ? null : words.html(para);
           if (c !== null && c > 40) note(`${n}: paragraph ${k + 1} has ${c} words; keep each to 40 or fewer`);
         });
-        const sw = wordCount(s.short), tw = wordCount(s.title);
+        const sw = words.text(s.short), tw = words.text(s.title);
         if (sw !== null && sw > 2) note(`${n}: "short" ${q(s.short)} has ${sw} words; use 1 or 2`);
         if (tw !== null && tw > 8) note(`${n}: the title has ${tw} words; keep it to 8 or fewer`);
         if (Array.isArray(s.changes) && s.changes.length > 3) note(`${n}: "changes" has ${s.changes.length} lines; keep it to 3 or fewer`);
@@ -1400,7 +1613,7 @@
       if (tried.length > 2) note(`${tried.length} steps have a try (steps ${tried.join(', ')}); keep it to 2 or fewer`);
       for (const t of tries) {
         for (const o of t ? t.options : []) {
-          const name = META[o.scene].name, tw = wordCount(o.verdict.text), yw = wordCount(o.verdict.why);
+          const name = META[o.scene].name, tw = words.text(o.verdict.text), yw = words.text(o.verdict.why);
           if (tw !== null && tw > 4) note(`${name}: verdict.text has ${tw} words; keep it to 4 or fewer`);
           if (yw !== null && yw > 20) note(`${name}: verdict.why has ${yw} words; keep it to one sentence of 20 or fewer`);
         }
@@ -1418,9 +1631,9 @@
     const checks = runChecks();
 
     return {
-      NODES, LINKS, STEPS, SCENES, META, METRICS, tries, plans, refView, refCams, checks,
+      NODES, LINKS, STEPS, SCENES, META, METRICS, GOALS, LEGEND, tries, plans, stepBounds, refView, refCams, checks,
       propsFor, queueCaps, linkGeom, hasHead, linkStyle, linkText, linkLabelSpec, depthOf, fadeOutOf, fadeInOf, overlayFor, arrowPath,
-      panelRows, panelLayout, panelSvg, flowList, chevronsSvg, planCameras, stillSvg, wordCount, isList,
+      panelRows, panelLayout, panelSvg, flowList, chevronsSvg, planCameras, stillSvg, describe, words, isList,
       report() {
         const id = w.id || 'walkthrough';
         for (const m of checks.warnings) console.warn(`[diorama] ${id}: ${m}`);
@@ -1435,8 +1648,8 @@
   //         onStep(i) }                   called after every step change
   function mountWalkthrough(host, w, opts) {
     const M = modelOf(w);
-    const { NODES, LINKS, STEPS, SCENES, META, METRICS, tries, plans } = M;
-    const { propsFor, queueCaps, linkGeom, hasHead, linkStyle, linkText, linkLabelSpec, depthOf, fadeOutOf, fadeInOf, overlayFor, arrowPath, panelRows, panelLayout, panelSvg, flowList, chevronsSvg } = M;
+    const { NODES, LINKS, STEPS, SCENES, METRICS, GOALS, LEGEND, tries, plans } = M;
+    const { queueCaps, linkGeom, hasHead, linkStyle, linkText, linkLabelSpec, depthOf, fadeOutOf, fadeInOf, overlayFor, arrowPath, panelRows, panelLayout, panelSvg, flowList, chevronsSvg } = M;
     const LBL = opts.labels;
     host.innerHTML = viewMarkup(opts);
     const R = {};
@@ -1650,12 +1863,16 @@
       tween(hud, 'op', 1, instant ? 0 : 420, { delay, owner: hud, ease: outCubic });
     }
 
-    function renderPanelInline(i) {
+    // The summary card under a narrow stage. `animate` marks a change, as when a replay reaches the option.
+    let inlineHtml = '';
+    function renderPanelInline(i, animate) {
       const box = $('panelInline');
       const panel = VIEW.inlinePanel && i >= 0 ? (SCENES[i].scene || {}).panel : null;
-      if (!panel || !panel.lines) { box.hidden = true; box.innerHTML = ''; return; }
-      box.hidden = false;
-      box.innerHTML = `<div class="pi-title">${esc(String(panel.title || '').toUpperCase())}</div>` + panelRows(panel).map((r) => `<div class="pi-row ${r.kind}">${esc(r.t)}</div>`).join('');
+      const html = panel && panel.lines ? `<div class="pi-title">${esc(String(panel.title || '').toUpperCase())}</div>` + panelRows(panel).map((r) => `<div class="pi-row ${r.kind}">${esc(r.t)}</div>`).join('') : '';
+      box.hidden = !html;
+      if (html === inlineHtml) return;
+      box.innerHTML = inlineHtml = html;
+      if (animate && html && !reduce) restartAnim(box, 'swap');
     }
 
     /* ---------- Floor effects ---------- */
@@ -1677,6 +1894,7 @@
       return { op: 1, lift: 0, load: pr.load ?? 0, heat: pr.heat, dead: pr.dead, dim: pr.dim, count: pr.count, swap: 1, ...extra };
     }
 
+    // Moves the stage to scene i; returns when (ms on the animation clock) the move ends.
     function stageTo(i, instant) {
       const token = ++stageToken;
       timers.length = 0;
@@ -1706,7 +1924,7 @@
         if (plan) Object.assign(cam, camTargetOf(cams[i]), { dirty: true });
         setPanel(i, true, 0);
         if (plan) startFlows(i);
-        return;
+        return 0;
       }
 
       const exits = [], moves = [], enters = [];
@@ -1733,7 +1951,8 @@
         const o = { owner: e, delay: tMove };
         e.from = e.to; e.to = pr;
         if (e.from.load === null && pr.load !== null) e.c.load = 0;
-        if (pr.load !== null) tween(e.c, 'load', pr.load, MOVE, o);
+        // A db shows its load as its fill, so a load that goes away drains it; a gauge fades out instead.
+        if (pr.load !== null || e.n.type === 'db') tween(e.c, 'load', pr.load ?? 0, MOVE, o);
         tween(e.c, 'heat', pr.heat, MOVE, o);
         tween(e.c, 'dead', pr.dead, MOVE, o);
         tween(e.c, 'dim', pr.dim, MOVE, o);
@@ -1810,6 +2029,7 @@
         startFlows(i);
         changed.forEach(spotlight);
       });
+      return end;
     }
 
     /* ---------- Flows ---------- */
@@ -1927,7 +2147,7 @@
       g.innerHTML = chevronsSvg(flows, (leg) => {
         const lk = lks.get(leg.id), [lo, hi] = legRange(lk);
         return { L: hi - lo, at: (s) => legPoint(lk, leg, s) };
-      });
+      }, (id) => lks.get(id).style === 'cut');
     }
 
     /* ---------- Frame loop ---------- */
@@ -1994,7 +2214,7 @@
       $('pills').innerHTML = pills.map(([ic, t, tone]) => `<li class="pill tone-${tone}">${iconHtml(ic)}${esc(t)}</li>`).join('');
       $('stripHead').textContent = LBL.strip;
       $('goalsHead').textContent = LBL.goals;
-      $('goals').hidden = !(Array.isArray(w.goals) && w.goals.length);
+      $('goals').hidden = !GOALS.length;
       renderSources();
     }
 
@@ -2018,7 +2238,7 @@
     }
 
     function renderLegend() {
-      $('legend').innerHTML = (w.legend || []).map((l) => {
+      $('legend').innerHTML = LEGEND.map((l) => {
         const kind = KINDS.includes(l.kind) ? l.kind : 'request';
         return `<li><svg viewBox="-8 -8 16 16" aria-hidden="true">${packetShape(kind)}</svg>${esc(l.label || kind)}</li>`;
       }).join('');
@@ -2027,8 +2247,6 @@
     /* ---------- Metric chips ---------- */
 
     const chips = [];
-    const decimalsOf = (v) => Math.min(2, (String(v).split('.')[1] || '').length);
-    const fmt = (v, dec) => v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 
     function buildMetrics() {
       const box = $('metrics');
@@ -2044,7 +2262,7 @@
     }
 
     function setChip(c, v) {
-      c.num.textContent = v === null ? '—' : fmt(v, decimalsOf(v));
+      c.num.textContent = v === null ? '—' : fmtNum(v);
       c.unit.textContent = v === null ? '' : (c.m.unit || '');
     }
 
@@ -2071,7 +2289,7 @@
           uiAnims.push((now) => {
             if (token !== c.token) return true;
             const u = Math.min(1, (now - t0) / 900);
-            c.num.textContent = u >= 1 ? fmt(v, dec) : fmt(Number(lerp(old, v, outCubic(u)).toFixed(dec)), dec);
+            c.num.textContent = u >= 1 ? fmtNum(v, dec) : fmtNum(Number(lerp(old, v, outCubic(u)).toFixed(dec)), dec);
             return u >= 1;
           });
         }
@@ -2090,6 +2308,7 @@
         old.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
         old.className = 'guide guide-old still';
         old.setAttribute('aria-hidden', 'true');
+        old.inert = true;   // its buttons must not take focus while it fades out
         old.style.left = `${guide.offsetLeft}px`;
         old.style.top = `${guide.offsetTop}px`;
         old.style.width = `${guide.offsetWidth}px`;
@@ -2205,7 +2424,7 @@
     }
 
     function renderGoals(i) {
-      $('goalsList').innerHTML = (Array.isArray(w.goals) ? w.goals : []).map((g) => {
+      $('goalsList').innerHTML = GOALS.map((g) => {
         const done = i >= g.step;
         return `<li class="${done ? 'done' : ''}"><span class="check" aria-hidden="true">${iconHtml('check')}</span><span>${esc(g.text)}<span class="sr-only">${done ? ' (covered)' : ''}</span></span></li>`;
       }).join('');
@@ -2248,38 +2467,8 @@
     /* ---------- Text alternative for the stage ---------- */
 
     function describeScene(i) {
-      const sc = SCENES[i].scene || {}, m = META[i];
-      const name = (id) => (NODES[id] ? propsFor(id, i).label || id : id);
-      const items = [];
-      for (const id of sc.show || []) {
-        const n = NODES[id];
-        if (!n) continue;
-        const pr = propsFor(id, i), bits = [];
-        if (pr.load !== null) bits.push(n.type === 'db' ? `${Math.round(pr.load * 100)}% full` : `${Math.round(pr.load * 100)}% busy`);
-        if (pr.heat > 0) bits.push('under strain');
-        if (pr.dead) bits.push('failed');
-        if (pr.dim) bits.push('not involved in this step');
-        if (n.type === 'crowd') bits.push(`${pr.count} people`);
-        if (n.type === 'queue') bits.push(`${pr.count} waiting`);
-        for (const t of pr.tags) bits.push(`“${t.text}”`);
-        items.push(`${pr.label || id}${pr.sub ? ` (${pr.sub})` : ''}${bits.length ? `: ${bits.join(', ')}` : ''}`);
-      }
-      const styleWord = { dashed: 'occasional', off: 'unused', cut: 'broken', beat: 'health check' };
-      for (const id of Object.keys(sc.links || {})) {
-        const L = LINKS[id];
-        if (!L) continue;
-        const st = linkStyle(i, id), text = linkText(i, id);
-        items.push(`Link ${name(L.from)} → ${name(L.to)}${text ? ` “${text}”` : ''}${styleWord[st] ? ` (${styleWord[st]})` : ''}`);
-      }
-      for (const f of sc.flows || []) {
-        const legs = (f.route || []).map((r) => ({ id: String(r).replace(/^~/, ''), rev: String(r).startsWith('~') })).filter((l) => LINKS[l.id]);
-        if (!legs.length) continue;
-        const stops = [legs[0].rev ? LINKS[legs[0].id].to : LINKS[legs[0].id].from, ...legs.map((l) => (l.rev ? LINKS[l.id].from : LINKS[l.id].to))].map(name);
-        items.push(`Moving: ${f.kind || 'request'} dots ${stops.join(' → ')}${f.bounce ? ' and back' : ''}${f.fail ? (f.fail >= 1 ? ', every one fails' : ', some fail') : ''}`);
-      }
-      if (sc.panel && sc.panel.lines) items.push(`${sc.panel.title || 'Summary'}: ${sc.panel.lines.map((l) => String(l).replace(/^[=!#] /, '').replace(/\s+/g, ' ')).join('; ')}`);
-      const opt = m.opt >= 0 ? tries[m.step].options[m.opt] : null;
-      $('sceneTitle').textContent = `Stage, step ${m.step + 1}: ${SCENES[i].title || ''}${opt ? ` (${LBL.try}: ${opt.label})` : ''}`;
+      const { title, items } = M.describe(i, LBL.try);
+      $('sceneTitle').textContent = `Stage, ${title}`;
       $('sceneText').innerHTML = `<ul>${items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`;
     }
 
@@ -2298,9 +2487,19 @@
       setPaused(false);
       const k = sceneNow();
       if (reduce) { stageTo(k, true); return; }
-      // With an option chosen, replay the change from the step's base scene to that option.
-      stageTo(k === cur ? cur - 1 : cur, true);   // step 1 has no previous scene, so this empties the stage
-      stageTo(k, false);
+      if (k === cur) {
+        stageTo(cur - 1, true);   // step 1 has no previous scene, so this empties the stage
+        stageTo(k, false);
+        return;
+      }
+      // With an option chosen, replay the change from the step's base scene to that option: the
+      // stage, the metrics counting from the base values, and an inline summary card.
+      stageTo(cur, true);
+      updateMetrics(cur, false);
+      updateMetrics(k, true);
+      renderPanelInline(cur);
+      const end = stageTo(k, false);
+      after(Math.max(0, end - 300), () => renderPanelInline(k, true));
     }
 
     /* ================= Layout of the stage ================= */
@@ -2310,9 +2509,10 @@
       let W = wrapW;
       const H = svg.clientHeight || 400;
       if (phoneQuery.matches) {
-        // On a phone the stage keeps a readable minimum scale (0.85) and pans sideways instead.
-        const need = Math.max(...plans.map((pl) => (pl.bounds.x1 - pl.bounds.x0) * .85 + 2 * VIEW.margin));
-        const hNeed = Math.max(...plans.map((pl) => (pl.bounds.y1 - pl.bounds.y0) * .85 + 2 * VIEW.margin));
+        // On a phone the stage keeps a readable minimum scale (0.85) and pans sideways instead. A try
+        // step needs room for its base and every option, as its camera frames them all at once.
+        const need = Math.max(...M.stepBounds.map((b) => (b.x1 - b.x0) * .85 + 2 * VIEW.margin));
+        const hNeed = Math.max(...M.stepBounds.map((b) => (b.y1 - b.y0) * .85 + 2 * VIEW.margin));
         if (need > wrapW && hNeed <= H) W = Math.ceil(Math.min(need, wrapW * 2.6));
         else if (need > wrapW) W = Math.ceil(Math.min(need * H / hNeed, wrapW * 2.6));
       }
@@ -2527,15 +2727,15 @@
     function tile(k) {
       const m = META[k], s = STEPS[m.step], t = tries[m.step], opt = m.opt >= 0 ? t.options[m.opt] : null;
       const chapter = s.chapter || 'setup';
-      const still = M.stillSvg(k, refCams[k], refView);
+      const still = M.stillSvg(k, refCams[k], refView), scene = M.describe(k, LBL.try);
       const vals = SCENES[k].metrics || {};
       const metrics = METRICS.map((mt) => {
         const v = vals[mt.id];
-        return `<span class="tile-metric">${esc(mt.label)} <b>${typeof v === 'number' ? `${v.toLocaleString('en-US')}${mt.unit ? ` ${esc(mt.unit)}` : ''}` : '—'}</b></span>`;
+        return `<span class="tile-metric">${esc(mt.label)} <b>${typeof v === 'number' ? `${fmtNum(v)}${mt.unit ? ` ${esc(mt.unit)}` : ''}` : '—'}</b></span>`;
       }).join('');
       const words = opt
-        ? [budget('verdict', M.wordCount(opt.verdict.text), 4), budget('why', M.wordCount(opt.verdict.why), 20)]
-        : (Array.isArray(s.body) ? s.body : []).map((p, j) => (M.isList(p) ? `<span>¶${j + 1} list ${M.wordCount(p) ?? '–'}</span>` : budget(`¶${j + 1}`, M.wordCount(p), 40)));
+        ? [budget('verdict', M.words.text(opt.verdict.text), 4), budget('why', M.words.text(opt.verdict.why), 20)]
+        : (Array.isArray(s.body) ? s.body : []).map((p, j) => (M.isList(p) ? `<span>¶${j + 1} list ${M.words.html(p) ?? '–'}</span>` : budget(`¶${j + 1}`, M.words.html(p), 40)));
       let extra = '';
       if (opt) {
         extra = `<p class="tile-opt"><span>${esc(LBL.try)}: <b>${esc(opt.label)}</b></span><span class="badge tone-${opt.verdict.tone}">${esc(opt.verdict.text || '?')}</span></p>`
@@ -2547,7 +2747,8 @@
   <p class="tile-head"><span class="tile-id">${esc(m.id)}</span><span>·</span><span>${esc(s.short || '')}</span><span>·</span><span class="badge tone-${CHAPTER_TONE[chapter] || 'gray'}">${esc(LBL.chapters[chapter] || chapter)}</span></p>
   <h2 class="tile-title"><a href="#/${encodeURIComponent(w.id)}/${m.step + 1}">${esc(s.title || '')}</a></h2>
   ${extra}
-  <svg class="tile-scene st" viewBox="${still.viewBox}" role="img" aria-label="Still of step ${esc(m.id)}">${still.svg}</svg>
+  <svg class="tile-scene st" viewBox="${still.viewBox}" role="img" aria-label="Still of ${esc(scene.title)}" aria-describedby="dio-still-${esc(m.id)}">${still.svg}</svg>
+  <div id="dio-still-${esc(m.id)}" class="sr-only"><ul>${scene.items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>
   ${METRICS.length ? `<p class="tile-metrics">${metrics}</p>` : ''}
   <p class="tile-words">words ${words.join(' ')}</p>
 </li>`;
@@ -2576,6 +2777,20 @@
     };
   }
 
+  // Why a walkthrough cannot be drawn, or null. Building its model reads and checks all of the data,
+  // so a fault the checks did not foresee still ends on the problem panel, never on an empty page.
+  function undrawable(w) {
+    const bad = unusable(w);
+    if (bad) return bad;
+    try {
+      modelOf(w);
+      return null;
+    } catch (err) {
+      console.error(err);
+      return `the engine could not read it (${err && err.message ? err.message : err})`;
+    }
+  }
+
   /* ================= Single-file page ================= */
 
   function startSingle(w) {
@@ -2583,7 +2798,7 @@
     const app = appRoot('dio-single');
     app.innerHTML = '<main class="dio-main"></main>';
     const main = app.firstChild;
-    const bad = unusable(w);
+    const bad = undrawable(w);
     if (bad) {
       warn(`the walkthrough cannot be shown: ${bad}`);
       main.innerHTML = statusMarkup({
@@ -3025,7 +3240,9 @@
       return parts.join(' · ');
     }
 
-    function showLoadError(e, reason, focus) {
+    // `step` is the route that failed (as for openItem), so Try again opens the same place: a sheet
+    // stays a sheet. It reads the file again, in case the data it holds was the problem.
+    function showLoadError(e, reason, focus, step) {
       const file = fileOf(e.id);
       warn(`could not open ${file}: ${reason}`);
       $('main').innerHTML = statusMarkup({
@@ -3033,7 +3250,7 @@
         body: `<p>File <code>${esc(file)}</code>: ${esc(reason)}</p><p class="muted">The rest of the collection still works. Fix the file, then try again.</p>`,
         actions: `<button class="btn primary" type="button" data-act="retry">${iconHtml('replay')}<span>Try again</span></button><a class="btn" href="#/">${iconHtml('home')}<span>${esc(L.home)}</span></a>`,
       });
-      $('main').querySelector('[data-act="retry"]').addEventListener('click', () => { currentId = null; openItem(e.id, null, true, true); });
+      $('main').querySelector('[data-act="retry"]').addEventListener('click', () => { currentId = null; walkthroughs.delete(e.id); openItem(e.id, step, true, true); });
       if (focus) focusMain();
     }
 
@@ -3070,12 +3287,12 @@
       try {
         w = await loadWalkthrough(id);
       } catch (err) {
-        if (token === navToken) showLoadError(e, err && err.reason ? err.reason : String(err), focusNew);
+        if (token === navToken) showLoadError(e, err && err.reason ? err.reason : String(err), focusNew, step);
         return;
       }
       if (token !== navToken) return;
-      const bad = unusable(w);
-      if (bad) { showLoadError(e, `the walkthrough cannot be drawn: ${bad}.`, focusNew); return; }
+      const bad = undrawable(w);
+      if (bad) { showLoadError(e, `the walkthrough cannot be drawn: ${bad}.`, focusNew, step); return; }
       if (!checked.has(id)) {
         checked.add(id);
         if (w.title !== e.title) warn(`collection.js calls "${id}" ${JSON.stringify(e.title)} but ${file} says ${JSON.stringify(w.title)}; keep the titles identical`);

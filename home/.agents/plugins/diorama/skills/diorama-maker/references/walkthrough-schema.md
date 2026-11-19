@@ -187,7 +187,8 @@ budgets.
 - Choosing an option moves the stage to it with the usual transitions and counts the
   metrics up; the text beside the stage stays put. The view is framed once for the base and
   all options, so choosing never moves the camera. Lay out option-only nodes with that in mind.
-- Replay with an option chosen replays the move from the base to that option.
+- Replay with an option chosen replays the move from the base to that option, the metrics
+  and an inline summary card included.
 - Reset appears once something is chosen and returns to the base. Leaving the step and
   coming back also resets, and the next step starts from its own data, not from the choice.
 - Keys on a try step: `1`–`5` choose an option, `0` resets. The keyboard hint shows them on
@@ -241,8 +242,9 @@ this step) · `cut` (broken: red, no arrowheads; dots on it die at the break) ·
 5. Each `changes` line corresponds to something that is visibly different on the stage.
 6. Each goal's `step` is the step where that idea is actually shown, not merely mentioned.
 7. No two nodes are closer than 6 grid units, and consecutive flow links share an endpoint.
-8. Nothing overlaps: in a settled step or option, no node label, tag, gauge, link label or
-   summary card covers an object or another of those.
+8. Nothing overlaps: in a settled step or option, no node label (including the name on a
+   block's face and a zone's name on the floor), tag, gauge, link label or summary card
+   covers an object or another of those. A name is not checked against its own object.
 9. A `try` is well formed: 2–5 options, each with a `label` and a `verdict.text`, a known
    verdict tone, and no option identical to the base. Rules 1, 2 and 3 also hold for every
    option after it is merged with its step.
@@ -263,11 +265,15 @@ A rule 8 warning names the step and the two things that overlap; at most four ar
 scene, then a count of the rest. Fix it by moving a node or shortening a text
 (`visual-craft.md`, "Fixing an overlap"), never by deleting the label.
 
+A field of the wrong type (for example `scene.show` that is not a list, or a tag that is
+not an object) is also a warning. It names the step, the option and the field, and the page
+draws the rest without it; in an option, the step's value is used instead.
+
 Notes are raised for:
 
 - a non-recap step whose body is not exactly 2 paragraphs, or a paragraph over 40 words
-  (tags are not counted, a list such as the recap's takeaways is skipped, and languages
-  written without spaces are not counted at all);
+  (tags are not counted, a list such as the recap's takeaways is skipped, and text written
+  mostly without spaces, such as Chinese or Japanese, is not counted at all);
 - `short` over 2 words, a step title over 8 words, `changes` over 3 lines;
 - step 1 showing more than 2 nodes, or a later step adding more than 2 (zones do not count);
 - a last step that is not `recap`;
@@ -290,9 +296,11 @@ the single page (`walkthrough.html#/badge-tap/sheet`) and in a collection
    checks found nothing, then one line listing what they do not cover.
 3. **Tiles:** one per step and one per try option (`6`, `6a`, `6b`…). A tile shows
    `n · short · chapter`, the step title, the settled stage as a still at the framing a
-   reader gets (flows as static arrows, summary card included), the metric values, and the
-   word count of each body paragraph, flagged when over budget. An option tile shows the
-   option's label, its verdict and `why`, and their word counts instead.
+   reader gets (flows as static arrows along the part of the route a dot reaches, summary
+   card included), the metric values, and the word count of each body paragraph, flagged
+   when over budget. An option tile shows the option's label, its verdict and `why`, and
+   their word counts instead. Each still carries the same text description for screen
+   readers as the reader's stage.
 
 Open it after every change, at a window about 1440 px wide: tiles are two across and large
 enough to read. One or two screenshots of it replace clicking through every step. It does
