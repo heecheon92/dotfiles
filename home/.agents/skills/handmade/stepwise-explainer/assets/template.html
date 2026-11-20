@@ -35,9 +35,19 @@
   .tabs button { border: 0; background: transparent; color: var(--muted); font: inherit; padding: .4rem .8rem; border-radius: 9px; cursor: pointer; }
   .tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
   .layout { display: grid; gap: 1.5rem; align-items: start; }
-  @media (min-width: 62rem) { .layout { grid-template-columns: 3fr 2fr; } }
   .side { display: grid; gap: 1rem; min-width: 0; }
+  @media (min-width: 62rem) {
+    .layout { grid-template-columns: 3fr 2fr; }
+    .side { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto; }
+  }
   .scroll { overflow-x: auto; }
+  /* Long flows scroll inside .rows, so the actors, the controls and the explanation stay in view. */
+  .lanes-wrap { overflow: hidden; scrollbar-gutter: stable; }
+  .rows { max-height: max(12rem, 45vh); overflow-y: auto; scrollbar-gutter: stable; }
+  @media (min-width: 62rem) { .rows { max-height: max(20rem, calc(100vh - 13rem)); } }
+  #lanes { display: block; width: 100%; height: auto; }
+  #lanes text { font-family: ui-sans-serif, system-ui, sans-serif; fill: currentColor; }
+  .bucket ul { max-height: 13rem; overflow-y: auto; }
   .controls { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin-top: .8rem; }
   .btn { font: inherit; font-size: .9rem; padding: .4rem .8rem; border-radius: 9px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer; }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
@@ -91,7 +101,10 @@
 
   <section class="layout">
     <div class="panel" id="diagram-card">
-      <div class="scroll"><svg id="diagram" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sequence of steps between the actors"></svg></div>
+      <div class="scroll"><div id="canvas">
+        <div class="lanes-wrap"><svg id="lanes" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Actors"></svg></div>
+        <div class="rows" id="rows"><svg id="diagram" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sequence of steps between the actors"></svg></div>
+      </div></div>
       <div class="controls">
         <button class="btn" id="prev">← Back</button>
         <button class="btn primary" id="next">Next step →</button>
@@ -327,7 +340,7 @@ get_weather("Busan")  ->  {"temp": 12, "humidity": 61, "wind": ...}` },
 (() => {
   const D = EXPLAINER, NS = "http://www.w3.org/2000/svg";
   const $ = (id) => document.getElementById(id);
-  const GAP = 160, EDGE = 80, TOP = 96, ROW = 48;
+  const GAP = 160, EDGE = 80, TOP = 34, ROW = 48;
   const W = EDGE * 2 + GAP * (D.lanes.length - 1);
   const X = Object.fromEntries(D.lanes.map((l, i) => [l.id, EDGE + i * GAP]));
   const NAME = Object.fromEntries(D.lanes.map((l) => [l.id, l.name]));
@@ -353,19 +366,20 @@ get_weather("Busan")  ->  {"temp": 12, "humidity": 61, "wind": ...}` },
   }
 
   function draw() {
-    const flow = D.flows[flowIx], svg = $("diagram");
-    const H = TOP + flow.steps.length * ROW + 10;
-    svg.replaceChildren();
+    const flow = D.flows[flowIx], svg = $("diagram"), head = $("lanes");
+    const H = TOP + flow.steps.length * ROW - 8;
+    svg.replaceChildren(); head.replaceChildren();
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
-    svg.style.minWidth = `${Math.min(W, 520)}px`;
+    head.setAttribute("viewBox", `0 0 ${W} 62`);
+    $("canvas").style.minWidth = `${Math.min(W, 520)}px`;
     for (const lane of D.lanes) {
       const off = (flow.unused || []).includes(lane.id);
-      const g = svgEl("g", { id: `lane-${lane.id}`, class: off ? "lane-off" : "" }, svg);
+      const g = svgEl("g", { id: `lane-${lane.id}`, class: off ? "lane-off" : "" }, head);
       svgEl("title", {}, g, `${lane.name}: ${off ? "not used in this flow" : lane.sub || ""}`);
-      svgEl("line", { class: "lane-line", x1: X[lane.id], x2: X[lane.id], y1: 56, y2: H - 6 }, g);
       svgEl("rect", { class: "lane-box", x: X[lane.id] - 66, y: 8, width: 132, height: 48, rx: 10 }, g);
       svgEl("text", { x: X[lane.id], y: 29, "text-anchor": "middle", "font-size": 15, "font-weight": 700 }, g, lane.name);
       svgEl("text", { class: "lane-sub", x: X[lane.id], y: 46, "text-anchor": "middle", "font-size": 11 }, g, off ? "not used here" : lane.sub || "");
+      svgEl("line", { class: `lane-line${off ? " lane-off" : ""}`, x1: X[lane.id], x2: X[lane.id], y1: 0, y2: H }, svg);
     }
     flow.steps.forEach((s, i) => {
       const y = TOP + i * ROW;
@@ -410,6 +424,7 @@ get_weather("Busan")  ->  {"temp": 12, "humidity": 61, "wind": ...}` },
         ul.append(li);
       }
       box.append(h, ul); wrap.append(box);
+      ul.scrollTop = ul.scrollHeight;   // keep the newest entry visible
     }
   }
 
@@ -427,14 +442,24 @@ get_weather("Busan")  ->  {"temp": 12, "humidity": 61, "wind": ...}` },
     $("prev").disabled = cur === 0;
     const last = cur === flow.steps.length - 1, nextFlow = D.flows[flowIx + 1];
     $("next").textContent = !last ? "Next step →" : nextFlow ? `Now see: ${nextFlow.tab} →` : "Start over";
+    // Scroll only the step list, and only when the current row is outside it.
+    const rows = $("rows"), box = rows.getBoundingClientRect(), row = document.querySelector("g.step.current").getBoundingClientRect();
+    if (row.top < box.top) rows.scrollTop -= box.top - row.top;
+    else if (row.bottom > box.bottom) rows.scrollTop += row.bottom - box.bottom;
   }
 
+  // After a step change, bring the diagram and then the explanation on screen.
+  // Each call does nothing when its target is already fully visible.
+  const settle = () => {
+    $("diagram-card").scrollIntoView({ block: "nearest" });
+    $("step-body").scrollIntoView({ block: "nearest" });
+  };
   function next() {
     if (cur < D.flows[flowIx].steps.length - 1) cur++;
     else { flowIx = flowIx + 1 < D.flows.length ? flowIx + 1 : flowIx; cur = 0; }
-    render();
+    render(); settle();
   }
-  function prev() { if (cur > 0) { cur--; render(); } }
+  function prev() { if (cur > 0) { cur--; render(); settle(); } }
 
   // Static parts.
   document.title = plain(D.title);

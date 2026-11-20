@@ -87,7 +87,7 @@ const EXPLAINER = {
 
 ## Limits to respect
 
-- **Keep flows short.** Aim for 6 to 12 steps per flow. If a flow needs more, the scenario is too big or two ideas are being explained at once.
+- **Keep flows short, but do not cap them.** Aim for 6 to 12 steps per flow; more than that often means the scenario is too big or two ideas are being explained at once. This is a recommendation, not a limit: the page accepts any number of steps, so never merge or drop real events to fit a number.
 - **Do not invent data.** Take message shapes and field names from documentation or real output. Where you are unsure of a shape, say so in `notes`.
 - **Label simulations.** Hand-written messages are a simulation and must say so. Bars are illustrative unless you measured them.
 - **Check understanding afterwards.** Ask the person to retell the flow or predict a changed case. If the page did not land, change the starting point or shrink the scenario; do not add detail.
