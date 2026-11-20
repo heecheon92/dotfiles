@@ -6,6 +6,12 @@ diagram stage described in the first half with these values; the trace and 3D se
 reference values for stages you build yourself. Read this before building or changing a
 stage, and when a sheet shows an overlap or a scene that looks lost.
 
+In the engine, the first half is two layers: the isometric stage (`engine/stage-iso.js`,
+`.css`: projection, objects, links, dots, camera, tracing) and the page of the `story`
+template around it (`engine/template-story.js`, `.css`: step transitions, numbers and text
+around the stage). `templates.md` holds the contract between them. The trace and 3D stages
+below are not in the engine. Drawing state on the object is a rule for every template.
+
 ## What "rich" is made of
 
 Seven things separate these stages from a plain box-and-arrow diagram. Each can be added
@@ -164,6 +170,28 @@ The scene for the next step is diffed against the current one by object id.
   moves the camera.
 - A summary card is docked in a corner in screen pixels. The planner tries each corner and
   zooms out in small steps until the card covers no object or label.
+
+### The reader's camera and tracing
+
+- The reader's zoom and pan sit on top of the planned framing and never change it: a factor
+  from 1× (the planned framing, the furthest out) to 4×, and a pan that keeps the view's
+  centre inside the bounds of the step's scene. The summary card and the stage buttons
+  stay put in screen pixels; pills and labels are part of the scene and scale with it.
+- Wheel, pinch and drag follow the pointer at once: the point under the pointer stays under
+  it. The buttons and `+`/`-` zoom by 1.5× around the middle in 220 ms; double-click on an
+  object (centre it at 2× or more), double-click on the floor and Fit ease over 360 ms.
+  Every eased move is cubic in-out; with reduced motion they all jump.
+- A step change eases the reader's view back to the planned framing over the same 820 ms as
+  the planned camera move. Replay and a change of layout jump back at once.
+- Tracing dims everything outside the traced object, its links and its neighbours (or the
+  traced link and its two ends) to 30% opacity in 150 ms, and draws the traced links slightly
+  heavier (2.8 px instead of 1.9). Dots and arrival marks take the state of the link they are
+  on, so a dot that moves on to an untraced link dims. With reduced motion the change is
+  immediate.
+- Tracing only sets classes on the outer group of each object, link, label and dot; the
+  transitions animate the opacity of inner groups. The two never touch the same property, so a
+  trace cannot disturb a transition, and an object that enters later takes the trace's state
+  when it is created.
 
 ### Numbers and text around the stage
 

@@ -168,8 +168,8 @@ A try step (`try` in `walkthrough-schema.md`) is technique 25 handed to the read
 
 58. **No account, nothing to install.** Progress is local.
 59. **Every step has a link.** A specific moment can be sent to someone.
-60. **Keyboard for everything.** ← → R Space, and `1`–`5` and `0` on a try step, with the
-    hint visible.
+60. **Keyboard for everything.** ← → R Space, `1`–`5` and `0` on a try step, `+` `-` `F`
+    for the camera, and Tab to reach each object, with the hint visible.
 61. **The reader's language and theme.** Language switch, light and dark.
 62. **Accessible controls.** Real buttons, labelled regions, live announcements of the
     current step and of each verdict, a text alternative for the stage.

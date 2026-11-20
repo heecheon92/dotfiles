@@ -4,6 +4,11 @@ Run this against the walkthrough data before rendering, and again against the re
 result on its sheet (`#/<id>/sheet`, described in `walkthrough-schema.md`). Fix every "no" or
 state in the handoff why it stands.
 
+This list reviews a step story, the `story` template and the only one today. "Question and
+case", "Numbers" and "Facts" hold for every template, as do the lines on stated
+simplifications, keyboard use and links; the steps, try steps and word budgets are the
+story's. `templates.md` holds the contracts a template follows.
+
 ## Question and case
 
 - [ ] `question` is one question a newcomer would ask, with one thing that moves and one number that answers it.

@@ -122,7 +122,14 @@ agent will propose the rest.
   - try-it steps, where you pick a value (click, or press `1`–`5`) and the page shows what
     happens and why; `0` resets;
   - a "Where this comes from" list that says which facts and numbers have a source and
-    which are assumptions.
+    which are assumptions;
+  - a stage you can move closer to: zoom with the wheel (Ctrl/⌘ + wheel where the page
+    scrolls), a pinch, the on-stage buttons or `+`/`-`, drag to look around, double-click an
+    object to zoom to it, and press `F` or double-click the floor to see the whole scene
+    again (each new step starts from the author's framing);
+  - tracing: point at an object, focus it with Tab or tap it, and it stays bright with its
+    links and the objects they lead to while the rest of the scene dims; point at a link to
+    see its two ends.
 - **For the author and the reviewer:** a sheet at `#/<walkthrough-id>/sheet` that shows
   every step and every try-it option as a still picture on one page, and automatic checks
   listed at its top: broken references, totals that do not add up, labels that overlap,
@@ -136,7 +143,7 @@ agent will propose the rest.
   ├── walkthroughs/      one file each
   ├── reviews/           review notes and your decisions
   ├── sources/           where the facts and numbers come from
-  ├── engine/            the stage; shared by all walkthroughs
+  ├── engine/            the page shell, the stage and the step story; shared by all walkthroughs
   └── AGENTS.md          rules and state for any agent that opens the folder
   ```
 
@@ -253,16 +260,30 @@ If you remember three things:
   against their sources. Neither replaces your reading: whether a walkthrough clicks for a
   newcomer is yours to judge.
 - Reading progress in a collection is kept in the reader's browser only.
+- There is one way to present a walkthrough today: the step story on the isometric stage.
+  Since engine 0.4.0 the engine can hold more such templates, and more are planned, but
+  none exists yet.
 
 ## Maintaining
 
-The stage engine has one source: `skills/diorama-maker/assets/collection/engine/`. The
-single-page template `skills/diorama-maker/assets/walkthrough.html` contains a copy of it.
-After changing the engine, regenerate and check that copy:
+The engine has one source, `skills/diorama-maker/assets/collection/engine/` (version
+0.4.0), in three layers. The shell (`diorama.js`, `diorama.css`) is the page around a
+walkthrough: the collection, search, progress and links. The stage (`stage-iso.*`) draws
+the isometric picture. The template (`template-story.*`) is the step story, the only
+template today. `skills/diorama-maker/references/templates.md` describes the contracts
+between the layers and how to add a template or a stage.
+
+The single page `skills/diorama-maker/assets/walkthrough.html` contains a copy of all three
+layers. After changing the engine, regenerate and check that copy:
 
 ```bash
 python3 tools/build-single.py          # rewrite walkthrough.html from the engine
 python3 tools/build-single.py --check  # fail if anything is out of date
 ```
+
+`--template <name>`, `--template-dir <folder>` and `--out <path>` build a single page for
+another template, from another folder, into another file. `tools/test-template/` holds
+`plain`, a template with no steps and no stage that exists only to test that the layers
+are separate; `templates.md` shows how to run it.
 
 `tools/` is for maintainers and is not part of any skill.

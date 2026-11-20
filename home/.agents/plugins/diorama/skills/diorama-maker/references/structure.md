@@ -3,6 +3,11 @@
 How the page, the collection and a single walkthrough are laid out. The layout is the same for every
 subject so that the reader learns the interface once and then spends attention on the idea.
 
+This file describes the step story, the `story` template and the only one today: its page,
+its arcs and its controls. `templates.md` holds the contracts between the shell, a template
+and a stage. A few rules here hold for any template: the question stated in the header,
+a link to every state, keyboard control, the sheet, and state drawn on the picture.
+
 ## The four regions
 
 ```
@@ -39,7 +44,9 @@ picture. If a step needs a third paragraph, it is two steps.
 
 ## Four walkthrough families
 
-Pick the family from what is being explained, before writing anything.
+Pick the family from what is being explained, before writing anything. A family is a kind
+of subject, not a template: the engine draws the story family, and a trace or a procedure
+when it is told as steps. The other layouts below are for stages you build yourself.
 
 | Family | Use when the subject is | The stage shows | Reader's action | Example |
 |---|---|---|---|---|
@@ -130,9 +137,11 @@ See [collection.md](collection.md) for the folder layout and shell.
 | Control | Behaviour |
 |---|---|
 | Next button | Labelled with the next step's short name: `Next: Find address` |
-| Keys | ← → step, R replay, Space pause. On a try step also `1`–`5` choose an option and `0` resets. Shown as a one-line hint under the buttons |
+| Keys | ← → step, R replay, Space pause. On a try step also `1`–`5` choose an option and `0` resets. Shown as a one-line hint under the buttons. `+` and `-` zoom and `F` fits the scene; the zoom buttons' tooltips name these keys, the hint does not |
 | Step strip | Click any dot to jump. Try steps are marked |
-| Replay / pause / speed | Always on the stage, top right |
+| Zoom out, zoom in, fit / replay / pause / speed | Always on the stage, top right, outside the picture so they never cover it |
+| Zoom and pan | The reader's own view on top of the author's framing, from 1× (that framing) to 4×. The wheel zooms toward the pointer where the page does not scroll (the desktop layout); where it scrolls, the wheel scrolls the page and only Ctrl/⌘ + wheel or a trackpad pinch zooms. Two-finger pinch on touch screens. Drag pans (one finger only while zoomed in, so at 1× a finger still scrolls); the centre of the view stays over the scene. Double-click or double-tap an object to centre it at 2× or more; on empty floor to fit again. The view returns to the author's framing on every step change, on Replay and when the layout changes; choosing a try option keeps it |
+| Tracing | Pointing at an object keeps it, its links in this scene and the objects at their other ends at full strength and dims the rest of the scene; pointing at a link or its label keeps the link, its dots and its two ends. Tab reaches each object in the order the step lists them, with the same trace and a focus ring; Escape clears it. On touch screens a tap traces and a tap on the floor clears. The trace ends on a step change and on Replay, and on a try option only if its object is no longer shown |
 | Try it | On a try step: option buttons, Reset and the verdict, after the body |
 | Sources | A collapsed list under the goals: where the facts and numbers come from |
 | Deep link | `#/<walkthrough-id>/<step>` |

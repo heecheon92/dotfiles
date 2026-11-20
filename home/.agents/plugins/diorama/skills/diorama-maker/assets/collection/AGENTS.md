@@ -21,7 +21,12 @@ browser to read it; nothing needs to be installed, built or served.
 | `walkthroughs/<id>.js` | One walkthrough each | Yes |
 | `reviews/<id>.md` | Review notes and the owner's decision for one walkthrough | Yes |
 | `sources/` | Material that facts and numbers come from | Add to it; do not rewrite what is there |
-| `index.html`, `engine/` | The shell and the stage engine | No. They are copied from the diorama-maker skill |
+| `index.html` | The page that opens the collection. It loads only `engine/diorama.css` and `engine/diorama.js` | No. It is copied from the diorama-maker skill |
+| `engine/` | The engine, in three layers, plus `VERSION` (its version). `diorama.js`, `diorama.css`: the shell (outline, search, progress, links). `stage-iso.js`, `stage-iso.css`: the isometric stage. `template-story.js`, `template-story.css`: the step story | No. To update, copy the skill's `assets/collection/engine/` over it, every file |
+
+The shell loads the stage and template files when a walkthrough opens, so `index.html`
+never needs an edit. The step story is the only template today; a walkthrough needs no
+`template` field to use it.
 
 ## Rules
 

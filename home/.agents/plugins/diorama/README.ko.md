@@ -125,6 +125,13 @@ collection 안에서는 planner가 이 단계를 대신 진행합니다. 단일 
     이유를 보여 줍니다. `0`을 누르면 처음으로 돌아갑니다
   - "Where this comes from" 목록. 어떤 사실과 숫자에 출처가 있고 어떤 것이 가정인지
     알려 줍니다
+  - 가까이 들여다볼 수 있는 무대. 휠(페이지가 스크롤되는 화면에서는 Ctrl/⌘ + 휠), 핀치,
+    무대 위 버튼, `+`/`-` 키로 확대하고 끌어서 둘러봅니다. 물체를 더블클릭하면 그 물체를
+    확대하고, `F`를 누르거나 바닥을 더블클릭하면 장면 전체가 다시 보입니다. 새 단계는
+    언제나 작성자가 잡아 둔 구도에서 시작합니다
+  - 연결 따라가기. 물체를 가리키거나 Tab으로 고르거나 탭하면, 그 물체와 연결선, 연결선
+    끝의 물체는 또렷하게 남고 나머지 장면은 흐려집니다. 연결선을 가리키면 그 양 끝이
+    보입니다
 - **작성자와 리뷰어가 쓰는 것:** `#/<walkthrough-id>/sheet` 주소의 시트입니다. 모든
   단계와 직접 해 보는 단계의 모든 선택지를 정지 화면으로 한 페이지에 보여 주고, 맨 위에
   자동 검사 결과를 나열합니다. 잘못된 참조, 맞지 않는 합계, 겹치는 라벨, 분량을 넘긴
@@ -138,7 +145,7 @@ collection 안에서는 planner가 이 단계를 대신 진행합니다. 단일 
   ├── walkthroughs/      walkthrough마다 파일 하나
   ├── reviews/           리뷰 기록과 사용자의 결정
   ├── sources/           사실과 숫자의 출처가 되는 자료
-  ├── engine/            무대 엔진. 모든 walkthrough가 함께 씁니다
+  ├── engine/            페이지 셸, 무대, 단계별 스토리. 모든 walkthrough가 함께 씁니다
   └── AGENTS.md          이 폴더를 여는 에이전트를 위한 규칙과 현재 상태
   ```
 
@@ -255,16 +262,30 @@ Diorama는 다른 것 없이 동작합니다. 다음 스킬 묶음은 함께 쓰
   쪽도 사용자가 직접 읽는 일을 대신하지는 않습니다. 처음 보는 사람에게 설명이
   와닿는지는 사용자가 판단해야 합니다.
 - collection의 읽기 진행 상황은 독자의 브라우저에만 저장됩니다.
+- 지금 walkthrough를 보여 주는 방식은 하나뿐입니다. 아이소메트릭 무대 위의 단계별
+  스토리입니다. 엔진 0.4.0부터는 엔진에 이런 템플릿을 더 넣을 수 있고 추가할 계획도
+  있지만, 아직 다른 템플릿은 없습니다.
 
 ## 유지보수
 
-무대 엔진의 원본은 `skills/diorama-maker/assets/collection/engine/` 한 곳입니다. 단일
-페이지 템플릿 `skills/diorama-maker/assets/walkthrough.html`에는 그 복사본이 들어
+엔진의 원본은 `skills/diorama-maker/assets/collection/engine/` 한 곳이며(버전 0.4.0),
+세 층으로 나뉩니다. 셸(`diorama.js`, `diorama.css`)은 walkthrough를 둘러싼 페이지로,
+collection, 검색, 진행 상황, 링크를 맡습니다. 무대(`stage-iso.*`)는 아이소메트릭 그림을
+그립니다. 템플릿(`template-story.*`)은 단계별 스토리이며, 지금 있는 유일한 템플릿입니다.
+층 사이의 계약과 템플릿이나 무대를 추가하는 방법은
+`skills/diorama-maker/references/templates.md`에 있습니다.
+
+단일 페이지 `skills/diorama-maker/assets/walkthrough.html`에는 세 층 모두의 복사본이 들어
 있습니다. 엔진을 고친 뒤에는 복사본을 다시 만들고 확인하세요.
 
 ```bash
 python3 tools/build-single.py          # 엔진으로 walkthrough.html을 다시 만듭니다
 python3 tools/build-single.py --check  # 최신 상태가 아닌 것이 있으면 실패합니다
 ```
+
+`--template <name>`, `--template-dir <folder>`, `--out <path>`를 쓰면 다른 템플릿의 단일
+페이지를, 다른 폴더의 파일로, 다른 경로에 만듭니다. `tools/test-template/`에는 `plain`이
+있습니다. 단계도 무대도 없는 템플릿으로, 층이 제대로 분리되었는지 시험하는 용도로만
+씁니다. 실행 방법은 `templates.md`에 있습니다.
 
 `tools/`는 유지보수용이며 어떤 스킬에도 포함되지 않습니다.

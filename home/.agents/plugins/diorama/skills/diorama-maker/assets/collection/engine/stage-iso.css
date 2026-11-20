@@ -1,0 +1,211 @@
+/* Diorama isometric stage ("iso"): the scene and its drawing, tracing, the summary card and the
+   stage's own controls. Loaded with stage-iso.js, after engine/diorama.css. */
+
+:root {
+  --grid: #a99474;
+  --grid-o: .3;
+  --shadow: #6d5439;
+  --rf: #3b2b15;
+  --rf-o: .06;
+  --sheen-o: .24;
+  --bev-o: .75;
+
+  /* Faces: t1/t2 top gradient, s1/s2 side gradient */
+  --blue-t1: #e1ebf8;   --blue-t2: #cddff4;   --blue-s1: #bad0ec;   --blue-s2: #a6c2e6;
+  --orange-t1: #fde5ca; --orange-t2: #fbd2aa; --orange-s1: #f8c493; --orange-s2: #f1b07c;
+  --yellow-t1: #fff2d4; --yellow-t2: #fde4b4; --yellow-s1: #fad898; --yellow-s2: #f4ca7e;
+  --green-t1: #e0f1d5;  --green-t2: #cee7be;  --green-s1: #c0dfae;  --green-s2: #afd49b;
+  --violet-t1: #f0e8f9; --violet-t2: #e3d8f3; --violet-s1: #d6c8ed; --violet-s2: #c8b6e4;
+  --gray-t1: #f6efe6;   --gray-t2: #eee5d9;   --gray-s1: #e8ddd0;   --gray-s2: #dcd0c0;
+
+  --pawn-blue: #9ebce3; --pawn-orange: #f1ae7c; --pawn-yellow: #f3cf7a; --pawn-green: #a8d395; --pawn-violet: #c3b0e4; --pawn-gray: #c9bcab;
+  --head: #fdebd3;
+  --lid-1: #8a847e; --lid-2: #3e3a36; --lid-3: #6f6963;
+  --screen: #fbfaf8; --hero-1: #d9cff3; --hero-2: #b9cdf0; --screen-line: #ddd6cc;
+  --led: #49b45d; --dark-glass: #2f2b27;
+
+  /* Links, packets, state */
+  --link: #2b2723;
+  --link-off: #b2a898;
+  --cut: #c63c2f;
+  --beat: #3f9f56;
+  --pk-request: #f3b07d; --pk-response: #9fd18f; --pk-heavy: #e8854e;
+  --pk-signal: #3f9f56;  --pk-write: #5f5569;    --pk-message: #efb246;
+  --liq-green: #cfe8bf; --liq-green-s: #79b86b;
+  --liq-amber: #f9dba2; --liq-amber-s: #d9a03c;
+  --liq-red: #f5beb2;   --liq-red-s: #d05a4a;
+  --g-track: #e7ddd0; --g-green: #7ec177; --g-amber: #eeaf40; --g-red: #e2554a;
+  --heat: #ef5530; --heat-tint: #e8434a;
+  --spot: #4aa95c;
+  --dead: #9b958d;
+  --zone: #fffaf2;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --grid: #b29d7d;
+    --grid-o: .14;
+    --shadow: #000;
+    --rf: #000;
+    --rf-o: .16;
+    --sheen-o: .07;
+    --bev-o: .16;
+
+    --blue-t1: #3b4f67;   --blue-t2: #34485e;   --blue-s1: #2e4056;   --blue-s2: #283a4d;
+    --orange-t1: #634c35; --orange-t2: #5a4430; --orange-s1: #4d3b29; --orange-s2: #423223;
+    --yellow-t1: #5e5233; --yellow-t2: #554a2d; --yellow-s1: #4b4026; --yellow-s2: #413720;
+    --green-t1: #3d5135;  --green-t2: #364a2f;  --green-s1: #2f4229;  --green-s2: #293a23;
+    --violet-t1: #4c4161; --violet-t2: #453a58; --violet-s1: #3b334e; --violet-s2: #342c45;
+    --gray-t1: #4a433c;   --gray-t2: #433c35;   --gray-s1: #3a342e;   --gray-s2: #322d28;
+
+    --pawn-blue: #6f8fb8; --pawn-orange: #c08158; --pawn-yellow: #c3a253; --pawn-green: #78a668; --pawn-violet: #9583b8; --pawn-gray: #8d8274;
+    --head: #d8c2a4;
+    --lid-1: #6a645e; --lid-2: #2b2825; --lid-3: #4f4a45;
+    --screen: #3a3631; --hero-1: #5b5180; --hero-2: #44587f; --screen-line: #575049;
+    --led: #5fc272; --dark-glass: #141210;
+
+    --link: #e2d8c6;
+    --link-off: #6e665b;
+    --cut: #ef6a5a;
+    --beat: #5fc272;
+    --pk-request: #f0a36b; --pk-response: #8fcf7f; --pk-heavy: #e8854e;
+    --pk-signal: #5fc272;  --pk-write: #b8aec4;    --pk-message: #efb246;
+    --liq-green: #3d5a33; --liq-green-s: #8fcf7f;
+    --liq-amber: #5e4a22; --liq-amber-s: #e6b24f;
+    --liq-red: #5c2d27;   --liq-red-s: #e47a6a;
+    --g-track: #3d362e; --g-green: #6fbf68; --g-amber: #e7aa3d; --g-red: #e2584d;
+    --heat: #f0663d; --heat-tint: #e0524c;
+    --spot: #5cc26f;
+    --dead: #59544e;
+    --zone: #26211c;
+  }
+}
+
+/* Stage */
+.cam-controls { display: flex; gap: 4px; }
+
+.scene-wrap { position: relative; border-radius: 12px; background: var(--stage); border: 1px solid var(--line); overflow: hidden; }
+/* The reader's camera: drag pans; at 1× one finger still scrolls the page or the sideways stage,
+   while zoomed in it pans the scene. Two fingers pinch either way. */
+.scene { display: block; width: 100%; height: clamp(340px, calc(100vh - 392px), 760px); user-select: none; -webkit-user-select: none; cursor: grab; touch-action: pan-x pan-y; }
+.scene.zoomed { touch-action: none; }
+.scene.grabbing { cursor: grabbing; }
+.scroll-hint { margin: 6px 4px 0; font-size: 11.5px; color: var(--muted); }
+.panel-inline { margin: 10px 2px 0; padding: 10px 12px; border: 1.3px solid var(--ink); border-radius: 10px; background: var(--card); box-shadow: 0 2.5px 0 var(--drop); font-size: 12px; }
+.panel-inline.swap { animation: value-in .42s cubic-bezier(.2, .7, .2, 1); }
+.panel-inline .pi-title { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 4px; margin-bottom: 4px; }
+.panel-inline .pi-row { white-space: pre; font-weight: 600; color: var(--ink-2); overflow-x: auto; }
+.panel-inline .pi-row.sum { background: var(--green-b); color: var(--green-f); font-weight: 800; border-radius: 5px; margin-top: 4px; }
+.panel-inline .pi-row.bad { background: var(--red-b); color: var(--red-f); border-radius: 5px; }
+.panel-inline .pi-row.note { color: var(--muted); font-style: italic; white-space: normal; }
+
+/* Stage drawing */
+.st text { font-family: var(--mono); }
+.st .deco, .st .sh, .st .sheen, .st .bev, .st .wash, .st .glow, .st .pk, .st .fx, .st .spot, .st .chev { pointer-events: none; }
+.grid-lines { fill: none; stroke: var(--grid); stroke-opacity: var(--grid-o); stroke-width: .8; }
+.sh { fill: var(--shadow); }
+.rf { fill: var(--rf); opacity: var(--rf-o); }
+.sheen { fill: #fff; opacity: var(--sheen-o); }
+.bev { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.bev.lt { stroke: #fff; stroke-opacity: var(--bev-o); stroke-width: 1.6; }
+.bev.dk { stroke: var(--rf); stroke-opacity: .07; stroke-width: 2.4; }
+.ol { fill: none; stroke: var(--ink); stroke-width: 1.9; stroke-linejoin: round; stroke-linecap: round; }
+.ol-thin { fill: none; stroke: var(--ink); stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
+.rim { fill: none; stroke: #fff; stroke-opacity: calc(var(--bev-o) * .9); stroke-width: 1.3; stroke-linecap: round; }
+.gl { fill: none; stroke: var(--ink); stroke-linecap: round; stroke-linejoin: round; }
+.gl-dot { fill: var(--ink); stroke: none; }
+.face-t { fill: var(--ink); font-weight: 800; text-anchor: middle; }
+.face-s { fill: var(--ink-2); font-weight: 600; text-anchor: middle; }
+.zone { fill: var(--zone); fill-opacity: .55; stroke: var(--ink); stroke-opacity: .55; stroke-width: 1.4; stroke-dasharray: 6 5; }
+.zone-t { fill: var(--ink); fill-opacity: .6; font-size: 10.5px; font-weight: 800; letter-spacing: 1.6px; }
+.glow { fill: var(--heat); }
+.tint { fill: var(--heat-tint); }
+.wash.dim { fill: var(--stage); }
+.wash.dead { fill: var(--dead); }
+.xhalo { fill: none; stroke: var(--card); stroke-width: 6.5; stroke-linecap: round; }
+.xmark { fill: none; stroke: var(--cut); stroke-width: 3.2; stroke-linecap: round; }
+.pawn-sh { fill: var(--shadow); opacity: .22; }
+.pawn-b { stroke: var(--ink); stroke-linejoin: round; }
+.pawn-h { fill: var(--head); stroke: var(--ink); }
+.liq-green { fill: var(--liq-green); } .liq-amber { fill: var(--liq-amber); } .liq-red { fill: var(--liq-red); }
+.men-green { fill: none; stroke: var(--liq-green-s); stroke-width: 1.6; }
+.men-amber { fill: none; stroke: var(--liq-amber-s); stroke-width: 1.6; }
+.men-red { fill: none; stroke: var(--liq-red-s); stroke-width: 1.6; }
+.scr { fill: var(--screen); }
+.scr-line { fill: var(--screen-line); }
+.scr-glass { fill: var(--dark-glass); }
+.led { fill: var(--led); }
+.key { fill: var(--lid-3); opacity: .45; }
+.puck { fill: var(--pk-message); stroke: var(--ink); stroke-width: 1.2; stroke-linejoin: round; }
+.puck-top { fill: #fff; opacity: .28; }
+.pulse { animation: pulse 1.3s ease-in-out infinite alternate; }
+
+.pill-drop { fill: var(--drop); }
+.pill-bg { fill: var(--tb); stroke: var(--ink); stroke-width: 1.3; }
+.pill-t { fill: var(--tf); font-weight: 700; text-anchor: middle; }
+.pill-s { fill: var(--tf); fill-opacity: .7; font-weight: 600; text-anchor: middle; }
+.pill .gl { stroke: var(--tf); }
+.pill-n { fill: var(--ink); font-size: 10.5px; font-weight: 800; text-anchor: end; }
+.g-track { fill: var(--g-track); }
+.g-green { fill: var(--g-green); } .g-amber { fill: var(--g-amber); } .g-red { fill: var(--g-red); }
+
+.lk { fill: none; stroke: var(--link); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; transition: stroke .5s, stroke-width .15s; }
+.lk-hit { fill: none; stroke: transparent; stroke-width: 16; stroke-linecap: round; pointer-events: stroke; }
+.lk.dashed { stroke-dasharray: 5 4.5; }
+.lk.off { stroke: var(--link-off); stroke-width: 1.6; stroke-dasharray: 4 5; }
+.lk.cut { stroke: var(--cut); stroke-dasharray: 7 6; }
+.lk.beat { stroke: var(--beat); stroke-width: 2; stroke-dasharray: 1.5 5.5; }
+.ah { fill: var(--link); stroke: var(--link); stroke-width: 1.4; stroke-linejoin: round; transition: fill .5s, stroke .5s; }
+.ah.off { fill: var(--link-off); stroke: var(--link-off); }
+
+.pk { transition: opacity .2s; }
+.pk.leave { opacity: 0 !important; transition: opacity .26s; }
+.pkb { stroke: var(--ink); stroke-width: 1.3; stroke-linejoin: round; }
+.pk-request { fill: var(--pk-request); } .pk-response { fill: var(--pk-response); }
+.pk-heavy { fill: var(--pk-heavy); } .pk-write { fill: var(--pk-write); } .pk-message { fill: var(--pk-message); }
+.pk-signal { fill: var(--pk-signal); }
+.pk-ring { fill: none; stroke: var(--pk-signal); stroke-width: 1.4; }
+.held .pkb { animation: held .8s ease-in-out infinite alternate; }
+@keyframes held { from { stroke-width: 1.5; } to { stroke-width: 3.4; } }
+.fx-ring { fill: none; stroke: var(--spot); stroke-width: 2; transform-box: fill-box; transform-origin: center; animation: fx-pop .45s ease-out forwards; }
+@keyframes fx-pop { from { transform: scale(.8); opacity: .95; } to { transform: scale(2.2); opacity: 0; } }
+.fx-burst { transform-box: fill-box; transform-origin: center; animation: fx-burst .65s ease-out forwards; }
+.fx-burst circle { fill: var(--cut); }
+.fx-burst path { fill: none; stroke: #fff; stroke-width: 1.8; stroke-linecap: round; }
+@keyframes fx-burst { 0% { transform: scale(.7); opacity: 1; } 30% { transform: scale(1.25); opacity: 1; } 100% { transform: scale(2.3); opacity: 0; } }
+.spot { fill: var(--spot); fill-opacity: .14; stroke: var(--spot); stroke-width: 2.4; transform-box: fill-box; transform-origin: center; animation: spot 1.5s ease-out forwards; }
+@keyframes spot { 0% { transform: scale(.75); opacity: 0; } 15% { opacity: .95; } 100% { transform: scale(1.4); opacity: 0; } }
+.chev { fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.chev-request { stroke: var(--pk-request); } .chev-response { stroke: var(--pk-response); } .chev-heavy { stroke: var(--pk-heavy); }
+.chev-signal { stroke: var(--pk-signal); } .chev-write { stroke: var(--pk-write); } .chev-message { stroke: var(--pk-message); }
+.st.paused * { animation-play-state: paused !important; }
+
+/* Tracing: what the reader points at, its links and the objects at their other ends stay at full
+   strength; the rest of the scene dims. Only outer groups are dimmed; the transitions animate the
+   opacity of inner ones, so the two never fight. */
+.st .ent, .st .ent-over, .st .link, .st .link-label, .st .pk > g, .st .fx, .st .chev[data-link] { transition: opacity .15s; }
+.st.tracing .ent:not(.on), .st.tracing .ent-over:not(.on), .st.tracing .link:not(.on), .st.tracing .link-label:not(.on),
+.st.tracing .pk:not(.on) > g, .st.tracing .fx:not(.on), .st.tracing .chev[data-link]:not(.on) { opacity: .3; }
+.st.tracing .link.on .lk { stroke-width: 2.8; }
+.st.tracing .link.on .lk.off { stroke-width: 2.2; }
+.st.tracing .link.on .ah { stroke-width: 2; }
+/* Keyboard focus on an object: an outline around it (the focus targets take no pointer input). */
+.fp { fill: none; stroke: none; pointer-events: none; outline: none; }
+.fp:focus-visible { stroke: var(--focus); stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+
+.hud-drop { fill: var(--drop); }
+.hud-bg { fill: var(--card); stroke: var(--ink); stroke-width: 1.4; }
+.hud-title { fill: var(--muted); font-size: 10.5px; font-weight: 800; letter-spacing: 1.2px; }
+.hud-rule { stroke: var(--line); stroke-width: 1; }
+.hud-rule.sum { stroke: var(--ink); stroke-opacity: .5; stroke-dasharray: 3 3; }
+.hud-line { font-size: 12px; font-weight: 600; fill: var(--ink-2); white-space: pre; }
+.hud-line.sum { fill: var(--green-f); font-weight: 800; }
+.hud-line.bad { fill: var(--red-f); font-weight: 700; }
+.hud-line.note { fill: var(--muted); font-size: 11px; font-style: italic; white-space: normal; }
+.hud-band.sum { fill: var(--green-b); }
+.hud-band.bad { fill: var(--red-b); }
+.hud-ic { stroke: var(--red-f); }
+
+@media (max-width: 600px) {
+  .scene-wrap { overflow-x: auto; overscroll-behavior-x: contain; }
+  .scene { height: 380px; }
+}

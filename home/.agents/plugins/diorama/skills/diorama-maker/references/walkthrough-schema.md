@@ -3,10 +3,29 @@
 A walkthrough is data, not prose. Write it as one JSON object first; the page (or the chat
 reply) is a rendering of it. This keeps every step the same shape and makes gaps obvious.
 
+Everything in this file after the `template` field is the data shape of the `story`
+template: the step story on the isometric stage, the only template today. `templates.md`
+holds the contracts a template and a stage follow.
+
 `assets/walkthrough.html` renders exactly this format on an illustrated isometric stage.
 `assets/example-walkthrough.json` is a complete walkthrough that follows it.
 `visual-craft.md` explains how the stage is drawn and animated. `collection.md` describes
 how several walkthroughs are put together into one site.
+
+## The `template` field
+
+```json
+{ "id": "badge-tap", "template": "story", "title": "How a Badge Tap Works" }
+```
+
+| Field | Type | Rule |
+|---|---|---|
+| `template` | string, optional | the name of the template that presents this walkthrough, in kebab-case. Leave it out for a step story: no field means `story`, the only name the engine knows today |
+
+A walkthrough written before this field existed needs no edit. A name the engine has no
+template for is not drawn as a story instead: the page shows "This walkthrough cannot be
+shown", naming the template, and prints a `[diorama]` warning to the console. A value that
+is not a kebab-case string gets the same message.
 
 ## Top level
 
@@ -308,9 +327,10 @@ not show transitions; step through once for those.
 
 ## Other families
 
-The same four regions apply (see `structure.md`), but the data differs. The template renders
-only the step-driven families (story, trace-as-steps, procedure-as-steps). An object lab or a
-3D scene needs its own stage code; `visual-craft.md` describes how those are built.
+The same four regions apply (see `structure.md`), but the data differs. The `story` template
+renders only the step-driven families (story, trace-as-steps, procedure-as-steps). An object
+lab or a 3D scene needs its own stage code; `visual-craft.md` describes how those are built.
+None of the shapes below is an engine template, so none is a value for `template`.
 
 ### Object lab (a thing you manipulate)
 

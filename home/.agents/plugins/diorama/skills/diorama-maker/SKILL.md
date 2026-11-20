@@ -10,7 +10,22 @@ step by step, with very few words beside it. One such explanation is a **walkthr
 
 This skill works alone. It needs no other skill, no installs and no network.
 
+## What every template keeps
+
+A **template** is a way of presenting a piece on a way of drawing it. There is one today:
+the step story (`story`) on the isometric stage. More are planned and none exists yet, so
+everything below this section describes the step story. Whatever its template, a piece:
+
+- answers one question and follows one concrete case;
+- lists where its numbers come from, data apart from assumption;
+- shows state on the picture and says what is simplified;
+- opens offline with no dependency, works by keyboard and has a link to each of its states;
+- can be reviewed on a sheet with automatic checks.
+
 ## Core rules
+
+Rules 4, 6, 7 and 8 belong to the step story, as do the step counts, word budgets, chapters
+and step strip in the references. The other rules apply the list above.
 
 1. Start from **one question** with one thing that moves and one number that answers it.
 2. **Numbers before the stage.** List every value with where it comes from. Never invent a
@@ -39,6 +54,7 @@ This skill works alone. It needs no other skill, no installs and no network.
    `data` or an `assumption`. Do not design a walkthrough around a mechanism that has not
    been checked.
 4. **Choose the family** (`references/structure.md`): story, object lab, trace or procedure.
+   A family is a kind of subject, not a template; only the step story has one.
 5. **Choose the case.** One scenario, named actors, values from the ledger that add up.
    Decide the 0–5 running numbers and the one variable that will be set too low and too high.
    Work out one derived value by hand and keep the working.
@@ -72,9 +88,9 @@ read it before building or changing any stage, and when a result looks plain.
 | Custom stage | An object lab, a 3D scene or a packet-level trace | Build in the user's stack following `references/structure.md` and `references/visual-craft.md` |
 
 Default to chat mode for a question asked in passing and to a single page when the user
-says "make", "build", "page", "share" or names an audience. The template draws an
+says "make", "build", "page", "share" or names an audience. The `story` template draws an
 illustrated isometric stage for story walkthroughs, and for traces or procedures told as
-steps. A custom stage is a project of its own; say so before starting.
+steps. A custom stage is a project of its own, outside the engine; say so before starting.
 
 On the stage, show state instead of describing it: a gauge for how busy, a glow for the
 node in trouble, a cut link for a broken path, more dots for more traffic, a tag for a value.
@@ -95,21 +111,23 @@ Only the collection's owner approves.
 
 ## Files
 
-- `references/structure.md` — page regions, walkthrough families, arcs, collection shape, navigation, visual language.
-- `references/visual-craft.md` — how the illustrated and 3D stages are drawn and animated, with reference values; fixing overlaps.
+- `references/structure.md` — the step story's page regions and arcs, walkthrough families, collection shape, navigation, visual language.
+- `references/visual-craft.md` — how the isometric stage and custom 3D stages are drawn and animated, with reference values; fixing overlaps.
 - `references/wording.md` — word budgets, voice, question, title, callout and verdict patterns, with examples.
 - `references/techniques.md` — the explaining moves and why they work; what the format does not do.
-- `references/walkthrough-schema.md` — the data format of one walkthrough, its consistency rules, the automatic checks and the sheet.
+- `references/walkthrough-schema.md` — the optional `template` field, the data format of a `story` walkthrough, its consistency rules, the automatic checks and the sheet.
 - `references/collection.md` — the collection folder, `collection.js`, statuses, the shell.
-- `references/checklist.md` — review list for the data and the rendered result.
+- `references/checklist.md` — review list for the data and the rendered result of a step story.
 - `references/text-mode.md` — the chat rendering.
-- `assets/walkthrough.html` — one self-contained page that renders a walkthrough from embedded JSON.
+- `references/templates.md` — the engine's three layers (shell, stage, template) and their contracts; read it before adding or changing a template or a stage.
+- `assets/walkthrough.html` — one self-contained page that renders a `story` walkthrough from embedded JSON.
 - `assets/example-walkthrough.json` — a complete walkthrough in the format.
 - `assets/collection/` — starter folder for a collection: shell, engine, example outline and walkthroughs.
 
 ## Optional companion skills
 
-Nothing here is required. When building a custom 3D stage, the `threejs-*` skills
+Nothing here is required, and no template needs three.js today. When building a custom 3D
+stage, the `threejs-*` skills
 ([CloudAI-X/threejs-skills](https://github.com/CloudAI-X/threejs-skills)) are recommended
 for the current three.js API; `references/visual-craft.md` lists which one helps with which
 part. Use them if they are installed and continue without them if they are not. Do not

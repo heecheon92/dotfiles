@@ -1,0 +1,7 @@
+/* The plain test template: one card of text. Every rule is scoped to plain-* classes, because a
+   template's stylesheet stays in the page after the reader moves on to another template. */
+
+.plain-card { max-width: 72ch; margin: 4px 4px 0; padding: 18px 22px; }
+.plain-text { margin: 0; color: var(--ink-2); }
+.plain-nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+.plain-nav:empty { display: none; }

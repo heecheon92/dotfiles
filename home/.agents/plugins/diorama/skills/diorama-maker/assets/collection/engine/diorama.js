@@ -1,25 +1,31 @@
 /*
- * Diorama engine: draws a walkthrough on an illustrated isometric stage, and presents a
- * collection of walkthroughs behind one shell page.
+ * Diorama engine shell: presents one walkthrough as a single-file page, or a collection of
+ * walkthroughs behind one shell page. How a walkthrough is presented (its template) and how its
+ * picture is drawn (the template's stage) live in files next to this one, which the shell loads
+ * when a walkthrough needs them: template-<name>.js/.css and stage-<name>.js/.css.
  *
  * Public API (one global):
  *   Diorama.collection(obj)        collection.js registers the outline
  *   Diorama.walkthrough(obj)       walkthroughs/<id>.js registers one walkthrough
  *   Diorama.startCollection()      index.html starts the collection shell
  *   Diorama.startSingle(obj)       the single-file page starts one walkthrough
+ *   Diorama.defineTemplate(name, { stage }, factory)   a template file defines its template
+ *   Diorama.defineStage(name, factory)                 a stage file defines its stage
  *
  * No dependencies, no network, works from file://. The data formats are described in the
- * diorama-maker skill: references/walkthrough-schema.md and references/collection.md.
+ * diorama-maker skill: references/walkthrough-schema.md and references/collection.md; the
+ * template and stage contracts in references/templates.md.
  */
 (() => {
   'use strict';
 
-  const VERSION = '0.2.1';
-  const NS = 'http://www.w3.org/2000/svg';
+  const VERSION = '0.4.0';
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
-  const phoneQuery = matchMedia('(max-width: 600px)');
   const warn = (m) => console.warn(`[diorama] ${m}`);
   const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+  // The folder this file was loaded from, where template and stage files are looked for. The
+  // single-file page carries everything inline and never loads one.
+  const ENGINE = document.currentScript && document.currentScript.src ? new URL('.', document.currentScript.src).href : 'engine/';
 
   /* ================= Small helpers ================= */
 
@@ -32,37 +38,7 @@
   const n1 = (v) => Math.round(v * 10) / 10;
   const n2 = (v) => Math.round(v * 100) / 100;
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const hash2 = (i, j) => { const s = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453; return s - Math.floor(s); };
-  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-  // A metric value as the reader and the sheet show it: up to two decimals, thousands separated.
-  const decimalsOf = (v) => Math.min(2, (String(v).split('.')[1] || '').length);
-  const fmtNum = (v, dec = decimalsOf(v)) => v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
-
-  function svgEl(tag, attrs = {}, parent = null) {
-    const node = document.createElementNS(NS, tag);
-    for (const k in attrs) node.setAttribute(k, attrs[k]);
-    if (parent) parent.appendChild(node);
-    return node;
-  }
-
-  // Text widths for layout come from a canvas using the same font stack as the SVG text.
-  // The context is created on first use, after the stylesheet that defines --mono has loaded.
-  let measureCtx = null, MONO = 'monospace';
-  const widthCache = new Map();
-  function textW(text, size, weight = 700) {
-    const key = `${weight}|${size}|${text}`;
-    let w = widthCache.get(key);
-    if (w === undefined) {
-      if (!measureCtx) {
-        measureCtx = document.createElement('canvas').getContext('2d');
-        MONO = getComputedStyle(document.documentElement).getPropertyValue('--mono').trim() || 'monospace';
-      }
-      measureCtx.font = `${weight} ${size}px ${MONO}`;
-      w = measureCtx.measureText(String(text)).width;
-      widthCache.set(key, w);
-    }
-    return w;
-  }
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
   /* ================= Icons (24px box, stroked) ================= */
 
@@ -108,2550 +84,8 @@
     close: '<path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/>',
   };
   const FALLBACK_GLYPH = '<circle cx="12" cy="12" r="2.8" class="gl-dot"/>';
-
-  function glyph(name, cx, cy, size = 24, sw = 1.9) {
-    const k = size / 24;
-    return `<g class="gl" transform="translate(${n1(cx - 12 * k)} ${n1(cy - 12 * k)}) scale(${n2(k)})" stroke-width="${n2(sw)}">${GLYPH[name] || FALLBACK_GLYPH}</g>`;
-  }
-  function iconHtml(name) {
-    return `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${GLYPH[name] || FALLBACK_GLYPH}</svg>`;
-  }
-
-  /* ================= Geometry ================= */
-
-  // Isometric floor: one grid unit is 14 px across and 7 px down (a 2:1 tile); z is in px.
-  const TILE = 14;
-  const P = (x, y, z = 0) => [TILE * (x + y), TILE / 2 * (x - y) - z];
-  const dist = (a, b) => Math.hypot(b[0] - a[0], b[1] - a[1]);
-  const pt = (q) => `${n1(q[0])} ${n1(q[1])}`;
-
-  function roundPoly(pts, radii) {
-    const n = pts.length;
-    let d = '';
-    for (let i = 0; i < n; i++) {
-      const p = pts[i], a = pts[(i + n - 1) % n], b = pts[(i + 1) % n];
-      const la = dist(p, a), lb = dist(p, b);
-      const r = Math.min(Array.isArray(radii) ? radii[i] : radii, la / 2, lb / 2);
-      const p1 = la ? [p[0] + (a[0] - p[0]) * r / la, p[1] + (a[1] - p[1]) * r / la] : p;
-      const p2 = lb ? [p[0] + (b[0] - p[0]) * r / lb, p[1] + (b[1] - p[1]) * r / lb] : p;
-      d += `${i ? 'L' : 'M'}${pt(p1)}Q${pt(p)} ${pt(p2)}`;
-    }
-    return d + 'Z';
-  }
-
-  function roundLine(pts, r) {
-    let d = `M${pt(pts[0])}`;
-    for (let i = 1; i < pts.length - 1; i++) {
-      const p = pts[i], a = pts[i - 1], b = pts[i + 1];
-      const la = dist(p, a), lb = dist(p, b);
-      if (la < .01 || lb < .01) continue;
-      const rr = Math.min(r, la / 2, lb / 2);
-      d += `L${pt([p[0] + (a[0] - p[0]) * rr / la, p[1] + (a[1] - p[1]) * rr / la])}Q${pt(p)} ${pt([p[0] + (b[0] - p[0]) * rr / lb, p[1] + (b[1] - p[1]) * rr / lb])}`;
-    }
-    return d + `L${pt(pts[pts.length - 1])}`;
-  }
-
-  function polyLen(pts) {
-    let l = 0;
-    for (let i = 1; i < pts.length; i++) l += dist(pts[i - 1], pts[i]);
-    return l;
-  }
-
-  function pointAt(pts, s) {
-    for (let i = 1; i < pts.length; i++) {
-      const a = pts[i - 1], b = pts[i], l = dist(a, b);
-      if (s <= l || i === pts.length - 1) {
-        const t = l ? clamp(s / l, 0, 1) : 0;
-        return { p: [lerp(a[0], b[0], t), lerp(a[1], b[1], t)], dir: l ? [(b[0] - a[0]) / l, (b[1] - a[1]) / l] : [1, 0] };
-      }
-      s -= l;
-    }
-    return { p: pts[0], dir: [1, 0] };
-  }
-
-  function trimPts(pts, s0, s1) {
-    const out = [pointAt(pts, s0).p];
-    let acc = 0;
-    for (let i = 1; i < pts.length - 1; i++) {
-      acc += dist(pts[i - 1], pts[i]);
-      if (acc > s0 && acc < s1) out.push(pts[i]);
-    }
-    out.push(pointAt(pts, s1).p);
-    return out;
-  }
-
-  function convexHull(points) {
-    const p = points.map((q) => [q[0], q[1]]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-    if (p.length < 3) return p;
-    const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
-    const lower = [], upper = [];
-    for (const q of p) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= 0) lower.pop(); lower.push(q); }
-    for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop(); upper.push(q); }
-    return lower.slice(0, -1).concat(upper.slice(0, -1));
-  }
-
-  function bboxOf(points) {
-    const b = { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity };
-    for (const q of points) { b.x0 = Math.min(b.x0, q[0]); b.y0 = Math.min(b.y0, q[1]); b.x1 = Math.max(b.x1, q[0]); b.y1 = Math.max(b.y1, q[1]); }
-    return b;
-  }
-  const boxAt = (cx, cy, w, h) => ({ x0: cx - w / 2, y0: cy - h / 2, x1: cx + w / 2, y1: cy + h / 2 + 2 });
-  const inflate = (b, d) => ({ x0: b.x0 - d, y0: b.y0 - d, x1: b.x1 + d, y1: b.y1 + d });
-  const boxCorners = (b) => [[b.x0, b.y0], [b.x1, b.y0], [b.x1, b.y1], [b.x0, b.y1]];
-  const overlapArea = (a, b) => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
-  const inBox = (q, b) => q[0] > b.x0 && q[0] < b.x1 && q[1] > b.y0 && q[1] < b.y1;
-
-  function pointInPoly(q, poly) {
-    let inside = false;
-    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-      const a = poly[i], b = poly[j];
-      if ((a[1] > q[1]) !== (b[1] > q[1]) && q[0] < (b[0] - a[0]) * (q[1] - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
-    }
-    return inside;
-  }
-
-  // Separating-axis test between two convex polygons; polyBoxOverlap takes an axis-aligned box as the second.
-  function convexOverlap(pa, pb) {
-    for (const poly of [pa, pb]) {
-      for (let i = 0; i < poly.length; i++) {
-        const a = poly[i], c = poly[(i + 1) % poly.length], ax = [a[1] - c[1], c[0] - a[0]];
-        if (!ax[0] && !ax[1]) continue;
-        let p0 = Infinity, p1 = -Infinity, r0 = Infinity, r1 = -Infinity;
-        for (const q of pa) { const d = q[0] * ax[0] + q[1] * ax[1]; p0 = Math.min(p0, d); p1 = Math.max(p1, d); }
-        for (const q of pb) { const d = q[0] * ax[0] + q[1] * ax[1]; r0 = Math.min(r0, d); r1 = Math.max(r1, d); }
-        if (p1 <= r0 || r1 <= p0) return false;
-      }
-    }
-    return true;
-  }
-  const polyBoxOverlap = (poly, b) => convexOverlap(poly, boxCorners(b));
-
-  /* ================= Palette and SVG defs ================= */
-
-  const COLORS = ['blue', 'orange', 'yellow', 'green', 'violet', 'gray'];
-  const TONES = ['paper', 'green', 'amber', 'red', 'violet', 'gray'];
-  const KINDS = ['request', 'response', 'heavy', 'signal', 'write', 'message'];
-  const STYLES = ['solid', 'dashed', 'off', 'cut', 'beat'];
-  const colorOf = (c) => (COLORS.includes(c) ? c : 'gray');
-  const toneOf = (t) => (TONES.includes(t) ? t : 'paper');
-
-  // Gradients, blurs and the floor grid. Ids are global, which is safe because only one
-  // stage exists at a time.
-  function defsMarkup() {
-    let s = '';
-    for (const c of COLORS) {
-      s += `<linearGradient id="g-${c}-top" x1="0" y1="0" x2=".35" y2="1"><stop offset="0" style="stop-color:var(--${c}-t1)"/><stop offset="1" style="stop-color:var(--${c}-t2)"/></linearGradient>`;
-      s += `<linearGradient id="g-${c}-side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--${c}-s1)"/><stop offset="1" style="stop-color:var(--${c}-s2)"/></linearGradient>`;
-    }
-    s += '<linearGradient id="g-lid-side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--lid-3)"/><stop offset="1" style="stop-color:var(--lid-2)"/></linearGradient>';
-    s += '<linearGradient id="g-lid-top" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--lid-1)"/><stop offset="1" style="stop-color:var(--lid-3)"/></linearGradient>';
-    s += '<linearGradient id="g-hero" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--hero-1)"/><stop offset="1" style="stop-color:var(--hero-2)"/></linearGradient>';
-    s += '<linearGradient id="g-cyl-sheen" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".3" stop-color="#fff" stop-opacity=".38"/><stop offset=".62" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".07"/></linearGradient>';
-    s += '<linearGradient id="g-glare" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>';
-    const blur = (id, sd) => `<filter id="${id}" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="${sd}"/></filter>`;
-    s += blur('blur-sm', 2.2) + blur('blur-md', 4) + blur('blur-lg', 6.5) + blur('blur-glow', 9);
-    s += '<pattern id="iso-grid" width="28" height="14" y="-7" patternUnits="userSpaceOnUse"><path class="grid-lines" d="M0 7L14 0L28 7L14 14Z"/></pattern>';
-    s += '<radialGradient id="grid-fade" gradientUnits="userSpaceOnUse" cx="0" cy="0" r="400" gradientTransform="scale(1 .6)"><stop offset="0" stop-color="#fff" stop-opacity="1"/><stop offset=".42" stop-color="#fff" stop-opacity=".92"/><stop offset=".78" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>';
-    s += '<mask id="grid-mask" maskUnits="userSpaceOnUse" x="-5000" y="-5000" width="10000" height="10000"><rect x="-5000" y="-5000" width="10000" height="10000" fill="url(#grid-fade)"/></mask>';
-    return s;
-  }
-
-  /* ================= Pills ================= */
-
-  const PILL_H = 21;
-  const STACK_GAP = 26;
-
-  function pillSize(spec) {
-    let w = 0;
-    for (const l of spec.lines) w = Math.max(w, textW(l.t, l.size, l.w));
-    let h = PILL_H;
-    for (let i = 1; i < spec.lines.length; i++) h += Math.round(1.3 * spec.lines[i].size);
-    return [Math.ceil(w + 18 + (spec.icon ? 15 : 0)), h];
-  }
-
-  function pillSvg(cx, cy, spec, alpha = 1) {
-    if (alpha <= .01) return '';
-    const [w, h] = pillSize(spec);
-    const x = cx - w / 2, y = cy - h / 2;
-    const tx = cx + (spec.icon ? 7.5 : 0);
-    let s = `<g class="pill tone-${toneOf(spec.tone)}"${alpha < .99 ? ` opacity="${n2(alpha)}"` : ''}>`;
-    s += `<rect class="pill-drop" x="${n1(x)}" y="${n1(y + 2)}" width="${w}" height="${h}" rx="10.5"/>`;
-    s += `<rect class="pill-bg" x="${n1(x)}" y="${n1(y)}" width="${w}" height="${h}" rx="10.5"/>`;
-    if (spec.icon) s += glyph(spec.icon, x + 15, cy, 12, 2.2);
-    let by = y + 10.5 + spec.lines[0].size * .36;
-    spec.lines.forEach((l, i) => {
-      if (i) by += Math.round(1.3 * l.size);
-      s += `<text class="${l.cls || 'pill-t'}" x="${n1(tx)}" y="${n1(by)}" style="font-size:${l.size}px;font-weight:${l.w}">${esc(l.t)}</text>`;
-    });
-    return s + '</g>';
-  }
-
-  const GAUGE_W = 86;
-  const loadTone = (v) => (v < .6 ? 'green' : v < .85 ? 'amber' : 'red');
-
-  function gaugeSvg(cx, cy, v, alpha = 1) {
-    if (alpha <= .01) return '';
-    v = clamp(v, 0, 1);
-    const w = GAUGE_W, h = PILL_H, x = cx - w / 2, y = cy - h / 2;
-    let s = `<g class="pill tone-paper"${alpha < .99 ? ` opacity="${n2(alpha)}"` : ''}>`;
-    s += `<rect class="pill-drop" x="${n1(x)}" y="${n1(y + 2)}" width="${w}" height="${h}" rx="10.5"/>`;
-    s += `<rect class="pill-bg" x="${n1(x)}" y="${n1(y)}" width="${w}" height="${h}" rx="10.5"/>`;
-    s += glyph('gauge', x + 14, cy, 12, 2.2);
-    s += `<rect class="g-track" x="${n1(x + 24)}" y="${n1(cy - 3.5)}" width="28" height="7" rx="3.5"/>`;
-    if (v > .005) s += `<rect class="g-${loadTone(v)}" x="${n1(x + 24)}" y="${n1(cy - 3.5)}" width="${n1(Math.max(7, 28 * v))}" height="7" rx="3.5"/>`;
-    s += `<text class="pill-n" x="${n1(x + w - 9)}" y="${n1(cy + 3.8)}">${Math.round(v * 100)}%</text>`;
-    return s + '</g>';
-  }
-
-  const tagSpec = (t) => ({ lines: [{ t: String(t.text ?? ''), size: 10.5, w: 700 }], tone: t.tone, icon: t.icon });
-
-  function labelSpec(n, t) {
-    if (!t.label && !t.sub) return null;
-    const lines = [];
-    if (t.label) lines.push({ t: t.label, size: 10.5, w: 700 });
-    if (t.sub) lines.push({ t: t.sub, size: 9, w: 600, cls: lines.length ? 'pill-s' : 'pill-t' });
-    const icon = n.glyph || { actor: 'user', crowd: 'users', queue: 'queue', db: 'database' }[n.type]
-      || (n.type === 'device' ? { reader: 'card', phone: 'phone' }[n.form] || 'laptop' : null);
-    return { lines, tone: 'paper', icon };
-  }
-
-  /* ================= Entity drawing ================= */
-  // Each draw function returns parts at the entity's current lift:
-  // { shadow, body, outline, deco, wash (path d), hull (convex polygon), anchor (first pill centre),
-  //   crossAt, floor (zones only) }.
-
-  function prism(o) {
-    const lift = o.lift || 0, zb = (o.z0 || 0) + lift, zt = zb + o.h;
-    const { x0, x1, y0, y1 } = o;
-    const T = P(x0, y1, zt), R = P(x1, y1, zt), B = P(x1, y0, zt), L = P(x0, y0, zt);
-    const Rd = P(x1, y1, zb), Bd = P(x1, y0, zb), Ld = P(x0, y0, zb);
-    const p = Math.max(0, Math.min(o.r ?? 9, o.h / 2 - .5));
-    const rc = o.rc ?? 10;
-    const silPts = [T, R, Rd, Bd, Ld, L];
-    const silR = [rc, p, p, rc + 2, p, p];
-    const sil = roundPoly(silPts, silR);
-    const topPts = [T, R, B, L];
-    const sideFill = o.side || `url(#g-${o.c}-side)`, topFill = o.top || `url(#g-${o.c}-top)`;
-    let shadow = '';
-    if (o.shadow !== false) {
-      // The contact shadow stays on the floor; while the body is lifted it spreads and fades.
-      const off = Math.min(9, 3 + .15 * o.h), up = Math.max(0, lift), k = 1 + up / 300;
-      const cx = (L[0] + R[0]) / 2, cy = (T[1] + Bd[1]) / 2 + lift + off;
-      const sp = silPts.map((q) => [cx + (q[0] - cx) * k, cy + (q[1] + lift + off - cy) * k]);
-      shadow = `<path class="sh" filter="url(#blur-lg)" opacity="${n2(.26 * (1 - Math.min(1, up / 140) * .85))}" d="${roundPoly(sp, silR)}"/>`;
-    }
-    let body = `<path d="${sil}" style="fill:${sideFill}"/>`;
-    body += `<path class="rf" d="${roundPoly([B, R, Rd, Bd], [Math.min(6, p), p, p, rc + 2])}"/>`;
-    body += `<path d="${roundPoly(topPts, [rc, p, Math.min(6, p), p])}" style="fill:${topFill}"/>`;
-    if (o.sheen !== false) {
-      const c = [(T[0] + B[0]) / 2, (T[1] + B[1]) / 2 - 3];
-      const sp = topPts.map((q) => [q[0] + (c[0] - q[0]) * .25, q[1] - 3 + (c[1] - q[1] + 3) * .25]);
-      body += `<path class="sheen" filter="url(#blur-sm)" d="${roundPoly(sp, 8)}"/>`;
-    }
-    if (o.bevel !== false) {
-      const along = (a, b, d) => { const l = dist(a, b) || 1; return [a[0] + (b[0] - a[0]) * d / l, a[1] + (b[1] - a[1]) * d / l]; };
-      const edge = [along(L, B, p), B, along(R, B, p)];
-      const down = (dy) => edge.map((q) => [q[0], q[1] + dy]);
-      body += `<path class="bev dk" d="${roundLine(down(3.4), 6)}"/><path class="bev lt" d="${roundLine(down(1.4), 6)}"/>`;
-    }
-    const outline = `<path class="ol" d="${sil}"${o.sw ? ` style="stroke-width:${o.sw}"` : ''}/>`;
-    return { shadow, body, outline, sil, T, R, B, L, Rd, Bd, Ld, hull: silPts, topC: P((x0 + x1) / 2, (y0 + y1) / 2, zt) };
-  }
-
-  // The name on a block's front face: the size chosen to fit, the rows, and the box they cover.
-  function faceRows(cx, cy, t, maxW) {
-    let size = 13.5;
-    while (size > 11.5 && textW(t.label, size, 800) > maxW) size -= .5;
-    let lines = [t.label];
-    if (textW(t.label, size, 800) > maxW && t.label.includes(' ')) {
-      const words = t.label.split(' ');
-      let best = null;
-      for (let i = 1; i < words.length; i++) {
-        const a = words.slice(0, i).join(' '), b = words.slice(i).join(' ');
-        const w = Math.max(textW(a, size, 800), textW(b, size, 800));
-        if (!best || w < best.w) best = { w, lines: [a, b] };
-      }
-      lines = best.lines;
-    }
-    const rows = lines.filter(Boolean).map((l) => ({ t: l, size, cls: 'face-t', w: 800 }));
-    if (t.sub) rows.push({ t: t.sub, size: rows.length ? 10 : 12, cls: 'face-s', w: 600 });
-    const lh = (r) => r.size * 1.2;
-    let y = cy - rows.reduce((a, r) => a + lh(r), 0) / 2;
-    const box = { x0: Infinity, y0: y, x1: -Infinity, y1: y };
-    for (const r of rows) {
-      const hw = textW(r.t, r.size, r.w) / 2;
-      box.x0 = Math.min(box.x0, cx - hw); box.x1 = Math.max(box.x1, cx + hw);
-      r.y = y + r.size * .92;
-      y += lh(r);
-    }
-    box.y1 = y;
-    return { rows, box, size: Math.min(...rows.map((r) => r.size)) };
-  }
-
-  function faceLabel(cx, t, L) {
-    if (t.a <= .01 || !L.rows.length) return '';
-    let s = `<g class="deco"${t.a < .99 ? ` opacity="${n2(t.a)}"` : ''}>`;
-    for (const r of L.rows) s += `<text class="${r.cls}" x="${n1(cx)}" y="${n1(r.y)}" style="font-size:${r.size}px">${esc(r.t)}</text>`;
-    return s + '</g>';
-  }
-
-  function crossMark(c, a = 1) {
-    const d = `M${n1(c[0] - 8)} ${n1(c[1] - 8)}L${n1(c[0] + 8)} ${n1(c[1] + 8)}M${n1(c[0] + 8)} ${n1(c[1] - 8)}L${n1(c[0] - 8)} ${n1(c[1] + 8)}`;
-    return `<g class="deco" opacity="${n2(a)}"><path class="xhalo" d="${d}"/><path class="xmark" d="${d}"/></g>`;
-  }
-
-  function drawBlock(e, n, p) {
-    const s = n.size || 4, h = n.height || 46;
-    const pr = prism({ x0: n.x - s / 2, x1: n.x + s / 2, y0: n.y - s / 2, y1: n.y + s / 2, h, c: colorOf(n.color), lift: p.lift });
-    const k = s >= 6 ? 1.15 : s < 3.5 ? .8 : 1;
-    let deco = '';
-    if (p.dead < .99) deco += `<g class="deco"${p.dead > .01 ? ` opacity="${n2(1 - p.dead)}"` : ''}>${glyph(n.glyph || 'server', pr.topC[0], pr.topC[1], 24 * k)}</g>`;
-    const ly = pr.topC[1] + (7 * s + h) * .4, texts = [];
-    for (const t of p.texts) {
-      if (t.a <= .01 || (!t.label && !t.sub)) continue;
-      const L = faceRows(pr.topC[0], ly, t, 28 * s * .86);
-      if (!L.rows.length) continue;
-      deco += faceLabel(pr.topC[0], t, L);
-      texts.push({ box: L.box, size: L.size });
-    }
-    return { shadow: pr.shadow, body: pr.body, outline: pr.outline, deco, wash: pr.sil, hull: pr.hull, crossAt: pr.topC, texts };
-  }
-
-  function cylinderPath(cx, ty, by, rx, ry) {
-    return `M${n1(cx - rx)} ${n1(ty)}L${n1(cx - rx)} ${n1(by)}A${n1(rx)} ${n1(ry)} 0 0 0 ${n1(cx + rx)} ${n1(by)}L${n1(cx + rx)} ${n1(ty)}A${n1(rx)} ${n1(ry)} 0 0 0 ${n1(cx - rx)} ${n1(ty)}Z`;
-  }
-  function ellipsePts(cx, cy, rx, ry, k = 12) {
-    const out = [];
-    for (let i = 0; i < k; i++) { const a = i / k * Math.PI * 2; out.push([cx + Math.cos(a) * rx, cy + Math.sin(a) * ry]); }
-    return out;
-  }
-
-  function drawDb(e, n, p) {
-    const rx = Math.SQRT2 * TILE * 1.7, ry = rx / 2, h = n.height || 38;
-    const [cx, cy] = P(n.x, n.y);
-    const by = cy - p.lift, ty = by - h, up = Math.max(0, p.lift), c = colorOf(n.color);
-    const shadow = `<ellipse class="sh" filter="url(#blur-md)" cx="${n1(cx + 4)}" cy="${n1(cy + 5)}" rx="${n1(rx * 1.05 * (1 + up / 300))}" ry="${n1(ry * 1.05 * (1 + up / 300))}" opacity="${n2(.3 * (1 - Math.min(1, up / 140) * .85))}"/>`;
-    const sil = cylinderPath(cx, ty, by, rx, ry);
-    let body = `<path d="${sil}" style="fill:url(#g-${c}-side)"/>`;
-    const load = clamp(p.load || 0, 0, 1);
-    if (load > .005) {
-      const lv = by - h * load, tone = loadTone(load);
-      body += `<path class="liq-${tone}" d="M${n1(cx - rx)} ${n1(lv)}L${n1(cx - rx)} ${n1(by)}A${n1(rx)} ${n1(ry)} 0 0 0 ${n1(cx + rx)} ${n1(by)}L${n1(cx + rx)} ${n1(lv)}A${n1(rx)} ${n1(ry)} 0 0 1 ${n1(cx - rx)} ${n1(lv)}Z"/>`;
-      body += `<path class="men-${tone}" d="M${n1(cx + rx - 1)} ${n1(lv)}A${n1(rx - 1)} ${n1(ry - .5)} 0 0 1 ${n1(cx - rx + 1)} ${n1(lv)}"/>`;
-    }
-    body += `<path d="${sil}" fill="url(#g-cyl-sheen)"/>`;
-    body += `<ellipse cx="${n1(cx)}" cy="${n1(ty)}" rx="${n1(rx)}" ry="${n1(ry)}" style="fill:url(#g-${c}-top)"/>`;
-    body += `<path class="rim" d="M${n1(cx - rx + 5)} ${n1(ty)}A${n1(rx - 5)} ${n1(ry - 2.5)} 0 0 0 ${n1(cx + rx - 5)} ${n1(ty)}"/>`;
-    const outline = `<path class="ol" d="${sil}"/><ellipse class="ol-thin" cx="${n1(cx)}" cy="${n1(ty)}" rx="${n1(rx)}" ry="${n1(ry)}"/>`;
-    let deco = '';
-    if (p.dead < .99) deco += `<g class="deco"${p.dead > .01 ? ` opacity="${n2(1 - p.dead)}"` : ''}>${glyph(n.glyph || 'database', cx, by - h / 2 + ry * .55, 19)}</g>`;
-    const hull = convexHull(ellipsePts(cx, ty, rx, ry).concat(ellipsePts(cx, by, rx, ry)));
-    return { shadow, body, outline, deco, wash: sil + `M${n1(cx - rx)} ${n1(ty)}A${n1(rx)} ${n1(ry)} 0 0 0 ${n1(cx + rx)} ${n1(ty)}A${n1(rx)} ${n1(ry)} 0 0 0 ${n1(cx - rx)} ${n1(ty)}Z`, hull, crossAt: [cx, by - h / 2 + ry * .5] };
-  }
-
-  function disc(cx, cy, rx, ry, t, lift, c) {
-    const by = cy - lift, ty = by - t, up = Math.max(0, lift);
-    const sil = cylinderPath(cx, ty, by, rx, ry);
-    return {
-      shadow: `<ellipse class="sh" filter="url(#blur-md)" cx="${n1(cx + 3)}" cy="${n1(cy + 4)}" rx="${n1(rx * (1 + up / 300))}" ry="${n1(ry * (1 + up / 300))}" opacity="${n2(.28 * (1 - Math.min(1, up / 140) * .85))}"/>`,
-      body: `<path d="${sil}" style="fill:url(#g-${c}-side)"/><ellipse cx="${n1(cx)}" cy="${n1(ty)}" rx="${n1(rx)}" ry="${n1(ry)}" style="fill:url(#g-${c}-top)"/>`
-        + `<path class="rim" d="M${n1(cx - rx + 4)} ${n1(ty)}A${n1(rx - 4)} ${n1(ry - 2)} 0 0 0 ${n1(cx + rx - 4)} ${n1(ty)}"/>`,
-      outline: `<path class="ol" d="${sil}"/><ellipse class="ol-thin" cx="${n1(cx)}" cy="${n1(ty)}" rx="${n1(rx)}" ry="${n1(ry)}"/>`,
-      sil, top: [cx, ty], hull: ellipsePts(cx, ty, rx, ry).concat(ellipsePts(cx, by, rx, ry)),
-    };
-  }
-
-  // A pawn stands with its feet at (x, y); k scales it; strokes stay ~1.6 px on screen.
-  function pawn(x, y, k, fill, alpha = 1) {
-    if (alpha <= .01) return '';
-    const sw = n2(1.6 / k);
-    return `<g transform="translate(${n1(x)} ${n1(y)}) scale(${n2(k)})"${alpha < .99 ? ` opacity="${n2(alpha)}"` : ''}>`
-      + '<ellipse class="pawn-sh" cx="1.4" cy=".8" rx="5.6" ry="2.4"/>'
-      + `<path class="pawn-b" style="fill:${fill};stroke-width:${sw}" d="M-4.4 0V-7.6a4.4 4.4 0 0 1 8.8 0V0a1.4 1.4 0 0 1-1.4 1.4h-6A1.4 1.4 0 0 1-4.4 0z"/>`
-      + `<circle class="pawn-h" cy="-16.4" r="4.3" style="stroke-width:${sw}"/></g>`;
-  }
-  const pawnFill = (c) => `var(--pawn-${colorOf(c)})`;
-
-  function drawActor(e, n, p) {
-    const [cx, cy] = P(n.x, n.y);
-    const rx = Math.SQRT2 * TILE * 1.45, ry = rx / 2;
-    const d = disc(cx, cy, rx, ry, 7, p.lift, 'gray');
-    const k = 2.1, feet = d.top;
-    const body = d.body + d.outline + pawn(feet[0], feet[1] + 2, k, pawnFill(n.color));
-    const headTop = feet[1] + 2 - (16.4 + 4.3) * k;
-    const hull = convexHull(d.hull.concat([[cx - 10.5, headTop + 4], [cx + 10.5, headTop + 4], [cx, headTop]]));
-    return { shadow: d.shadow, body, outline: '', deco: '', wash: d.sil + `M${n1(cx - 9.2)} ${n1(feet[1])}V${n1(headTop + 10)}A9.2 9.2 0 0 1 ${n1(cx + 9.2)} ${n1(headTop + 10)}V${n1(feet[1])}Z`, hull, crossAt: [cx, headTop + 16] };
-  }
-
-  const CROWD = { rows: 4, cols: 6, sp: 1.75 };
-  const PAWN_ORDER = ['blue', 'orange', 'green', 'violet', 'yellow'];
-  function crowdSlots(n) {
-    const slots = [];
-    for (let i = 0; i < CROWD.rows; i++) {
-      for (let j = 0; j < CROWD.cols; j++) {
-        const di = i - (CROWD.rows - 1) / 2, dj = j - (CROWD.cols - 1) / 2;
-        slots.push({ x: n.x + di * CROWD.sp, y: n.y + dj * CROWD.sp, key: Math.hypot(di, dj * .8) + hash2(i, j) * .9, color: PAWN_ORDER[Math.floor(hash2(j + 3, i + 7) * 5)] });
-      }
-    }
-    return slots.sort((a, b) => a.key - b.key);
-  }
-
-  function drawCrowd(e, n, p) {
-    const hx = CROWD.rows * CROWD.sp / 2 + .7, hy = CROWD.cols * CROWD.sp / 2 + .7, h = 10;
-    const pr = prism({ x0: n.x - hx, x1: n.x + hx, y0: n.y - hy, y1: n.y + hy, h, c: 'gray', lift: p.lift, rc: 12, r: 4 });
-    const slots = e.slots || (e.slots = crowdSlots(n));
-    const shown = clamp(p.count || 0, 0, slots.length), full = Math.floor(shown), frac = shown - full;
-    const drawn = [];
-    for (let i = 0; i < Math.ceil(shown); i++) drawn.push({ ...slots[i], a: i < full ? 1 : frac });
-    drawn.sort((a, b) => (a.x - a.y) - (b.x - b.y));
-    let people = '';
-    for (const s of drawn) {
-      const q = P(s.x, s.y, h + p.lift);
-      people += pawn(q[0], q[1] + 1 + (1 - s.a) * 6, 1.3 * (.6 + .4 * s.a), pawnFill(s.color), s.a);
-    }
-    const hull = convexHull(pr.hull.concat(pr.hull.map((q) => [q[0], q[1] - 28])));
-    return { shadow: pr.shadow, body: pr.body, outline: pr.outline, deco: people, wash: pr.sil, hull, crossAt: pr.topC };
-  }
-
-  function drawQueue(e, n, p) {
-    const sp = 1.3, cap = e.cap || 4, len = cap * sp + 1;
-    const pr = prism({ x0: n.x - len / 2, x1: n.x + len / 2, y0: n.y - .9, y1: n.y + .9, h: 5, c: 'gray', lift: p.lift, rc: 6, r: 2, sheen: false });
-    const count = clamp(p.count || 0, 0, cap), full = Math.floor(count), frac = count - full;
-    let deco = '';
-    for (let k = 0; k < Math.ceil(count); k++) {
-      const a = k < full ? 1 : frac, sc = .5 + .5 * a;
-      const q = P(n.x - len / 2 + .5 + sp * (k + .5), n.y, 5 + p.lift);
-      const rx = 7 * sc, ry = 3.5 * sc, hh = 5 * sc, by = q[1] + (1 - a) * 8;
-      deco += `<g opacity="${n2(a)}"><path class="puck" d="${cylinderPath(q[0], by - hh, by, rx, ry)}"/><ellipse class="puck" cx="${n1(q[0])}" cy="${n1(by - hh)}" rx="${n1(rx)}" ry="${n1(ry)}"/><ellipse class="puck-top" cx="${n1(q[0] - 1)}" cy="${n1(by - hh - .6)}" rx="${n1(rx * .5)}" ry="${n1(ry * .4)}"/></g>`;
-    }
-    const hull = convexHull(pr.hull.concat(pr.hull.map((q) => [q[0], q[1] - 12])));
-    return { shadow: pr.shadow, body: pr.body, outline: pr.outline, deco, wash: pr.sil, hull, crossAt: pr.topC };
-  }
-
-  function drawZone(e, n, p) {
-    const w = n.w || 8, h = n.h || 6;
-    const x0 = n.x - w / 2, x1 = n.x + w / 2, y0 = n.y - h / 2, y1 = n.y + h / 2;
-    const corners = [P(x0, y1), P(x1, y1), P(x1, y0), P(x0, y0)];
-    let s = `<path class="zone" d="${roundPoly(corners, 8)}"/>`;
-    const texts = [];
-    for (const t of p.texts) {
-      if (!t.label || t.a <= .01) continue;
-      const o = P(x0 + 1.2, y1 - .5), text = String(t.label).toUpperCase();
-      // The floor matrix lays text flat on the grid, reading along +x.
-      s += `<text class="zone-t" transform="matrix(1 .5 -1 .5 ${n1(o[0])} ${n1(o[1])})"${t.a < .99 ? ` opacity="${n2(t.a)}"` : ''}>${esc(text)}</text>`;
-      // Its outline on screen (10.5 px, 1.6 px letter spacing as in the stylesheet), for the overlap check.
-      const len = textW(text, 10.5, 800) + 1.6 * text.length, flat = (u, v) => [o[0] + u - v, o[1] + .5 * u + .5 * v];
-      texts.push({ poly: [flat(0, -8.5), flat(len, -8.5), flat(len, 2.5), flat(0, 2.5)], size: 10.5 });
-    }
-    return { floor: s, extent: corners, hull: null, texts };
-  }
-
-  function drawLaptop(e, n, p) {
-    const base = prism({ x0: n.x - 1.9, x1: n.x + 1.9, y0: n.y - 1.9, y1: n.y + 1.9, h: 8, c: 'gray', lift: p.lift, rc: 8, r: 3 });
-    const deck = prism({ x0: n.x - 1.05, x1: n.x + 1.35, y0: n.y - 1.3, y1: n.y + 1.3, z0: 8, h: 3, c: 'gray', lift: p.lift, rc: 3, r: 1, shadow: false, sheen: false, bevel: false, sw: 1.3 });
-    const lid = prism({ x0: n.x - 1.32, x1: n.x - 1.08, y0: n.y - 1.3, y1: n.y + 1.3, z0: 9, h: 40, side: 'url(#g-lid-side)', top: 'url(#g-lid-top)', lift: p.lift, rc: 2, r: 2, shadow: false, sheen: false, bevel: false, sw: 1.5 });
-    let keys = '';
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 5; c++) {
-        const gx = n.x - .82 + r * .32, gy = n.y - .9 + c * .4;
-        keys += `<path class="key" d="M${pt(P(gx, gy + .14, 11 + p.lift))}L${pt(P(gx + .22, gy + .14, 11 + p.lift))}L${pt(P(gx + .22, gy - .14, 11 + p.lift))}L${pt(P(gx, gy - .14, 11 + p.lift))}Z"/>`;
-      }
-    }
-    keys += `<path class="key" d="M${pt(P(n.x + .55, n.y + .45, 11 + p.lift))}L${pt(P(n.x + 1.15, n.y + .45, 11 + p.lift))}L${pt(P(n.x + 1.15, n.y - .45, 11 + p.lift))}L${pt(P(n.x + .55, n.y - .45, 11 + p.lift))}Z"/>`;
-    // Screen on the lid face that looks toward +x; matrix(1 -.5 0 1) maps a flat page onto it.
-    const o = P(n.x - 1.08, n.y - 1.3, 49 + p.lift), fw = 2.6 * TILE;
-    const scr = `<g class="deco" transform="matrix(1 -.5 0 1 ${n1(o[0])} ${n1(o[1])})">`
-      + `<rect class="scr" x="2.5" y="2.5" width="${n1(fw - 5)}" height="33" rx="2"/>`
-      + '<circle cx="6" cy="6.2" r="1.1" fill="#e5675c"/><circle cx="9.4" cy="6.2" r="1.1" fill="#efb246"/><circle cx="12.8" cy="6.2" r="1.1" fill="#6dbb63"/>'
-      + `<rect class="scr-line" x="16" y="5" width="${n1(fw - 21)}" height="2.6" rx="1.3"/>`
-      + `<rect x="5" y="10" width="${n1(fw - 10)}" height="12" rx="1.6" fill="url(#g-hero)"/>`
-      + `<rect class="scr-line" x="5" y="25" width="${n1(fw * .55)}" height="2.2" rx="1.1"/><rect class="scr-line" x="5" y="29.5" width="${n1(fw * .35)}" height="2.2" rx="1.1"/>`
-      + `<path d="M2.5 2.5h${n1(fw * .5)}L2.5 26z" fill="url(#g-glare)"/></g>`;
-    const body = base.body + base.outline + deck.body + deck.outline + keys + lid.body + scr + lid.outline;
-    return { shadow: base.shadow, body, outline: '', deco: '', wash: base.sil + lid.sil, hull: convexHull(base.hull.concat(lid.hull)), crossAt: P(n.x - 1.1, n.y, 30 + p.lift) };
-  }
-
-  function drawPhone(e, n, p) {
-    const base = prism({ x0: n.x - 1.3, x1: n.x + 1.3, y0: n.y - 1.3, y1: n.y + 1.3, h: 6, c: 'gray', lift: p.lift, rc: 8, r: 2.5 });
-    const set = prism({ x0: n.x - .3, x1: n.x + .05, y0: n.y - .8, y1: n.y + .8, z0: 6, h: 44, side: 'url(#g-lid-side)', top: 'url(#g-lid-top)', lift: p.lift, rc: 3, r: 3, shadow: false, sheen: false, bevel: false, sw: 1.5 });
-    const o = P(n.x + .05, n.y - .8, 50 + p.lift), fw = 1.6 * TILE;
-    const scr = `<g class="deco" transform="matrix(1 -.5 0 1 ${n1(o[0])} ${n1(o[1])})">`
-      + `<rect class="scr" x="2" y="3" width="${n1(fw - 4)}" height="37" rx="2.5"/>`
-      + '<rect x="4" y="8" width="11" height="6" rx="2.5" fill="url(#g-hero)"/>'
-      + `<rect class="scr-line" x="${n1(fw - 15)}" y="17" width="11" height="6" rx="2.5"/>`
-      + '<rect x="4" y="26" width="13" height="6" rx="2.5" fill="url(#g-hero)"/></g>';
-    const body = base.body + base.outline + set.body + scr + set.outline;
-    return { shadow: base.shadow, body, outline: '', deco: '', wash: base.sil + set.sil, hull: convexHull(base.hull.concat(set.hull)), crossAt: P(n.x, n.y, 28 + p.lift) };
-  }
-
-  function drawReader(e, n, p) {
-    const wall = prism({ x0: n.x - 1.6, x1: n.x + 1.6, y0: n.y + .15, y1: n.y + .65, h: 74, c: 'gray', lift: p.lift, rc: 6, r: 4 });
-    const unit = prism({ x0: n.x - .9, x1: n.x + .9, y0: n.y - .3, y1: n.y + .15, z0: 18, h: 40, c: colorOf(n.color), lift: p.lift, rc: 5, r: 4, shadow: false, sheen: false });
-    // Reader face toward -y (down-left on screen); matrix(1 .5 0 1) maps a flat page onto it.
-    const o = unit.L;
-    const face = `<g class="deco" transform="matrix(1 .5 0 1 ${n1(o[0])} ${n1(o[1])})">`
-      + '<rect class="scr-glass" x="4" y="5" width="17.2" height="9" rx="2"/><rect class="led" x="6.5" y="8.2" width="6" height="2.6" rx="1.3"/>'
-      + '<path class="gl" stroke-width="1.4" d="M9.5 22.5a4 4 0 0 1 0 6M12.5 20a7.5 7.5 0 0 1 0 11M15.5 17.5a11 11 0 0 1 0 16"/>'
-      + '<circle class="gl-dot" cx="7" cy="25.5" r="1.3"/></g>';
-    const body = wall.body + wall.outline + unit.body + unit.outline + face;
-    return { shadow: wall.shadow, body, outline: '', deco: '', wash: wall.sil + unit.sil, hull: convexHull(wall.hull.concat(unit.hull)), crossAt: P(n.x, n.y - .3, 38 + p.lift) };
-  }
-
-  function drawDevice(e, n, p) {
-    if (n.form === 'reader') return drawReader(e, n, p);
-    if (n.form === 'phone') return drawPhone(e, n, p);
-    return drawLaptop(e, n, p);
-  }
-
-  const DRAW = { block: drawBlock, db: drawDb, device: drawDevice, actor: drawActor, crowd: drawCrowd, queue: drawQueue, zone: drawZone };
-  const LABEL_ON_FACE = new Set(['block', 'zone']);
-
-  function drawEntity(e, n, p) {
-    const d = (DRAW[n.type] || drawBlock)(e, n, p);
-    if (d.hull) {
-      const top = Math.min(...d.hull.map((q) => q[1]));
-      d.anchor = [P(n.x, n.y)[0], top - 17];
-    }
-    return d;
-  }
-
-  // Layers one entity's parts with its state washes: glow behind, tints on the body, marks on top.
-  function composeEntity(d, p) {
-    let s = d.shadow || '';
-    if (p.heat > .01) s += `<g opacity="${n2(p.heat)}"><path class="glow pulse" filter="url(#blur-glow)" d="${d.wash}"/></g>`;
-    s += d.body;
-    if (p.heat > .01) s += `<path class="wash tint" opacity="${n2(.3 * p.heat)}" d="${d.wash}"/>`;
-    if (p.dead > .01) s += `<path class="wash dead" opacity="${n2(.62 * p.dead)}" d="${d.wash}"/>`;
-    s += d.outline + d.deco;
-    if (p.dim > .01) s += `<path class="wash dim" opacity="${n2(.45 * p.dim)}" d="${d.wash}"/>`;
-    if (p.dead > .01) s += crossMark(d.crossAt, p.dead);
-    return s;
-  }
-
-  /* ================= Walkthrough view ================= */
-  // One walkthrough in four regions: header, stage, explanation and step strip. A view owns its
-  // DOM, frame loop, timers and observers; destroy() releases all of them, so views can be
-  // created and thrown away as often as the reader switches walkthroughs.
-
-  const DEFAULT_LABELS = {
-    goals: "What you'll learn", strip: 'In this walkthrough', changes: 'What changed', next: 'Next', back: 'Back', restart: 'Start again', chapters: {},
-    sources: 'Where this comes from', sourced: 'sourced', assumed: 'assumption', try: 'Try it', reset: 'Reset',
-    sections: 'Sections', home: 'Overview', continue: 'Continue', planned: 'planned', draft: 'draft',
-  };
-
-  // Later layers win: defaults, then the collection's labels, then the walkthrough's own.
-  function mergeLabels(...layers) {
-    const out = { ...DEFAULT_LABELS, chapters: {} };
-    for (const l of layers) {
-      if (!l || typeof l !== 'object') continue;
-      for (const k in l) {
-        if (k === 'chapters') { if (l.chapters && typeof l.chapters === 'object') Object.assign(out.chapters, l.chapters); }
-        else if (typeof l[k] === 'string') out[k] = l[k];
-      }
-    }
-    return out;
-  }
-
-  // Returns a reason when the data cannot be drawn at all; smaller mistakes are only warned about.
-  function unusable(w) {
-    if (!w || typeof w !== 'object' || Array.isArray(w)) return 'it is missing or is not a JSON object';
-    if (!Array.isArray(w.steps) || !w.steps.length) return 'it has no steps';
-    const k = w.steps.findIndex((s) => !isObject(s));
-    if (k >= 0) return `step ${k + 1} is not an object`;
-    if (w.nodes !== undefined && (typeof w.nodes !== 'object' || Array.isArray(w.nodes))) return '"nodes" is not an object';
-    return null;
-  }
-
-  function viewMarkup(opts) {
-    return `<div class="page">
-  <header class="wt-head">
-    <div>
-      ${opts.crumb ? `<p class="crumb">${esc(opts.crumb)}</p>` : ''}
-      <h1 data-ref="title" tabindex="-1"></h1>
-      <p data-ref="question" class="question" hidden></p>
-      <p data-ref="summary" class="summary"></p>
-      <p data-ref="note" class="note" hidden></p>
-    </div>
-    <ul data-ref="pills" class="pills" aria-label="About this walkthrough"></ul>
-  </header>
-  <div class="layout">
-    <section class="stage card" aria-label="Stage">
-      <div class="stage-top">
-        <div data-ref="metrics" class="metrics" role="list" aria-label="Running numbers"></div>
-        <div class="stage-controls">
-          <button data-ref="replayBtn" class="btn small" type="button" title="Replay this step (R)"></button>
-          <button data-ref="pauseBtn" class="btn small" type="button" aria-pressed="false" title="Pause or resume (Space)"></button>
-        </div>
-      </div>
-      <div data-ref="sceneWrap" class="scene-wrap">
-        <svg data-ref="scene" class="scene st" role="img" aria-labelledby="dio-scene-title" aria-describedby="dio-scene-text">
-          <title id="dio-scene-title" data-ref="sceneTitle">Stage</title>
-          <defs data-ref="sceneDefs"></defs>
-          <rect class="deco" x="-5000" y="-5000" width="10000" height="10000" fill="url(#iso-grid)" mask="url(#grid-mask)"/>
-          <g data-ref="layerGeo" opacity="0" aria-hidden="true"></g>
-          <g data-ref="layerFloor"></g>
-          <g data-ref="layerLinks"></g>
-          <g data-ref="layerPackets"></g>
-          <g data-ref="layerEnts"></g>
-          <g data-ref="layerFx"></g>
-          <g data-ref="layerOver"></g>
-          <g data-ref="layerHud"></g>
-        </svg>
-      </div>
-      <p data-ref="scrollHint" class="scroll-hint" hidden>Swipe sideways to see the whole stage.</p>
-      <div data-ref="panelInline" class="panel-inline" hidden></div>
-      <ul data-ref="legend" class="legend" aria-label="Legend"></ul>
-      <div id="dio-scene-text" data-ref="sceneText" class="sr-only"></div>
-    </section>
-
-    <aside class="explain card" aria-label="Explanation">
-      <div data-ref="guide" class="guide still" aria-live="polite"></div>
-      <div class="nav">
-        <button data-ref="backBtn" class="btn" type="button"></button>
-        <button data-ref="nextBtn" class="btn primary" type="button"></button>
-      </div>
-      <p class="kbd-hint"><span><kbd>←</kbd> <kbd>→</kbd> step</span> · <span data-ref="tryHint" hidden></span><span><kbd>R</kbd> replay</span> · <span><kbd>Space</kbd> pause</span>${opts.searchHint ? ' · <span><kbd>/</kbd> search</span>' : ''}</p>
-      <p data-ref="tryLive" class="sr-only" aria-live="polite"></p>
-      <section data-ref="goals" class="goals" aria-labelledby="dio-goals-head" hidden>
-        <h3 id="dio-goals-head" data-ref="goalsHead" class="section-h"></h3>
-        <ul data-ref="goalsList"></ul>
-      </section>
-      <details data-ref="sources" class="sources" hidden>
-        <summary data-ref="sourcesHead"></summary>
-        <ul data-ref="sourcesList"></ul>
-      </details>
-    </aside>
-
-    <nav class="strip card" aria-label="Steps">
-      <div class="strip-head"><span data-ref="stripHead"></span><span data-ref="stripCount"></span></div>
-      <div data-ref="stripScroll" class="strip-scroll">
-        <ol data-ref="stepStrip" class="still"></ol>
-      </div>
-    </nav>
-  </div>
-</div>`;
-  }
-
-  /* ================= Walkthrough model ================= */
-  // What follows from the data alone: the scenes (one per step, then one per try option), the
-  // layout of every scene at rest, camera planning for a given stage size, still pictures and the
-  // automatic checks. The walkthrough view and the contact sheet both draw from it. It is built
-  // once per walkthrough object, which is also why its checks print only once.
-
-  const models = new WeakMap();
-  const SCENE_KEYS = ['show', 'state', 'links', 'flows', 'panel'];
-  const OPTION_LETTERS = 'abcde';
-  // The stage size the checks and the contact sheet assume: about what a 1440 × 900 window leaves for the stage.
-  const REF = { W: 960, H: 540 };
-  const UNSPACED = /\p{Script=Han}|\p{Script=Hiragana}|\p{Script=Katakana}|\p{Script=Thai}/gu;
-
-  // Camera limits for a stage of W × H px. A bigger stage may zoom further in, so the scene grows
-  // with the window instead of floating in empty space.
-  function viewFor(W, H, o = {}) {
-    return { W, H, margin: 26, zMin: .3, zMax: o.phone ? 1.45 : clamp(Math.min(W / 700, H / 400), 1.45, 2.6), hud: clamp(W / 780, .86, 1.16), inlinePanel: !!o.inline };
-  }
-  const viewRect = (c, V) => ({ x: c.cx - V.W / 2 / c.z, y: c.cy - V.H / 2 / c.z, w: V.W / c.z, h: V.H / c.z });
-
-  function modelOf(w) {
-    let m = models.get(w);
-    if (!m) {
-      m = buildModel(w);
-      models.set(w, m);
-      m.report();
-    }
-    return m;
-  }
-
-  function buildModel(w) {
-    /* ================= Shapes ================= */
-    // Everything below reads cleaned copies of the data. A field of the wrong type is reported here,
-    // naming the step, the option and the field, and is then treated as absent, so one malformed
-    // field never stops a walkthrough from drawing. These reports open the list of warnings.
-
-    const shapes = [];
-    const bad = (where, field, what, end = 'so it is ignored') => shapes.push(`${where}: ${field} ${what}, ${end}`);
-    const isNum = (v) => typeof v === 'number' && Number.isFinite(v);
-
-    const NODES = {};
-    for (const [id, n] of Object.entries(isObject(w.nodes) ? w.nodes : {})) {
-      if (!isObject(n)) bad(`node "${id}"`, 'the entry', 'is not an object', 'so the node is left out');
-      else if (!isNum(n.x) || !isNum(n.y)) bad(`node "${id}"`, '"x" or "y"', 'is not a number', 'so the node is left out');
-      else NODES[id] = n;
-    }
-    const LINKS = {};
-    if (w.links != null && !isObject(w.links)) bad('the walkthrough', '"links"', 'is not an object', 'so no links are drawn');
-    for (const [id, L] of Object.entries(isObject(w.links) ? w.links : {})) {
-      if (isObject(L) && typeof L.from === 'string' && typeof L.to === 'string') LINKS[id] = L;
-      else bad(`link "${id}"`, 'the entry', 'is not an object with a "from" and a "to"', 'so the link is left out');
-    }
-    const listOf = (key, keep, what) => {
-      if (w[key] == null) return [];
-      if (!Array.isArray(w[key])) { bad('the walkthrough', `"${key}"`, 'is not a list', 'so it is ignored'); return []; }
-      return w[key].filter((x, k) => keep(x) || (bad(`${key} entry ${k + 1}`, 'the entry', what, 'so it is left out'), false));
-    };
-    const METRICS = listOf('metrics', (m) => isObject(m) && typeof m.id === 'string', 'is not an object with an "id"');
-    const GOALS = listOf('goals', isObject, 'is not an object');
-    const LEGEND = listOf('legend', isObject, 'is not an object');
-
-    // A scene's keys; for an option (inherit), a key that is malformed falls back to the step's value.
-    function cleanScene(raw, where, inherit) {
-      const out = {};
-      if (raw == null) return out;
-      const end = inherit ? "so it is ignored and the step's value is used" : 'so it is ignored';
-      if (!isObject(raw)) { bad(where, 'scene', 'is not an object', end); return out; }
-      if ('show' in raw) {
-        const v = raw.show ?? [];
-        if (!Array.isArray(v)) bad(where, 'scene.show', 'is not a list of node ids', end);
-        else {
-          out.show = v.filter((id) => typeof id === 'string');
-          if (out.show.length < v.length) bad(where, 'scene.show', 'has an entry that is not a node id', 'so that entry is ignored');
-        }
-      }
-      if ('state' in raw) {
-        const v = raw.state ?? {};
-        if (!isObject(v)) bad(where, 'scene.state', 'is not an object', end);
-        else {
-          out.state = {};
-          for (const [id, st] of Object.entries(v)) {
-            if (!isObject(st)) { bad(where, `scene.state.${id}`, 'is not an object'); continue; }
-            const s = { ...st };
-            if (st.tags != null && !Array.isArray(st.tags)) { bad(where, `scene.state.${id}.tags`, 'is not a list'); delete s.tags; }
-            else if (st.tags) {
-              s.tags = st.tags.filter(isObject);
-              if (s.tags.length < st.tags.length) bad(where, `scene.state.${id}.tags`, 'has an entry that is not an object', 'so that entry is ignored');
-            }
-            out.state[id] = s;
-          }
-        }
-      }
-      if ('links' in raw) {
-        const v = raw.links ?? {};
-        if (!isObject(v)) bad(where, 'scene.links', 'is not an object', end);
-        else {
-          out.links = {};
-          for (const [id, l] of Object.entries(v)) {
-            if (l != null && !isObject(l)) bad(where, `scene.links.${id}`, 'is not an object', 'so the link is drawn without its label or style');
-            out.links[id] = isObject(l) ? l : {};
-          }
-        }
-      }
-      if ('flows' in raw) {
-        const v = raw.flows ?? [];
-        if (!Array.isArray(v)) bad(where, 'scene.flows', 'is not a list', end);
-        else out.flows = v.filter((f, j) => (isObject(f) && Array.isArray(f.route)) || (bad(where, `flow ${j + 1}`, 'is not an object with a "route" list'), false));
-      }
-      if ('panel' in raw) {
-        const v = raw.panel;
-        if (v == null) out.panel = null;
-        else if (!isObject(v) || !Array.isArray(v.lines)) bad(where, 'scene.panel', 'is not an object with a "lines" list', end);
-        else out.panel = v;
-      }
-      return out;
-    }
-
-    // Metrics of a step (null stays null) or of an option (absent or null inherits the step's).
-    function cleanMetrics(raw, where, inherit) {
-      if (raw == null) return inherit ? undefined : raw;
-      if (!isObject(raw)) { bad(where, 'metrics', 'is not an object', inherit ? "so it is ignored and the step's metrics are used" : 'so it is ignored'); return undefined; }
-      const out = {};
-      for (const [id, v] of Object.entries(raw)) {
-        if (v === null || isNum(v)) out[id] = v;
-        else bad(where, `metrics.${id}`, 'is not a number or null', 'so it is shown as —');
-      }
-      return out;
-    }
-
-    const STEPS = w.steps.map((s, i) => {
-      const where = `step ${i + 1}`;
-      const out = { ...s, scene: cleanScene(s.scene, where, false), metrics: cleanMetrics(s.metrics, where, false) };
-      for (const key of ['body', 'changes']) if (s[key] != null && !Array.isArray(s[key])) { bad(where, key, 'is not a list'); delete out[key]; }
-      if (s.callout != null && !isObject(s.callout)) { bad(where, 'callout', 'is not an object'); delete out.callout; }
-      return out;
-    });
-
-    /* ================= Scenes: steps and try options ================= */
-    // SCENES[i] is step i. Each try option adds one scene after the steps: its step with the
-    // option's scene keys and metrics in place of the step's own; everything else is inherited.
-
-    const SCENES = STEPS.slice();
-    const META = STEPS.map((s, i) => ({ step: i, opt: -1, id: String(i + 1), name: `step ${i + 1}` }));
-    const tries = STEPS.map((s, i) => {
-      const t = s.try;
-      if (!isObject(t) || !Array.isArray(t.options) || !t.options.length) return null;
-      const options = t.options.slice(0, 5).map((raw, k) => {
-        const o = isObject(raw) ? raw : {}, v = isObject(o.verdict) ? o.verdict : {};
-        const label = typeof o.label === 'string' && o.label.trim() ? o.label : `Option ${k + 1}`;
-        const index = SCENES.length, id = `${i + 1}${OPTION_LETTERS[k]}`, name = `step ${id} (option ${JSON.stringify(label)})`;
-        const os = cleanScene(o.scene, name, true), om = cleanMetrics(o.metrics, name, true);
-        const scene = { ...s.scene };
-        for (const key of SCENE_KEYS) if (key in os) scene[key] = os[key];
-        SCENES.push({ ...s, scene, metrics: om === undefined ? s.metrics : om });
-        META.push({ step: i, opt: k, id, name, raw: o });
-        return { label, scene: index, verdict: { tone: toneOf(v.tone), text: String(v.text ?? ''), why: String(v.why ?? '') } };
-      });
-      return { prompt: String(t.prompt ?? ''), options };
-    });
-
-    /* ================= Per-step node state ================= */
-
-    function propsFor(id, i) {
-      const n = NODES[id], st = ((SCENES[i] && SCENES[i].scene && SCENES[i].scene.state) || {})[id] || {};
-      const dflt = n.type === 'crowd' ? 12 : n.type === 'queue' ? 3 : 0;
-      return {
-        load: typeof st.load === 'number' ? clamp(st.load, 0, 1) : null,
-        heat: clamp(Number(st.heat) || 0, 0, 1),
-        dead: st.dead ? 1 : 0,
-        dim: st.dim ? 1 : 0,
-        count: typeof st.count === 'number' ? st.count : (typeof n.count === 'number' ? n.count : dflt),
-        label: String(st.label ?? n.label ?? ''),
-        sub: String(st.sub ?? n.sub ?? ''),
-        tags: (st.tags || []).map((t) => ({ text: String(t.text ?? ''), tone: toneOf(t.tone), icon: typeof t.icon === 'string' ? t.icon : '' })),
-      };
-    }
-
-    const restParams = (pr) => ({ lift: 0, load: pr.load ?? 0, heat: pr.heat, dead: pr.dead, dim: pr.dim, count: pr.count, texts: [{ label: pr.label, sub: pr.sub, a: 1 }] });
-
-    function stackOf(n, pr) {
-      const out = [];
-      if (pr.load !== null && n.type !== 'db') out.push({ key: '§load', gauge: true });
-      for (const t of pr.tags) out.push({ key: `${t.text}|${t.tone}|${t.icon || ''}`, tag: t });
-      return out;
-    }
-
-    const queueCaps = {};
-    for (const id in NODES) {
-      if (NODES[id].type !== 'queue') continue;
-      let m = 4;
-      SCENES.forEach((s, i) => { if ((s.scene && s.scene.show || []).includes(id)) m = Math.max(m, Math.ceil(propsFor(id, i).count)); });
-      queueCaps[id] = Math.min(16, m);
-    }
-    const shell = (id) => ({ id, cap: queueCaps[id] });
-
-    /* ================= Links: geometry ================= */
-
-    const geomCache = new Map();
-    const restHullCache = new Map();
-    function restHull(id) {
-      if (!restHullCache.has(id)) {
-        const n = NODES[id];
-        restHullCache.set(id, drawEntity(shell(id), n, restParams({ load: null, heat: 0, dead: 0, dim: 0, count: n.type === 'crowd' ? 24 : 4, label: '', sub: '' })).hull);
-      }
-      return restHullCache.get(id);
-    }
-
-    // Distance along the polyline at which it leaves the polygon (0 if it starts outside).
-    function exitDist(pts, hull) {
-      if (!hull || !pointInPoly(pts[0], hull)) return 0;
-      const L = polyLen(pts);
-      let hi = null;
-      for (let s = 2; s <= L; s += 2) if (!pointInPoly(pointAt(pts, s).p, hull)) { hi = s; break; }
-      if (hi === null) return L / 2;
-      let lo = hi - 2;
-      for (let k = 0; k < 20; k++) { const m = (lo + hi) / 2; if (pointInPoly(pointAt(pts, m).p, hull)) lo = m; else hi = m; }
-      return hi;
-    }
-
-    function linkGeom(id) {
-      if (geomCache.has(id)) return geomCache.get(id);
-      const L = LINKS[id], a = NODES[L.from], b = NODES[L.to];
-      const grid = [[a.x, a.y]];
-      if (a.x !== b.x && a.y !== b.y) {
-        if (L.route === 'x-first') grid.push([b.x, a.y]);
-        else if (L.route === 'y-first') grid.push([a.x, b.y]);
-      }
-      grid.push([b.x, b.y]);
-      let pts = grid.map(([x, y]) => P(x, y));
-      const total = polyLen(pts);
-      const s0 = exitDist(pts, restHull(L.from)) + 3;
-      const s1 = total - exitDist(pts.slice().reverse(), restHull(L.to)) - 4;
-      pts = trimPts(pts, s0, Math.max(s0 + 2, s1));
-      const len = polyLen(pts);
-      const g = { pts, len, d: roundLine(pts, 9), tip: pts[pts.length - 1], dir: pointAt(pts, len).dir, mid: pointAt(pts, len / 2) };
-      geomCache.set(id, g);
-      return g;
-    }
-
-    const hasHead = (style) => style !== 'cut' && style !== 'beat';
-    const stepLinks = (i) => (i >= 0 && SCENES[i].scene && SCENES[i].scene.links) || {};
-    function linkStyle(i, id) { const s = (stepLinks(i)[id] || {}).style; return STYLES.includes(s) ? s : 'solid'; }
-    function linkText(i, id) { const v = stepLinks(i)[id] || {}; return String('label' in v ? (v.label ?? '') : (LINKS[id].label ?? '')); }
-    const linkLabelSpec = (text, style) => ({ lines: [{ t: text, size: 9.5, w: 700 }], tone: style === 'cut' ? 'red' : style === 'off' ? 'gray' : 'paper' });
-
-    /* ================= Step plans: layout at rest ================= */
-
-    function placementCost(box, ctx, own) {
-      let cost = 0;
-      const padded = inflate(box, 3);
-      for (const h of ctx.hulls) if (polyBoxOverlap(h, padded)) cost += 170;
-      for (const b of ctx.pills) { const a = overlapArea(box, inflate(b, 2)); if (a > 0) cost += 90 + a / 6; }
-      for (const b of ctx.labels) { const a = overlapArea(box, inflate(b, 3)); if (a > 0) cost += 90 + a / 3; }
-      const sb = inflate(box, 2);
-      for (const s of ctx.samples) if (inBox(s.p, sb)) cost += s.id === own ? 18 : 12;
-      return cost;
-    }
-
-    function placeEntityLabel(n, hull, spec, ctx) {
-      const [w, h] = pillSize(spec), b = bboxOf(hull), cx = P(n.x, n.y)[0];
-      const below = b.y1 + h / 2 + 8, side = b.y1 - h / 2 - 4;
-      const cands = [
-        [cx, below, 0], [cx + w * .4, below - 2, 6], [cx - w * .4, below - 2, 6],
-        [b.x1 + w / 2 + 8, side, 10], [b.x0 - w / 2 - 8, side, 10],
-        [cx, below + 16, 16], [b.x1 + w / 2 + 8, b.y0 + (b.y1 - b.y0) / 2, 14], [b.x0 - w / 2 - 8, b.y0 + (b.y1 - b.y0) / 2, 14],
-        [cx, b.y0 - h / 2 - 8, 20], [b.x1 + w / 2 + 4, b.y1 + h / 2 + 2, 18], [b.x0 - w / 2 - 4, b.y1 + h / 2 + 2, 18],
-      ];
-      let best = null;
-      for (const [x, y, extra] of cands) {
-        const cost = placementCost(boxAt(x, y, w, h), ctx, null) + extra;
-        if (!best || cost < best.cost) best = { x, y, cost };
-      }
-      return best;
-    }
-
-    function placeLinkLabel(id, spec, ctx) {
-      const g = linkGeom(id), [w, h] = pillSize(spec);
-      let best = null;
-      for (const dt of [0, .1, -.1, .2, -.2, .3, -.3, .4, -.4]) {
-        const t = .5 + dt;
-        if (t < .12 || t > .88) continue;
-        const { p, dir } = pointAt(g.pts, t * g.len);
-        const nrm = [-dir[1], dir[0]];
-        const sup = Math.abs(nrm[0]) * w / 2 + Math.abs(nrm[1]) * (h + 2) / 2;
-        const variants = [[sup + 5, 0], [-(sup + 5), 2], [sup + 16, 22], [-(sup + 16), 24], [sup + 32, 46], [-(sup + 32), 48], [0, 70]];
-        for (const [off, extra] of variants) {
-          const x = p[0] + nrm[0] * off, y = p[1] + nrm[1] * off;
-          const cost = placementCost(boxAt(x, y, w, h), ctx, id) + Math.abs(dt) * 90 + extra;
-          if (!best || cost < best.cost) best = { x, y, cost };
-        }
-      }
-      return best;
-    }
-
-    // Where a node's pill stack sits: above by default, or below/beside it when that frees space.
-    const STACK_SIDES = { above: 0, below: 30, right: 40, left: 40 };
-    function stackPos(d, side, idx, w) {
-      const b = bboxOf(d.hull);
-      if (side === 'below') return [d.anchor[0], b.y1 + 17 + STACK_GAP * idx];
-      if (side === 'right') return [b.x1 + 8 + w / 2, b.y0 + 12 - STACK_GAP * idx];
-      if (side === 'left') return [b.x0 - 8 - w / 2, b.y0 + 12 - STACK_GAP * idx];
-      return [d.anchor[0], d.anchor[1] - STACK_GAP * idx];
-    }
-    const stackItemSize = (it) => (it.gauge ? [GAUGE_W, PILL_H] : pillSize(tagSpec(it.tag)));
-
-    // Places every pill of scene i. `items` names each placed box, for the overlap check (rule 8).
-    function layoutOverlays(i, plan, base, sides) {
-      const ctx = { hulls: base.hulls, samples: base.samples, pills: [], labels: [] };
-      const out = { cost: 0, entLabels: {}, linkLabels: {}, items: [] };
-      const nameOf = (id) => JSON.stringify(plan.props[id].label || id);
-      for (const id of plan.show) {
-        const info = plan.ents[id];
-        if (!info.d.hull) continue;
-        const side = sides[id] || 'above';
-        stackOf(NODES[id], plan.props[id]).forEach((it, k) => {
-          const [w, h] = stackItemSize(it), [x, y] = stackPos(info.d, side, k, w);
-          const box = boxAt(x, y, w, h);
-          out.cost += placementCost(box, ctx, null) + STACK_SIDES[side];
-          ctx.pills.push(box);
-          out.items.push({ box, what: it.gauge ? `the gauge on ${nameOf(id)}` : `tag ${JSON.stringify(String(it.tag.text ?? ''))} on ${nameOf(id)}` });
-        });
-      }
-      for (const id of plan.show) {
-        const n = NODES[id], info = plan.ents[id];
-        if (LABEL_ON_FACE.has(n.type) || !info.d.hull) continue;
-        const spec = labelSpec(n, plan.props[id]);
-        if (!spec) continue;
-        const best = placeEntityLabel(n, info.d.hull, spec, ctx);
-        out.entLabels[id] = [best.x, best.y];
-        out.cost += best.cost;
-        const [w, h] = pillSize(spec);
-        ctx.pills.push(boxAt(best.x, best.y, w, h));
-        out.items.push({ box: boxAt(best.x, best.y, w, h), what: `the label ${nameOf(id)}` });
-      }
-      for (const id of plan.linkIds) {
-        const text = linkText(i, id);
-        if (!text) continue;
-        const spec = linkLabelSpec(text, linkStyle(i, id));
-        const best = placeLinkLabel(id, spec, ctx);
-        out.linkLabels[id] = [best.x, best.y];
-        out.cost += best.cost;
-        const [w, h] = pillSize(spec);
-        ctx.labels.push(boxAt(best.x, best.y, w, h));
-        out.items.push({ box: boxAt(best.x, best.y, w, h), what: `link label ${JSON.stringify(text)}` });
-      }
-      out.ctx = ctx;
-      return out;
-    }
-
-    function buildPlan(i) {
-      const sc = SCENES[i].scene || {};
-      const show = (sc.show || []).filter((id) => NODES[id]);
-      const plan = { i, show, props: {}, ents: {}, labels: {}, linkIds: [], hullIds: [], panel: sc.panel && sc.panel.lines ? sc.panel : null };
-      const base = { hulls: [], samples: [] };
-      const pts = [];
-      for (const id of show) {
-        const n = NODES[id], pr = propsFor(id, i);
-        plan.props[id] = pr;
-        const d = drawEntity(shell(id), n, restParams(pr));
-        plan.ents[id] = { d, labelAt: null, side: 'above' };
-        if (d.extent) pts.push(...d.extent);
-        if (d.hull) { base.hulls.push(d.hull); plan.hullIds.push(id); pts.push(...d.hull); }
-      }
-      plan.linkIds = Object.keys(sc.links || {}).filter((id) => LINKS[id] && show.includes(LINKS[id].from) && show.includes(LINKS[id].to));
-      for (const id of plan.linkIds) {
-        const g = linkGeom(id);
-        for (let s = 0; s <= g.len; s += 12) base.samples.push({ id, p: pointAt(g.pts, s).p });
-        pts.push(g.pts[0], g.tip);
-      }
-      // Greedy pass: move a stack off its default side only when the whole layout gets cheaper.
-      const sides = {};
-      let best = layoutOverlays(i, plan, base, sides);
-      for (const id of show) {
-        if (!plan.ents[id].d.hull || !stackOf(NODES[id], plan.props[id]).length) continue;
-        for (const side of ['below', 'right', 'left']) {
-          const trial = layoutOverlays(i, plan, base, { ...sides, [id]: side });
-          if (trial.cost < best.cost - 1) { best = trial; sides[id] = side; }
-        }
-      }
-      for (const id of show) {
-        plan.ents[id].side = sides[id] || 'above';
-        plan.ents[id].labelAt = best.entLabels[id] || null;
-      }
-      plan.labels = best.linkLabels;
-      // Text drawn on an object (a block's name on its face, a zone's name on the floor) is checked
-      // for overlaps as well, against everything except its own object.
-      const texts = [];
-      for (const id of show) {
-        for (const t of plan.ents[id].d.texts || []) {
-          const what = `the ${NODES[id].type === 'zone' ? 'zone name' : 'name'} ${JSON.stringify(plan.props[id].label || id)}`;
-          texts.push(t.box ? { box: t.box, what, own: id, size: t.size } : { poly: t.poly, what, own: id, size: t.size });
-          pts.push(...(t.box ? boxCorners(t.box) : t.poly));
-        }
-      }
-      for (const b of best.ctx.pills.concat(best.ctx.labels)) pts.push(...boxCorners(b));
-      plan.bounds = pts.length ? bboxOf(pts) : { x0: -100, y0: -60, x1: 100, y1: 60 };
-      plan.ctx = best.ctx;
-      plan.items = best.items.concat(texts);
-      plan.texts = texts;
-      return plan;
-    }
-
-    /* ================= Camera ================= */
-    // V is a stage size from viewFor(). Plans do not depend on the stage size; cameras do.
-
-    function fitCamera(b, V) {
-      const bw = Math.max(40, b.x1 - b.x0), bh = Math.max(40, b.y1 - b.y0);
-      const z = clamp(Math.min(V.zMax, (V.W - 2 * V.margin) / bw, (V.H - 2 * V.margin) / bh), V.zMin, V.zMax);
-      return { cx: (b.x0 + b.x1) / 2, cy: (b.y0 + b.y1) / 2, z };
-    }
-
-    // Keeps the previous framing when the new content still fits with room to spare.
-    function keepsPrevious(prev, next, b, V) {
-      if (!prev) return false;
-      if (!(prev.z <= next.z + 1e-6 && prev.z >= next.z * .9)) return false;
-      const v = viewRect(prev, V), m = 12 / prev.z;
-      if (b.x0 < v.x + m || b.y0 < v.y + m || b.x1 > v.x + v.w - m || b.y1 > v.y + v.h - m) return false;
-      return Math.abs(next.cx - prev.cx) < .15 * v.w && Math.abs(next.cy - prev.cy) < .18 * v.h;
-    }
-
-    function cardWorldRect(c, corner, cw, ch, V) {
-      const v = viewRect(c, V), m = 12;
-      const sx = corner[1] === 'r' ? V.W - m - cw : m;
-      const sy = corner[0] === 'b' ? V.H - m - ch - 3 : m;
-      return { x0: v.x + sx / c.z, y0: v.y + sy / c.z, x1: v.x + (sx + cw) / c.z, y1: v.y + (sy + ch + 3) / c.z };
-    }
-
-    function cardHits(r, ctx) {
-      const pr = inflate(r, 4);
-      return ctx.hulls.some((h) => polyBoxOverlap(h, pr)) || ctx.pills.concat(ctx.labels).some((b) => overlapArea(pr, b) > 0)
-        || (ctx.texts || []).some((t) => (t.box ? overlapArea(pr, t.box) > 0 : polyBoxOverlap(t.poly, pr)));
-    }
-
-    // Docks the summary card in a corner: the largest zoom at which, in one corner, every card of the
-    // step (a try step's base and each option show their own) clears its own scene. The content slides
-    // away from the corner within the free margin before the zoom drops. `cards` is [{ L, ctx }].
-    function dockPanel(cards, b, cam, prevCorner, V) {
-      const order = [prevCorner, 'tr', 'br', 'tl', 'bl'].filter((c, k, a) => c && a.indexOf(c) === k);
-      const shifts = [[0, 0], [.5, 0], [0, .5], [.5, .5], [1, 0], [0, 1], [1, .5], [.5, 1], [1, 1]];
-      for (let z = cam.z; z >= V.zMin - 1e-6; z -= .025) {
-        const sx = Math.max(0, V.W - 2 * V.margin - (b.x1 - b.x0) * z) / 2 / z;
-        const sy = Math.max(0, V.H - 2 * V.margin - (b.y1 - b.y0) * z) / 2 / z;
-        for (const [fx, fy] of shifts) {
-          for (const corner of order) {
-            const c = { cx: (b.x0 + b.x1) / 2 + (corner[1] === 'r' ? 1 : -1) * fx * sx, cy: (b.y0 + b.y1) / 2 + (corner[0] === 'b' ? 1 : -1) * fy * sy, z };
-            if (cards.every((d) => !cardHits(cardWorldRect(c, corner, d.L.w * V.hud, d.L.h * V.hud, V), d.ctx))) return { ...c, corner };
-          }
-        }
-      }
-      return { ...cam, corner: 'tr' };
-    }
-
-    // One framing per step. A try step is framed to hold its base and every option, so choosing
-    // an option never moves the camera. Returns one camera per scene.
-    function planCameras(V) {
-      const cams = [];
-      let prev = null;
-      STEPS.forEach((_, i) => {
-        const group = groupOf(i), bounds = stepBounds[i];
-        let cam = fitCamera(bounds, V);
-        if (keepsPrevious(prev, cam, bounds, V)) cam = { cx: prev.cx, cy: prev.cy, z: prev.z };
-        const cards = V.inlinePanel ? [] : group.filter((p) => p.panel).map((p) => ({ L: panelLayout(p.panel), ctx: { ...p.ctx, texts: p.texts } }));
-        if (cards.length) cam = dockPanel(cards, bounds, cam, prev && prev.corner, V);
-        for (const p of group) cams[p.i] = cam;
-        prev = cam;
-      });
-      return cams;
-    }
-
-    const plans = SCENES.map((_, k) => buildPlan(k));
-    // The plans a step's framing must hold, and their bounds: a try step's base and every option.
-    const groupOf = (i) => [plans[i], ...(tries[i] ? tries[i].options.map((o) => plans[o.scene]) : [])];
-    const stepBounds = STEPS.map((_, i) => bboxOf(groupOf(i).flatMap((p) => boxCorners(p.bounds))));
-
-    /* ================= Recap panel (HUD card in screen pixels) ================= */
-
-    function panelRows(panel) {
-      return (panel.lines || []).map((raw) => {
-        const s = String(raw);
-        // Prefixes are replaced by spaces so column alignment written into the data survives.
-        if (s.startsWith('= ')) return { t: '  ' + s.slice(2), kind: 'sum' };
-        if (s.startsWith('! ')) return { t: '  ' + s.slice(2), kind: 'bad' };
-        if (s.startsWith('# ')) return { t: s.slice(2), kind: 'note' };
-        return { t: s, kind: 'row' };
-      });
-    }
-
-    function panelLayout(panel) {
-      const PAD = 14, LH = 19;
-      const title = String(panel.title || '').toUpperCase();
-      const rows = panelRows(panel);
-      let w = textW(title, 10.5, 800) + title.length * 1.2;
-      for (const r of rows) w = Math.max(w, textW(r.t, r.kind === 'note' ? 11 : 12, r.kind === 'sum' ? 800 : 600));
-      w = Math.ceil(w + PAD * 2);
-      let h = 34;
-      for (const r of rows) h += LH + (r.kind === 'sum' ? 6 : 0);
-      return { title, rows, w, h: h + 8, PAD, LH };
-    }
-
-    function panelSvg(L) {
-      let s = `<rect class="hud-drop" x="0" y="2.5" width="${L.w}" height="${L.h}" rx="10"/><rect class="hud-bg" width="${L.w}" height="${L.h}" rx="10"/>`;
-      s += `<text class="hud-title" x="${L.PAD}" y="21">${esc(L.title)}</text><path class="hud-rule" d="M${L.PAD} 29.5H${L.w - L.PAD}"/>`;
-      let y = 34;
-      for (const r of L.rows) {
-        if (r.kind === 'sum') { s += `<path class="hud-rule sum" d="M${L.PAD} ${y + 3}H${L.w - L.PAD}"/>`; y += 6; }
-        if (r.kind === 'sum' || r.kind === 'bad') s += `<rect class="hud-band ${r.kind}" x="${L.PAD - 6}" y="${y + 1}" width="${L.w - 2 * L.PAD + 12}" height="${L.LH}" rx="5"/>`;
-        if (r.kind === 'bad') s += `<g class="pill tone-red">${glyph('alert', L.PAD + 5, y + 10.5, 11, 2.4)}</g>`;
-        s += `<text class="hud-line ${r.kind}" x="${L.PAD}" y="${y + 14.5}" xml:space="preserve">${esc(r.t)}</text>`;
-        y += L.LH;
-      }
-      return s;
-    }
-
-    /* ================= Pills, links and flows shared by the stage and the stills ================= */
-
-    const depthOf = (n) => (n.type === 'zone' ? -1e4 : n.type === 'queue' ? -1e3 + n.x - n.y : n.x - n.y);
-    const fadeOutOf = (k) => 1 - clamp(k / .42, 0, 1);
-    const fadeInOf = (k) => clamp((k - .55) / .4, 0, 1);
-
-    // A node's pills: its stack (gauge, tags) and its name label. While a step changes them, old
-    // and new cross-fade, and pills that stay slide to their new place in the stack.
-    function overlayFor(e, d, p) {
-      const n = e.n, k = e.c.swap;
-      const swapping = e.from && k < 1;
-      const item = (it, idx, a) => {
-        const [w] = stackItemSize(it), [x, y] = stackPos(d, e.side || 'above', idx, w);
-        return it.gauge ? gaugeSvg(x, y, e.c.load ?? 0, a) : pillSvg(x, y, tagSpec(it.tag), a);
-      };
-      const now = stackOf(n, e.to), before = swapping ? stackOf(n, e.from) : null;
-      const mv = inOut(clamp(k, 0, 1));
-      let s = '';
-      if (before) {
-        before.forEach((it, j) => { if (!now.some((o) => o.key === it.key)) s += item(it, j, fadeOutOf(k)); });
-      }
-      now.forEach((it, i) => {
-        const j = before ? before.findIndex((o) => o.key === it.key) : -1;
-        s += item(it, before && j >= 0 ? lerp(j, i, mv) : i, !before || j >= 0 ? 1 : fadeInOf(k));
-      });
-      if (!LABEL_ON_FACE.has(n.type) && e.labelPos) {
-        const [lx, ly] = [e.labelPos[0], e.labelPos[1] - p.lift];
-        for (const t of p.texts) {
-          const spec = labelSpec(n, t);
-          if (spec) s += pillSvg(lx, ly, spec, t.a);
-        }
-      }
-      return s;
-    }
-
-    function arrowPath(tip, dir) {
-      const nx = -dir[1], ny = dir[0];
-      const bx = tip[0] - dir[0] * 9, by = tip[1] - dir[1] * 9;
-      return `M${pt(tip)}L${pt([bx + nx * 4.2, by + ny * 4.2])}L${pt([bx - nx * 4.2, by - ny * 4.2])}Z`;
-    }
-
-    // The flows of scene k, keeping only the legs on links for which has(id) is true.
-    function flowList(k, has) {
-      return ((SCENES[k].scene || {}).flows || []).map((f) => ({
-        f,
-        kind: KINDS.includes(f.kind) ? f.kind : 'request',
-        legs: (f.route || []).map((r) => ({ id: String(r).replace(/^~/, ''), rev: String(r).startsWith('~') })).filter((l) => has(l.id)),
-        acc: .6,
-      })).filter((fl) => fl.legs.length);
-    }
-
-    // How far a moving dot really gets, as the stage animates it: along the route up to the first
-    // broken (cut) link, where it dies halfway; back again only when the flow bounces, no link on
-    // the way is broken and not every dot fails on arrival (fail: 1).
-    function reachOf(fl, isCut) {
-      const legs = [];
-      for (const leg of fl.legs) {
-        if (isCut(leg.id)) return { legs: legs.concat({ ...leg, upTo: .5 }), back: [], broken: leg };
-        legs.push({ ...leg, upTo: 1 });
-      }
-      const back = fl.f.bounce && (Number(fl.f.fail) || 0) < 1 ? fl.legs.slice().reverse().map((l) => ({ id: l.id, rev: !l.rev, upTo: 1 })) : [];
-      return { legs, back, broken: null };
-    }
-
-    // Reduced motion and the stills: each flow becomes still chevrons along the part of its route
-    // that a dot reaches. legOf(leg) gives the length a dot travels on that leg and the point at a
-    // distance along it; isCut(id) says whether that link is broken.
-    function chevronsSvg(list, legOf, isCut) {
-      let s = '';
-      const chev = (leg, t, kind, side) => {
-        const { L, at } = legOf(leg);
-        const a = at(L * t), b = at(Math.min(L, L * t + 2));
-        const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
-        const ox = -Math.sin(ang) * side, oy = Math.cos(ang) * side;
-        return `<path class="chev chev-${kind}" transform="translate(${n1(a[0] + ox)} ${n1(a[1] + oy)}) rotate(${n1(ang * 180 / Math.PI)})" d="M-3-4.5 2 0-3 4.5"/>`;
-      };
-      const run = (leg, kind, side) => {
-        const count = clamp(Math.floor(legOf(leg).L * leg.upTo / 30), 1, 5), hi = leg.upTo < 1 ? leg.upTo - .08 : .88;
-        for (let k = 0; k < count; k++) s += chev(leg, .12 + (hi - .12) * (k + .5) / count, kind, side);
-      };
-      for (const fl of list) {
-        const r = reachOf(fl, isCut), side = r.back.length ? -5 : 0;
-        for (const leg of r.legs) run(leg, fl.kind, side);
-        for (const leg of r.back) run(leg, 'response', side);
-      }
-      return s;
-    }
-
-    // Scene k settled, as one picture framed by `cam` on a stage of size V: what the stage shows
-    // once a step has finished arriving, with flows as still chevrons and the summary card docked.
-    function stillSvg(k, cam, V) {
-      const plan = plans[k], v = viewRect(cam, V);
-      let floor = '', links = '', body = '', over = '', hudCard = '';
-      for (const id of plan.show.slice().sort((a, b) => depthOf(NODES[a]) - depthOf(NODES[b]))) {
-        const n = NODES[id], pr = plan.props[id], info = plan.ents[id], p = restParams(pr), d = info.d;
-        if (d.floor) { floor += d.floor; continue; }
-        body += composeEntity(d, p);
-        over += overlayFor({ n, c: { swap: 1, load: pr.load ?? 0 }, from: null, to: pr, side: info.side, labelPos: info.labelAt }, d, p);
-      }
-      for (const id of plan.linkIds) {
-        const g = linkGeom(id), style = linkStyle(k, id), head = hasHead(style), text = linkText(k, id), at = plan.labels[id];
-        links += `<path class="lk ${style}" d="${roundLine(trimPts(g.pts, 0, Math.max(.5, g.len - (head ? 7 : 0))), 9)}"/>`;
-        if (head) links += `<path class="ah${style === 'off' ? ' off' : ''}" d="${arrowPath(g.tip, g.dir)}"/>`;
-        if (style === 'cut') links += crossMark(g.mid.p);
-        if (text && at) over += pillSvg(at[0], at[1], linkLabelSpec(text, style));
-      }
-      const chevrons = chevronsSvg(flowList(k, (id) => plan.linkIds.includes(id)), (leg) => {
-        const g = linkGeom(leg.id), hi = Math.max(4, g.len - (hasHead(linkStyle(k, leg.id)) ? 10 : 2));
-        return { L: hi - 2, at: (s) => pointAt(g.pts, leg.rev ? hi - s : 2 + s).p };
-      }, (id) => linkStyle(k, id) === 'cut');
-      if (plan.panel && !V.inlinePanel && cam.corner) {
-        const L = panelLayout(plan.panel), m = 12;
-        const sx = cam.corner[1] === 'r' ? V.W - m - L.w * V.hud : m;
-        const sy = cam.corner[0] === 'b' ? V.H - m - L.h * V.hud - 3 : m;
-        hudCard = `<g transform="translate(${n2(v.x)} ${n2(v.y)}) scale(${(v.w / V.W).toFixed(4)})"><g class="hud-card" transform="translate(${n1(sx)} ${n1(sy)}) scale(${n2(V.hud)})">${panelSvg(L)}</g></g>`;
-      }
-      const grid = `<rect class="deco" x="${n1(v.x)}" y="${n1(v.y)}" width="${n1(v.w)}" height="${n1(v.h)}" fill="url(#iso-grid)" opacity=".7"/>`;
-      return {
-        viewBox: `${n2(v.x)} ${n2(v.y)} ${n2(v.w)} ${n2(v.h)}`,
-        svg: `${grid}<g>${floor}</g><g>${links}</g><g class="chev">${chevrons}</g><g>${body}</g><g>${over}</g>${hudCard}`,
-      };
-    }
-
-    // Scene k in words, for the stage's text alternative and the sheet's stills: a title such as
-    // "step 6: The lock clicks (Try it: 50 ms)" and one line per object, link, flow and summary card.
-    function describe(k, tryWord) {
-      const plan = plans[k], sc = SCENES[k].scene || {}, m = META[k];
-      const name = (id) => (NODES[id] ? propsFor(id, k).label || id : id);
-      const items = [];
-      for (const id of plan.show) {
-        const n = NODES[id], pr = plan.props[id], bits = [];
-        if (pr.load !== null) bits.push(n.type === 'db' ? `${Math.round(pr.load * 100)}% full` : `${Math.round(pr.load * 100)}% busy`);
-        if (pr.heat > 0) bits.push('under strain');
-        if (pr.dead) bits.push('failed');
-        if (pr.dim) bits.push('not involved in this step');
-        if (n.type === 'crowd') bits.push(`${pr.count} people`);
-        if (n.type === 'queue') bits.push(`${pr.count} waiting`);
-        for (const t of pr.tags) bits.push(`“${t.text}”`);
-        items.push(`${pr.label || id}${pr.sub ? ` (${pr.sub})` : ''}${bits.length ? `: ${bits.join(', ')}` : ''}`);
-      }
-      const styleWord = { dashed: 'occasional', off: 'unused', cut: 'broken', beat: 'health check' };
-      for (const id of plan.linkIds) {
-        const L = LINKS[id], st = linkStyle(k, id), text = linkText(k, id);
-        items.push(`Link ${name(L.from)} → ${name(L.to)}${text ? ` “${text}”` : ''}${styleWord[st] ? ` (${styleWord[st]})` : ''}`);
-      }
-      for (const f of sc.flows || []) {
-        const legs = f.route.map((r) => ({ id: String(r).replace(/^~/, ''), rev: String(r).startsWith('~') })).filter((l) => LINKS[l.id]);
-        if (!legs.length) continue;
-        const from = (l) => (l.rev ? LINKS[l.id].to : LINKS[l.id].from), to = (l) => (l.rev ? LINKS[l.id].from : LINKS[l.id].to);
-        const r = reachOf({ f, legs }, (id) => linkStyle(k, id) === 'cut'), fail = Number(f.fail) || 0;
-        const stops = [from(legs[0]), ...(r.broken ? r.legs.slice(0, -1) : r.legs).map(to)].map(name);
-        const end = r.broken ? `, dying at the broken link to ${name(to(r.broken))}` : `${r.back.length ? ' and back' : ''}${fail ? (fail >= 1 ? ', every one fails' : ', some fail') : ''}`;
-        items.push(`Moving: ${f.kind || 'request'} dots ${stops.join(' → ')}${end}`);
-      }
-      if (plan.panel) items.push(`${plan.panel.title || 'Summary'}: ${plan.panel.lines.map((l) => String(l).replace(/^[=!#] /, '').replace(/\s+/g, ' ')).join('; ')}`);
-      const opt = m.opt >= 0 ? tries[m.step].options[m.opt] : null;
-      return { title: `step ${m.step + 1}: ${SCENES[k].title || ''}${opt ? ` (${tryWord}: ${opt.label})` : ''}`, items };
-    }
-
-    /* ================= Automatic checks ================= */
-    // Warnings: the data breaks a rule of the format (rules 1, 2, 3, 7, 8, 9, sources).
-    // Notes: text or layout over its budget. Both are listed on the contact sheet and printed to
-    // the console once per walkthrough.
-
-    const q = (s) => JSON.stringify(String(s ?? ''));
-    const isList = (para) => /^\s*<(ul|ol)\b/i.test(String(para));
-    // Words as a reader sees them; null for text written mostly without spaces (Chinese, Japanese, Thai).
-    // Plain-text fields are shown exactly as written, so nothing in them is markup. Body HTML loses its
-    // tags, but a paragraph, list item or line break still separates the words on either side.
-    function countWords(t) {
-      t = t.replace(/\s+/g, ' ').trim();
-      if (!t) return 0;
-      const chars = t.replace(/ /g, ''), unspaced = (chars.match(UNSPACED) || []).length;
-      return unspaced * 2 > chars.length ? null : t.split(' ').length;
-    }
-    const words = {
-      text: (s) => countWords(String(s ?? '')),
-      html: (h) => countWords(plainText(String(h ?? '').replace(/<\/?(?:p|li|ul|ol|div|br|h[1-6])\b[^>]*>/gi, ' '))),
-    };
-
-    // Rules 1, 2 and 3 for one scene.
-    function checkScene(k, warn) {
-      const n = META[k].name, s = SCENES[k], sc = s.scene || {}, show = sc.show || [], links = sc.links || {};
-      for (const id of show) if (!NODES[id]) warn(`${n}: scene.show names unknown node "${id}" (rule 1)`);
-      for (const id of Object.keys(sc.state || {})) if (!NODES[id]) warn(`${n}: scene.state names unknown node "${id}" (rule 1)`);
-      for (const id of Object.keys(links)) {
-        const L = LINKS[id];
-        if (!L) warn(`${n}: scene.links names unknown link "${id}" (rule 1)`);
-        else if (!show.includes(L.from) || !show.includes(L.to)) warn(`${n}: link "${id}" is shown but "${show.includes(L.from) ? L.to : L.from}" is not (rule 2)`);
-      }
-      (sc.flows || []).forEach((f, j) => {
-        const legs = (f.route || []).map((r) => ({ id: String(r).replace(/^~/, ''), rev: String(r).startsWith('~') }));
-        if (!legs.length) warn(`${n}: flow ${j + 1} has an empty route`);
-        for (const l of legs) {
-          if (!LINKS[l.id]) warn(`${n}: flow ${j + 1} uses unknown link "${l.id}" (rule 1)`);
-          else if (!(l.id in links)) warn(`${n}: flow ${j + 1} uses link "${l.id}", which is not shown in this step (rule 2)`);
-        }
-        for (let r = 1; r < legs.length; r++) {
-          const a = LINKS[legs[r - 1].id], b = LINKS[legs[r].id];
-          if (!a || !b) continue;
-          const shared = [a.from, a.to].some((x) => x === b.from || x === b.to);
-          const end = legs[r - 1].rev ? a.from : a.to, start = legs[r].rev ? b.to : b.from;
-          if (!shared) warn(`${n}: flow ${j + 1} links "${legs[r - 1].id}" and "${legs[r].id}" share no endpoint (rule 7)`);
-          else if (end !== start) warn(`${n}: flow ${j + 1} arrives at "${end}" but leaves from "${start}"; prefix a link with ~ to travel it backwards (rule 7)`);
-        }
-      });
-      if (METRICS.length > 1 && s.metrics) {
-        const total = METRICS[METRICS.length - 1].id, tv = s.metrics[total];
-        const parts = METRICS.slice(0, -1).map((m) => s.metrics[m.id]).filter((v) => typeof v === 'number');
-        const sum = parts.reduce((a, b) => a + b, 0);
-        if (typeof tv === 'number' ? Math.abs(tv - sum) > 1e-9 : parts.length > 0) warn(`${n}: metrics.${total} is ${tv} but the other metrics add up to ${sum} (rule 3)`);
-      }
-    }
-
-    // Rule 8 for one scene: pills, labels, text drawn on objects and the summary card that cover an
-    // object or each other. Text drawn on an object is not tested against that object.
-    function overlapsIn(k, cam, V) {
-      const plan = plans[k], items = plan.items.slice(), out = [];
-      if (plan.panel && !V.inlinePanel && cam.corner) {
-        const L = panelLayout(plan.panel);
-        items.push({ box: cardWorldRect(cam, cam.corner, L.w * V.hud, L.h * V.hud, V), what: 'the summary card' });
-      }
-      const shape = (a, d) => (a.box ? boxCorners(inflate(a.box, d)) : a.poly);
-      items.forEach((a, x) => {
-        const inner = shape(a, -1.5);
-        plan.hullIds.forEach((id, h) => {
-          if (id !== a.own && convexOverlap(plan.ctx.hulls[h], inner)) out.push(`${a.what} overlaps the ${q(plan.props[id].label || id)} object`);
-        });
-        for (let y = x + 1; y < items.length; y++) {
-          const b = items[y];
-          if (a.box && b.box ? overlapArea(a.box, b.box) > 4 : convexOverlap(shape(a, -1), shape(b, -1))) out.push(`${a.what} overlaps ${b.what}`);
-        }
-      });
-      return out;
-    }
-
-    // The smallest text size (in stage units) that scene k draws, for the label-size note. Text on
-    // objects is measured at the size the drawing chose for it.
-    function smallestText(k) {
-      const plan = plans[k];
-      let min = Infinity;
-      for (const t of plan.texts) min = Math.min(min, t.size);
-      for (const id of plan.show) {
-        const n = NODES[id], pr = plan.props[id];
-        if (n.type === 'zone') continue;
-        if (!LABEL_ON_FACE.has(n.type)) {
-          if (pr.sub) min = Math.min(min, 9);
-          else if (pr.label) min = Math.min(min, 10.5);
-        }
-        if (stackOf(n, pr).length) min = Math.min(min, 10.5);
-      }
-      if (Object.keys(plan.labels).length) min = Math.min(min, 9.5);
-      return min;
-    }
-
-    // What scene k puts on the stage, in a fixed form for rule 9: the same picture gives the same
-    // string whatever the key order of the data and whether a default value is written out.
-    function signature(k) {
-      const plan = plans[k], num = (v, d) => (typeof v === 'number' ? v : d);
-      const props = plan.show.slice().sort().map((id) => {
-        const n = NODES[id], pr = plan.props[id];
-        return [id, { ...pr, load: n.type === 'db' ? pr.load ?? 0 : pr.load, count: n.type === 'crowd' || n.type === 'queue' ? pr.count : null }];
-      });
-      const links = plan.linkIds.slice().sort().map((id) => [id, linkStyle(k, id), linkText(k, id)]);
-      const flows = flowList(k, (id) => plan.linkIds.includes(id)).map((fl) => JSON.stringify([fl.kind, fl.legs.map((l) => (l.rev ? '~' : '') + l.id),
-        !!fl.f.bounce, num(fl.f.rate, .8), num(fl.f.speed, 1), clamp(Number(fl.f.fail) || 0, 0, 1), Number(fl.f.hold) || 0])).sort();
-      const panel = plan.panel ? [String(plan.panel.title || ''), plan.panel.lines.map(String)] : null;
-      const metrics = METRICS.map((m) => num((SCENES[k].metrics || {})[m.id], null));
-      return JSON.stringify({ props, links, flows, panel, metrics });
-    }
-
-    function runChecks() {
-      const warnings = [], notes = [];
-      const warn = (m) => warnings.push(m), note = (m) => notes.push(m);
-      const order = STEPS.flatMap((_, i) => [i, ...(tries[i] ? tries[i].options.map((o) => o.scene) : [])]);
-      // Every scene, steps first with their options after them. An option repeats what its step
-      // already reported for the parts it inherits, so only its new findings are kept.
-      const perScene = (find) => {
-        const found = SCENES.map((_, k) => { const out = []; find(k, (m) => out.push(m)); return out; });
-        for (const k of order) {
-          const m = META[k];
-          const seen = m.opt < 0 ? null : new Set(found[m.step].map((x) => x.replace(META[m.step].name, m.name)));
-          for (const x of found[k]) if (!seen || !seen.has(x)) warn(x);
-        }
-      };
-
-      shapes.forEach(warn);
-      if (typeof w.id !== 'string' || !KEBAB.test(w.id)) warn(`id ${JSON.stringify(w.id)} should be a kebab-case string`);
-      for (const [id, L] of Object.entries(LINKS)) {
-        if (!NODES[L.from] || !NODES[L.to]) warn(`link "${id}" joins a node that does not exist (rule 1)`);
-      }
-      perScene(checkScene);
-      GOALS.forEach((g, k) => {
-        if (!Number.isInteger(g.step) || g.step < 0 || g.step >= STEPS.length) warn(`goal ${k + 1} points at step index ${g.step}, which does not exist (rule 1)`);
-      });
-      const ids = Object.keys(NODES).filter((id) => NODES[id].type !== 'zone');
-      for (let a = 0; a < ids.length; a++) {
-        for (let b = a + 1; b < ids.length; b++) {
-          const A = NODES[ids[a]], B = NODES[ids[b]], d = Math.hypot(A.x - B.x, A.y - B.y);
-          if (d < 6) warn(`nodes "${ids[a]}" and "${ids[b]}" are ${n1(d)} grid units apart; keep at least 6 (rule 7)`);
-        }
-      }
-      perScene((k, out) => {
-        const hits = overlapsIn(k, refCams[k], refView);
-        hits.slice(0, 4).forEach((h) => out(`${META[k].name}: ${h}; move a node or shorten the text (rule 8)`));
-        if (hits.length > 4) out(`${META[k].name}: ${hits.length - 4} more overlap${hits.length === 5 ? '' : 's'} like these (rule 8)`);
-      });
-
-      STEPS.forEach((s, i) => {
-        if (s.try === undefined) return;
-        const t = s.try, n = `step ${i + 1}`;
-        if (!isObject(t) || !Array.isArray(t.options)) { warn(`${n}: "try" needs an "options" array with 2 to 5 options (rule 9)`); return; }
-        const count = t.options.length;
-        if (count < 2 || count > 5) warn(`${n}: the try has ${count} option${count === 1 ? '' : 's'}; give it 2 to 5${count > 5 ? ' (only the first 5 are shown)' : ''} (rule 9)`);
-        const base = signature(i);
-        (tries[i] ? tries[i].options : []).forEach((opt) => {
-          const m = META[opt.scene], o = m.raw, v = isObject(o.verdict) ? o.verdict : {};
-          if (typeof o.label !== 'string' || !o.label.trim()) warn(`${m.name}: the option has no "label" (rule 9)`);
-          if (typeof v.text !== 'string' || !v.text.trim()) warn(`${m.name}: the option has no verdict.text (rule 9)`);
-          if (v.tone === undefined) warn(`${m.name}: the option has no verdict.tone; give it one of ${TONES.join(', ')} (rule 9)`);
-          else if (!TONES.includes(v.tone)) warn(`${m.name}: verdict.tone ${JSON.stringify(v.tone)} is not one of ${TONES.join(', ')} (rule 9)`);
-          if (signature(opt.scene) === base) warn(`${m.name}: the option is identical to the base scene, so choosing it changes nothing; give it its own value of the variable (rule 9)`);
-        });
-      });
-
-      if (w.sources !== undefined) {
-        if (!Array.isArray(w.sources)) warn('"sources" should be an array of { claim, kind, source, url } entries (sources)');
-        else w.sources.forEach((src, k) => {
-          const claim = isObject(src) && typeof src.claim === 'string' ? src.claim.trim() : '';
-          const n = `sources entry ${k + 1}${claim ? ` (${q(claim.length > 48 ? `${claim.slice(0, 47)}…` : claim)})` : ''}`;
-          if (!isObject(src)) { warn(`${n} is not an object (sources)`); return; }
-          if (!claim) warn(`${n} has no "claim" (sources)`);
-          if (src.kind === 'data') {
-            if (typeof src.source !== 'string' || !src.source.trim()) warn(`${n}: kind "data" needs a "source" that says where the value comes from; add one, or mark the entry "assumption" (sources)`);
-          } else if (src.kind !== 'assumption') warn(`${n}: unknown kind ${JSON.stringify(src.kind)}; use "data" or "assumption" (sources)`);
-        });
-      }
-
-      const isRecap = (s) => s.chapter === 'recap';
-      STEPS.forEach((s, i) => {
-        const n = `step ${i + 1}`, body = Array.isArray(s.body) ? s.body : [];
-        if (!isRecap(s) && body.length !== 2) note(`${n}: the body has ${body.length} paragraph${body.length === 1 ? '' : 's'}; a step has exactly 2`);
-        body.forEach((para, k) => {
-          const c = isList(para) ? null : words.html(para);
-          if (c !== null && c > 40) note(`${n}: paragraph ${k + 1} has ${c} words; keep each to 40 or fewer`);
-        });
-        const sw = words.text(s.short), tw = words.text(s.title);
-        if (sw !== null && sw > 2) note(`${n}: "short" ${q(s.short)} has ${sw} words; use 1 or 2`);
-        if (tw !== null && tw > 8) note(`${n}: the title has ${tw} words; keep it to 8 or fewer`);
-        if (Array.isArray(s.changes) && s.changes.length > 3) note(`${n}: "changes" has ${s.changes.length} lines; keep it to 3 or fewer`);
-      });
-      const nodesIn = (i) => ((SCENES[i].scene || {}).show || []).filter((id) => NODES[id] && NODES[id].type !== 'zone');
-      const first = nodesIn(0);
-      if (first.length > 2) note(`step 1 shows ${first.length} nodes; start with 1 or 2 and bring in the rest as the story needs them`);
-      for (let i = 1; i < STEPS.length; i++) {
-        const before = new Set(nodesIn(i - 1)), added = nodesIn(i).filter((id) => !before.has(id));
-        if (added.length > 2) note(`step ${i + 1} adds ${added.length} nodes (${added.join(', ')}); add at most 2 per step`);
-      }
-      if (!isRecap(STEPS[STEPS.length - 1])) note('the last step is not a recap; end on a step with chapter "recap"');
-      STEPS.forEach((_, i) => {
-        const size = Math.min(...[i, ...(tries[i] ? tries[i].options.map((o) => o.scene) : [])].map(smallestText));
-        const z = refCams[i].z, px = size * z;
-        if (size < Infinity && px < 8) note(`step ${i + 1}: at the reference stage size (${REF.W} × ${REF.H} px) the camera zooms out to ×${n2(z)}, so ${size} px labels show at ${n1(px)} px (under 8); move nodes closer together or show fewer at once`);
-      });
-      const tried = STEPS.map((s, i) => (s.try !== undefined ? i + 1 : 0)).filter(Boolean);
-      if (tried.length > 2) note(`${tried.length} steps have a try (steps ${tried.join(', ')}); keep it to 2 or fewer`);
-      for (const t of tries) {
-        for (const o of t ? t.options : []) {
-          const name = META[o.scene].name, tw = words.text(o.verdict.text), yw = words.text(o.verdict.why);
-          if (tw !== null && tw > 4) note(`${name}: verdict.text has ${tw} words; keep it to 4 or fewer`);
-          if (yw !== null && yw > 20) note(`${name}: verdict.why has ${yw} words; keep it to one sentence of 20 or fewer`);
-        }
-      }
-      const numberTags = SCENES.some((s) => Object.values((s.scene || {}).state || {}).some((st) => isObject(st) && Array.isArray(st.tags) && st.tags.some((t) => /\d/.test(String(t && t.text)))));
-      const hasSources = Array.isArray(w.sources) && w.sources.length > 0;
-      if ((METRICS.length || numberTags) && !hasSources && !(typeof w.note === 'string' && w.note.trim())) {
-        note(`the walkthrough shows numbers (${METRICS.length ? 'metrics' : 'tags with numbers'}) but has neither "sources" nor "note"; say where the numbers come from`);
-      }
-      return { warnings, notes };
-    }
-
-    const refView = viewFor(REF.W, REF.H);
-    const refCams = planCameras(refView);
-    const checks = runChecks();
-
-    return {
-      NODES, LINKS, STEPS, SCENES, META, METRICS, GOALS, LEGEND, tries, plans, stepBounds, refView, refCams, checks,
-      propsFor, queueCaps, linkGeom, hasHead, linkStyle, linkText, linkLabelSpec, depthOf, fadeOutOf, fadeInOf, overlayFor, arrowPath,
-      panelRows, panelLayout, panelSvg, flowList, chevronsSvg, planCameras, stillSvg, describe, words, isList,
-      report() {
-        const id = w.id || 'walkthrough';
-        for (const m of checks.warnings) console.warn(`[diorama] ${id}: ${m}`);
-        for (const m of checks.notes) console.info(`[diorama] note: ${id}: ${m}`);
-      },
-    };
-  }
-
-  // opts: { labels, start (0-based step), crumb, searchHint, docTitle,
-  //         prev: { title, go } | null   where Back on the first step leads,
-  //         end: { label, icon, go }      what the last step's primary button does,
-  //         onStep(i) }                   called after every step change
-  function mountWalkthrough(host, w, opts) {
-    const M = modelOf(w);
-    const { NODES, LINKS, STEPS, SCENES, METRICS, GOALS, LEGEND, tries, plans } = M;
-    const { queueCaps, linkGeom, hasHead, linkStyle, linkText, linkLabelSpec, depthOf, fadeOutOf, fadeInOf, overlayFor, arrowPath, panelRows, panelLayout, panelSvg, flowList, chevronsSvg } = M;
-    const LBL = opts.labels;
-    host.innerHTML = viewMarkup(opts);
-    const R = {};
-    for (const el of host.querySelectorAll('[data-ref]')) R[el.dataset.ref] = el;
-    const $ = (name) => R[name];
-    $('sceneDefs').innerHTML = defsMarkup();
-    let reduce = motionQuery.matches;
-
-    // Everything asynchronous goes through these two, so destroy() can cancel all of it.
-    let alive = true;
-    const timeouts = new Set(), frames = new Set();
-    function later(fn, ms) {
-      const t = setTimeout(() => { timeouts.delete(t); fn(); }, ms);
-      timeouts.add(t);
-    }
-    function nextFrame(fn) {
-      const f = requestAnimationFrame((now) => { frames.delete(f); fn(now); });
-      frames.add(f);
-    }
-
-    /* ================= Runtime state ================= */
-
-    const svg = $('scene'), wrap = $('sceneWrap');
-    const layer = { geo: $('layerGeo'), floor: $('layerFloor'), links: $('layerLinks'), packets: $('layerPackets'), ents: $('layerEnts'), fx: $('layerFx'), over: $('layerOver'), hud: $('layerHud') };
-    const gridFadeEl = $('sceneDefs').querySelector('#grid-fade');
-    const gridFade = () => gridFadeEl;
-
-    const VIEW = viewFor(900, 520);
-    let cams = [];         // one camera per scene for the current stage size
-    let cur = -1;          // step shown in the explanation
-    let choice = -1;       // the try option chosen on that step, or -1 for its base scene
-    let stageIdx = -1;     // scene the stage is heading to
-    let stageToken = 0;
-    let paused = false;
-    let clock = 0;         // animation time in ms; stands still while paused
-
-    const ents = new Map();
-    const lks = new Map();
-    const cam = { x: -400, y: -250, w: 800, h: 500, dirty: true };
-    const hud = { g: null, key: '', op: 0, corner: 'tr', layout: null, old: [], dirty: true };
-    let flows = [];
-    let packets = [];
-
-    /* ---------- Tweens and timers (one clock, one loop) ---------- */
-
-    const tweens = [];
-    const timers = [];
-
-    function tween(target, key, to, dur, opt = {}) {
-      for (let k = tweens.length - 1; k >= 0; k--) if (tweens[k].target === target && tweens[k].key === key) tweens.splice(k, 1);
-      if (reduce || dur <= 0) {
-        target[key] = to;
-        if (opt.owner) opt.owner.dirty = true;
-        if (opt.done) opt.done();
-        return;
-      }
-      tweens.push({ target, key, to, dur, from: null, t0: clock + (opt.delay || 0), ease: opt.ease || inOut, owner: opt.owner, done: opt.done });
-    }
-
-    function runTweens() {
-      for (let k = 0; k < tweens.length; k++) {
-        const t = tweens[k];
-        if (clock < t.t0) continue;
-        if (t.from === null) t.from = t.target[t.key];
-        const u = Math.min(1, (clock - t.t0) / t.dur);
-        t.target[t.key] = lerp(t.from, t.to, t.ease(u));
-        if (t.owner) t.owner.dirty = true;
-        if (u >= 1) { tweens.splice(k--, 1); if (t.done) t.done(); }
-      }
-    }
-
-    function after(ms, fn) { timers.push({ at: clock + ms, fn }); }
-    function runTimers() {
-      for (let k = 0; k < timers.length; k++) if (clock >= timers[k].at) { const t = timers.splice(k--, 1)[0]; t.fn(); }
-    }
-
-    /* ---------- Entities ---------- */
-
-    function insertByDepth(parent, node, depth) {
-      node.dataset.depth = depth;
-      const next = [...parent.children].find((c) => Number(c.dataset.depth) > depth);
-      parent.insertBefore(node, next || null);
-    }
-
-    function makeEnt(id) {
-      const n = NODES[id];
-      const e = { id, n, cap: queueCaps[id], g: svgEl('g', { class: 'ent', 'data-id': id }), og: svgEl('g', { class: 'ent-over' }), c: null, from: null, to: null, labelPos: null, labelTarget: null, dirty: true, leaving: false, landAt: 0 };
-      insertByDepth(n.type === 'zone' ? layer.floor : layer.ents, e.g, depthOf(n));
-      insertByDepth(layer.over, e.og, depthOf(n));
-      ents.set(id, e);
-      return e;
-    }
-
-    function removeEnt(e) {
-      e.g.remove();
-      e.og.remove();
-      ents.delete(e.id);
-    }
-
-    function liveParams(e) {
-      const c = e.c, k = c.swap;
-      const texts = [];
-      if (e.from && k < 1 && (e.from.label !== e.to.label || e.from.sub !== e.to.sub)) {
-        texts.push({ label: e.from.label, sub: e.from.sub, a: fadeOutOf(k) }, { label: e.to.label, sub: e.to.sub, a: fadeInOf(k) });
-      } else {
-        texts.push({ label: e.to.label, sub: e.to.sub, a: 1 });
-      }
-      return { lift: c.lift, load: c.load, heat: c.heat, dead: c.dead, dim: c.dim, count: c.count, texts };
-    }
-
-    function renderEnt(e) {
-      e.dirty = false;
-      const p = liveParams(e);
-      const d = drawEntity(e, e.n, p);
-      e.g.innerHTML = d.floor || composeEntity(d, p);
-      e.g.setAttribute('opacity', n2(e.c.op));
-      e.og.setAttribute('opacity', n2(e.c.op));
-      e.og.innerHTML = d.hull ? overlayFor(e, d, p) : '';
-    }
-
-    /* ---------- Links ---------- */
-
-    function makeLink(id) {
-      const geom = linkGeom(id);
-      const g = svgEl('g', { class: 'link', 'data-id': id }, layer.links);
-      const line = svgEl('path', { class: 'lk' }, g);
-      const head = svgEl('path', { class: 'ah' }, g);
-      const mark = svgEl('g', { class: 'deco' }, g);
-      const lg = svgEl('g', { class: 'link-label' }, layer.over);
-      const geo = svgEl('path', { d: geom.d, fill: 'none' }, layer.geo);
-      const lk = { id, geom, g, line, head, mark, lg, geo, glen: geo.getTotalLength() || geom.len, draw: 0, op: 1, style: 'solid', text: '', textFrom: null, posFrom: null, lswap: 1, pos: null, target: null, dirty: true, leaving: false };
-      lks.set(id, lk);
-      return lk;
-    }
-
-    function removeLink(lk) {
-      lk.g.remove();
-      lk.lg.remove();
-      lk.geo.remove();
-      lks.delete(lk.id);
-    }
-
-    function renderLink(lk) {
-      lk.dirty = false;
-      const g = lk.geom, head = hasHead(lk.style);
-      lk.g.setAttribute('opacity', n2(lk.op));
-      lk.line.setAttribute('class', `lk ${lk.style}`);
-      if (lk.draw <= .001) {
-        lk.line.setAttribute('d', '');
-      } else {
-        const end = lk.draw * (g.len - (head ? 7 : 0));
-        lk.line.setAttribute('d', roundLine(trimPts(g.pts, 0, Math.max(.5, end)), 9));
-      }
-      const headA = head ? clamp((lk.draw - .97) / .03, 0, 1) : 0;
-      lk.head.setAttribute('class', `ah${lk.style === 'off' ? ' off' : ''}`);
-      lk.head.setAttribute('d', headA > 0 ? arrowPath(g.tip, g.dir) : '');
-      lk.head.setAttribute('opacity', n2(headA));
-      lk.mark.innerHTML = lk.style === 'cut' && lk.draw > .5 ? crossMark(g.mid.p, clamp((lk.draw - .5) * 4, 0, 1)) : '';
-      const a = lk.op * clamp((lk.draw - .6) / .4, 0, 1);
-      let s = '';
-      if (lk.textFrom && lk.lswap < 1 && lk.posFrom) s += pillSvg(lk.posFrom[0], lk.posFrom[1], linkLabelSpec(lk.textFrom, lk.style), a * fadeOutOf(lk.lswap));
-      if (lk.text && lk.pos) s += pillSvg(lk.pos[0], lk.pos[1], linkLabelSpec(lk.text, lk.style), a * (lk.textFrom && lk.lswap < 1 ? fadeInOf(lk.lswap) : 1));
-      lk.lg.innerHTML = s;
-    }
-
-    /* ---------- Camera and HUD ---------- */
-
-    function camTargetOf(c) { const v = viewRect(c, VIEW); return { x: v.x, y: v.y, w: v.w, h: v.h }; }
-
-    function applyCamera() {
-      cam.dirty = false;
-      svg.setAttribute('viewBox', `${n2(cam.x)} ${n2(cam.y)} ${n2(cam.w)} ${n2(cam.h)}`);
-      const gf = gridFade();
-      if (gf) {
-        gf.setAttribute('cx', n1(cam.x + cam.w / 2));
-        gf.setAttribute('cy', n1((cam.y + cam.h / 2) / .6));
-        gf.setAttribute('r', n1(cam.w * .56));
-      }
-      layer.hud.setAttribute('transform', `translate(${n2(cam.x)} ${n2(cam.y)}) scale(${(cam.w / VIEW.W).toFixed(4)})`);
-    }
-
-    function renderHud() {
-      hud.dirty = false;
-      if (!hud.g) return;
-      const L = hud.layout, cw = L.w * VIEW.hud, ch = L.h * VIEW.hud, m = 12;
-      const sx = hud.corner[1] === 'r' ? VIEW.W - m - cw : m;
-      const sy = hud.corner[0] === 'b' ? VIEW.H - m - ch - 3 : m;
-      hud.g.setAttribute('transform', `translate(${n1(sx)} ${n1(sy)}) scale(${n2(VIEW.hud)})`);
-      hud.g.setAttribute('opacity', n2(hud.op));
-    }
-
-    function setPanel(k, instant, delay) {
-      const plan = k >= 0 ? plans[k] : null;
-      const panel = plan && plan.panel && !VIEW.inlinePanel ? plan.panel : null;
-      const key = panel ? JSON.stringify(panel) : '';
-      if (plan && cams[k].corner) hud.corner = cams[k].corner;
-      hud.dirty = true;
-      if (key === hud.key) return;
-      if (hud.g) {
-        const old = hud.g;
-        hud.g = null;
-        if (instant || reduce) old.remove();
-        else { const o = { op: hud.op }; tween(o, 'op', 0, 260, { done: () => old.remove() }); hud.old.push({ g: old, o }); }
-      }
-      hud.key = key;
-      if (!panel) return;
-      hud.layout = panelLayout(panel);
-      hud.g = svgEl('g', { class: 'hud-card' }, layer.hud);
-      hud.g.innerHTML = panelSvg(hud.layout);
-      hud.op = 0;
-      tween(hud, 'op', 1, instant ? 0 : 420, { delay, owner: hud, ease: outCubic });
-    }
-
-    // The summary card under a narrow stage. `animate` marks a change, as when a replay reaches the option.
-    let inlineHtml = '';
-    function renderPanelInline(i, animate) {
-      const box = $('panelInline');
-      const panel = VIEW.inlinePanel && i >= 0 ? (SCENES[i].scene || {}).panel : null;
-      const html = panel && panel.lines ? `<div class="pi-title">${esc(String(panel.title || '').toUpperCase())}</div>` + panelRows(panel).map((r) => `<div class="pi-row ${r.kind}">${esc(r.t)}</div>`).join('') : '';
-      box.hidden = !html;
-      if (html === inlineHtml) return;
-      box.innerHTML = inlineHtml = html;
-      if (animate && html && !reduce) restartAnim(box, 'swap');
-    }
-
-    /* ---------- Floor effects ---------- */
-
-    function spotlight(id) {
-      const n = NODES[id];
-      const r = n.type === 'block' ? (n.size || 4) / 2 + 1.2 : n.type === 'crowd' ? 6.5 : n.type === 'zone' ? Math.max(n.w || 8, n.h || 6) / 2 : 2.6;
-      const d = roundPoly([P(n.x - r, n.y + r), P(n.x + r, n.y + r), P(n.x + r, n.y - r), P(n.x - r, n.y - r)], 12);
-      const el = svgEl('path', { class: 'spot', d }, layer.floor);
-      after(1600, () => el.remove());
-    }
-
-    /* ---------- Scene transitions ---------- */
-
-    const EXIT = 420, MOVE = 820, ENTER = 680, STAGGER = 130, LINK_DRAW = 560, LINK_OUT = 300, CAM = 820;
-    const ENTER_LIFT = { device: 40, crowd: 26, queue: 26, actor: 60, zone: 0 };
-
-    function freshState(pr, extra) {
-      return { op: 1, lift: 0, load: pr.load ?? 0, heat: pr.heat, dead: pr.dead, dim: pr.dim, count: pr.count, swap: 1, ...extra };
-    }
-
-    // Moves the stage to scene i; returns when (ms on the animation clock) the move ends.
-    function stageTo(i, instant) {
-      const token = ++stageToken;
-      timers.length = 0;
-      stopFlows();
-      const plan = i >= 0 ? plans[i] : null;
-      const show = new Set(plan ? plan.show : []);
-      stageIdx = i;
-      instant = instant || reduce;
-
-      if (instant) {
-        tweens.length = 0;
-        for (const e of [...ents.values()]) if (!show.has(e.id)) removeEnt(e);
-        for (const id of show) {
-          const e = ents.get(id) || makeEnt(id), pr = plan.props[id];
-          e.leaving = false; e.from = null; e.to = pr; e.c = freshState(pr);
-          e.labelTarget = plan.ents[id].labelAt; e.labelPos = e.labelTarget; e.side = plan.ents[id].side; e.dirty = true;
-        }
-        const vis = new Set(plan ? plan.linkIds : []);
-        for (const lk of [...lks.values()]) if (!vis.has(lk.id)) removeLink(lk);
-        for (const id of vis) {
-          const lk = lks.get(id) || makeLink(id);
-          Object.assign(lk, { leaving: false, draw: 1, op: 1, style: linkStyle(i, id), text: linkText(i, id), textFrom: null, lswap: 1, dirty: true });
-          lk.target = plan.labels[id] || null; lk.pos = lk.target;
-        }
-        for (const h of hud.old) h.g.remove();
-        hud.old = [];
-        if (plan) Object.assign(cam, camTargetOf(cams[i]), { dirty: true });
-        setPanel(i, true, 0);
-        if (plan) startFlows(i);
-        return 0;
-      }
-
-      const exits = [], moves = [], enters = [];
-      for (const e of ents.values()) if (!show.has(e.id) && !e.leaving) exits.push(e);
-      for (const id of plan ? plan.show : []) {
-        const e = ents.get(id), pr = plan.props[id];
-        if (!e) enters.push({ id, pr });
-        else if (e.leaving || !same(pr, e.to)) moves.push({ e, pr });
-      }
-      const tMove = exits.length ? EXIT * .55 : 0;
-      const tEnter = moves.length ? tMove + MOVE * .75 : exits.length ? EXIT * .7 : 0;
-      const tCam = exits.length ? 168 : 0;
-      let end = 0;
-
-      for (const e of exits) {
-        e.leaving = true;
-        tween(e.c, 'op', 0, EXIT, { owner: e });
-        tween(e.c, 'lift', -22, EXIT, { owner: e, done: () => { if (e.leaving) removeEnt(e); } });
-        end = Math.max(end, EXIT);
-      }
-
-      const changed = [];
-      for (const { e, pr } of moves) {
-        const o = { owner: e, delay: tMove };
-        e.from = e.to; e.to = pr;
-        if (e.from.load === null && pr.load !== null) e.c.load = 0;
-        // A db shows its load as its fill, so a load that goes away drains it; a gauge fades out instead.
-        if (pr.load !== null || e.n.type === 'db') tween(e.c, 'load', pr.load ?? 0, MOVE, o);
-        tween(e.c, 'heat', pr.heat, MOVE, o);
-        tween(e.c, 'dead', pr.dead, MOVE, o);
-        tween(e.c, 'dim', pr.dim, MOVE, o);
-        tween(e.c, 'count', pr.count, MOVE, o);
-        e.c.swap = 0;
-        tween(e.c, 'swap', 1, MOVE, { ...o, ease: linear });
-        if (e.leaving) {
-          e.leaving = false;
-          tween(e.c, 'op', 1, MOVE, o);
-          tween(e.c, 'lift', 0, MOVE, o);
-        }
-        e.labelTarget = plan.ents[e.id].labelAt; e.side = plan.ents[e.id].side;
-        e.landAt = tMove;
-        changed.push(e.id);
-        end = Math.max(end, tMove + MOVE);
-      }
-      for (const e of ents.values()) if (show.has(e.id) && !moves.some((m) => m.e === e)) { e.landAt = 0; e.labelTarget = plan.ents[e.id].labelAt; e.side = plan.ents[e.id].side; e.dirty = true; }
-
-      enters.sort((a, b) => depthOf(NODES[a.id]) - depthOf(NODES[b.id]));
-      enters.forEach(({ id, pr }, k) => {
-        const e = makeEnt(id), n = NODES[id];
-        e.to = pr; e.from = null;
-        e.c = freshState(pr, { op: 0, lift: ENTER_LIFT[n.type] ?? 120, count: n.type === 'crowd' ? 0 : pr.count });
-        e.labelTarget = plan.ents[id].labelAt; e.labelPos = e.labelTarget; e.side = plan.ents[id].side;
-        const delay = tEnter + k * STAGGER;
-        tween(e.c, 'op', 1, ENTER, { owner: e, delay, ease: outCubic });
-        tween(e.c, 'lift', 0, ENTER, { owner: e, delay, ease: outBack });
-        if (n.type === 'crowd') tween(e.c, 'count', pr.count, ENTER + 300, { owner: e, delay });
-        e.landAt = delay + ENTER;
-        changed.push(id);
-        end = Math.max(end, e.landAt);
-      });
-
-      const vis = new Set(plan ? plan.linkIds : []);
-      for (const lk of lks.values()) {
-        if (vis.has(lk.id) || lk.leaving) continue;
-        lk.leaving = true;
-        tween(lk, 'op', 0, LINK_OUT, { owner: lk, done: () => { if (lk.leaving) removeLink(lk); } });
-      }
-      let j = 0;
-      for (const id of plan ? plan.linkIds : []) {
-        const style = linkStyle(i, id), text = linkText(i, id), target = plan.labels[id] || null;
-        let lk = lks.get(id);
-        if (lk) {
-          if (lk.leaving) { lk.leaving = false; tween(lk, 'op', 1, LINK_OUT, { owner: lk, delay: tMove }); }
-          if (lk.draw < 1) tween(lk, 'draw', 1, LINK_DRAW, { owner: lk, delay: tMove });
-          if (lk.style !== style) { lk.style = style; lk.dirty = true; }
-          if (lk.text !== text) {
-            lk.textFrom = lk.text; lk.posFrom = lk.pos; lk.text = text; lk.pos = target; lk.lswap = 0;
-            tween(lk, 'lswap', 1, MOVE, { owner: lk, delay: tMove, ease: linear });
-          }
-          lk.target = target;
-          if (!lk.pos) lk.pos = target;
-          continue;
-        }
-        lk = makeLink(id);
-        Object.assign(lk, { style, text, target, pos: target, draw: 0, op: 1 });
-        const L = LINKS[id];
-        const land = Math.max(ents.get(L.from) ? ents.get(L.from).landAt : 0, ents.get(L.to) ? ents.get(L.to).landAt : 0);
-        const delay = land + 60 + 90 * j++;
-        tween(lk, 'draw', 1, LINK_DRAW, { owner: lk, delay });
-        end = Math.max(end, delay + LINK_DRAW);
-      }
-
-      if (plan) {
-        const t = camTargetOf(cams[i]);
-        for (const k of ['x', 'y', 'w', 'h']) tween(cam, k, t[k], CAM, { owner: cam, delay: tCam });
-        end = Math.max(end, tCam + CAM);
-      }
-      setPanel(i, false, Math.max(0, end - 300));
-
-      after(end + 40, () => {
-        if (token !== stageToken || !plan) return;
-        startFlows(i);
-        changed.forEach(spotlight);
-      });
-      return end;
-    }
-
-    /* ---------- Flows ---------- */
-
-    const SPEED = 155;
-    const KIND_SPEED = { heavy: .7, signal: .85 };
-
-    function packetShape(kind) {
-      switch (kind) {
-        case 'heavy': return '<rect class="pkb pk-heavy" x="-6" y="-6" width="12" height="12" rx="3"/>';
-        case 'write': return '<rect class="pkb pk-write" x="-4.2" y="-4.2" width="8.4" height="8.4" rx="1.8"/>';
-        case 'message': return '<rect class="pkb pk-message" x="-4.8" y="-4.8" width="9.6" height="9.6" rx="2.2"/>';
-        case 'signal': return '<circle class="pk-ring" r="5.8"/><circle class="pkb pk-signal" r="2.9"/>';
-        case 'response': return '<circle class="pkb pk-response" r="4.3"/>';
-        default: return '<circle class="pkb pk-request" r="4.3"/>';
-      }
-    }
-
-    const legRange = (lk) => [2, Math.max(4, lk.glen - (hasHead(lk.style) ? 10 : 2))];
-
-    function legPoint(lk, leg, s) {
-      const [lo, hi] = legRange(lk);
-      const q = lk.geo.getPointAtLength(leg.rev ? hi - s : lo + s);
-      return [q.x, q.y];
-    }
-
-    function startFlows(i) {
-      stopFlows();
-      flows = flowList(i, (id) => lks.has(id));
-      if (reduce) drawChevrons();
-    }
-
-    function stopFlows() {
-      flows = [];
-      for (const p of packets) { const g = p.g; g.classList.add('leave'); later(() => g.remove(), 280); }
-      packets = [];
-      for (const c of [...layer.packets.querySelectorAll('.chev')]) c.remove();
-      layer.fx.innerHTML = '';
-    }
-
-    function setPacketKind(p, kind) {
-      if (p.kind === kind) return;
-      p.kind = kind;
-      p.shape.innerHTML = packetShape(kind);
-    }
-
-    function spawn(fl) {
-      const legs = fl.legs.map((l) => ({ ...l, kind: fl.kind }));
-      const turn = legs.length - 1;
-      if (fl.f.bounce) for (let k = fl.legs.length - 1; k >= 0; k--) legs.push({ id: fl.legs[k].id, rev: !fl.legs[k].rev, kind: 'response' });
-      const g = svgEl('g', { class: 'pk', style: 'opacity:0' }, layer.packets);
-      const shape = svgEl('g', {}, g);
-      const p = { fl, legs, turn, k: 0, s: 0, wait: 0, g, shape, kind: null };
-      setPacketKind(p, legs[0].kind);
-      placePacket(p, legPoint(lks.get(legs[0].id), legs[0], 0));
-      nextFrame(() => { if (!p.dead && p.wait <= 0) g.style.opacity = 1; });
-      packets.push(p);
-    }
-
-    const placePacket = (p, q) => p.g.setAttribute('transform', `translate(${n1(q[0])} ${n1(q[1])})`);
-
-    function killPacket(p) {
-      p.dead = true;
-      p.g.remove();
-    }
-
-    function fxRing(q) {
-      const c = svgEl('circle', { class: 'fx fx-ring', cx: n1(q[0]), cy: n1(q[1]), r: 6 }, layer.fx);
-      later(() => c.remove(), 700);
-    }
-
-    function fxBurst(q) {
-      const g = svgEl('g', { class: 'fx', transform: `translate(${n1(q[0])} ${n1(q[1])})` }, layer.fx);
-      g.innerHTML = '<g class="fx-burst"><circle r="6.5"/><path d="M-2.8-2.8l5.6 5.6M2.8-2.8l-5.6 5.6"/></g>';
-      later(() => g.remove(), 900);
-    }
-
-    function stepPackets(dt) {
-      for (const fl of flows) {
-        fl.acc += dt * (typeof fl.f.rate === 'number' ? fl.f.rate : .8);
-        while (fl.acc >= 1) { fl.acc -= 1; spawn(fl); }
-      }
-      for (let q = packets.length - 1; q >= 0; q--) {
-        const p = packets[q];
-        if (p.wait > 0) {
-          p.wait -= dt;
-          if (p.wait > 0) continue;
-          p.g.classList.remove('held');
-          p.k += 1; p.s = 0;
-          setPacketKind(p, p.legs[p.k].kind);
-          p.g.style.opacity = 1;
-        }
-        const leg = p.legs[p.k], lk = lks.get(leg.id);
-        if (!lk) { killPacket(p); packets.splice(q, 1); continue; }
-        const [lo, hi] = legRange(lk), L = hi - lo;
-        p.s += dt * SPEED * (typeof p.fl.f.speed === 'number' ? p.fl.f.speed : 1) * (KIND_SPEED[p.kind] || 1);
-        if (lk.style === 'cut' && p.s >= L / 2) {
-          // A broken link cannot deliver: the dot dies at the break.
-          fxBurst(legPoint(lk, leg, L / 2)); killPacket(p); packets.splice(q, 1); continue;
-        }
-        if (p.s < L) { placePacket(p, legPoint(lk, leg, p.s)); continue; }
-        const endPt = legPoint(lk, leg, L);
-        placePacket(p, endPt);
-        if (p.k === p.turn && Math.random() < (Number(p.fl.f.fail) || 0)) { fxBurst(endPt); killPacket(p); packets.splice(q, 1); continue; }
-        if (p.k === p.legs.length - 1) { fxRing(endPt); killPacket(p); packets.splice(q, 1); continue; }
-        const hold = p.k === p.turn ? Number(p.fl.f.hold) || 0 : 0;
-        if (hold > 0) { p.wait = hold; p.g.classList.add('held'); }
-        else { p.wait = .16; p.g.style.opacity = 0; }
-      }
-    }
-
-    // Reduced motion: each flow becomes still chevrons along its links.
-    function drawChevrons() {
-      const g = svgEl('g', { class: 'chev' }, layer.packets);
-      g.innerHTML = chevronsSvg(flows, (leg) => {
-        const lk = lks.get(leg.id), [lo, hi] = legRange(lk);
-        return { L: hi - lo, at: (s) => legPoint(lk, leg, s) };
-      }, (id) => lks.get(id).style === 'cut');
-    }
-
-    /* ---------- Frame loop ---------- */
-
-    let lastT = performance.now();
-    const uiAnims = [];
-
-    function frame(now) {
-      if (!alive) return;
-      const dt = Math.min(50, now - lastT);
-      lastT = now;
-      for (let k = 0; k < uiAnims.length; k++) if (uiAnims[k](now)) uiAnims.splice(k--, 1);
-      if (!paused) {
-        clock += dt;
-        runTimers();
-        runTweens();
-        for (const e of ents.values()) {
-          if (e.labelTarget && e.labelPos && (e.labelPos[0] !== e.labelTarget[0] || e.labelPos[1] !== e.labelTarget[1])) {
-            const nx = lerp(e.labelPos[0], e.labelTarget[0], .16), ny = lerp(e.labelPos[1], e.labelTarget[1], .16);
-            e.labelPos = Math.abs(nx - e.labelTarget[0]) + Math.abs(ny - e.labelTarget[1]) < .3 ? e.labelTarget : [nx, ny];
-            e.dirty = true;
-          } else if (e.labelTarget && !e.labelPos) { e.labelPos = e.labelTarget; e.dirty = true; }
-        }
-        for (const lk of lks.values()) {
-          if (lk.target && lk.pos && (lk.pos[0] !== lk.target[0] || lk.pos[1] !== lk.target[1])) {
-            const nx = lerp(lk.pos[0], lk.target[0], .16), ny = lerp(lk.pos[1], lk.target[1], .16);
-            lk.pos = Math.abs(nx - lk.target[0]) + Math.abs(ny - lk.target[1]) < .3 ? lk.target : [nx, ny];
-            lk.dirty = true;
-          }
-        }
-        for (const h of hud.old) h.g.setAttribute('opacity', n2(h.o.op));
-        hud.old = hud.old.filter((h) => h.g.isConnected);
-      }
-      for (const e of ents.values()) if (e.dirty) renderEnt(e);
-      for (const lk of lks.values()) if (lk.dirty) renderLink(lk);
-      if (cam.dirty) { applyCamera(); hud.dirty = true; }
-      if (hud.dirty) renderHud();
-      if (!paused && !reduce) stepPackets(dt / 1000);
-      nextFrame(frame);
-    }
-
-    /* ================= Page regions ================= */
-
-    const CHAPTER_TONE = { setup: 'gray', problem: 'red', technique: 'violet', solution: 'green', insight: 'amber', tradeoff: 'amber', recap: 'paper' };
-    const CALLOUT = {
-      insight: { label: 'Key idea', icon: 'bulb', tone: 'amber' },
-      tip: { label: 'Good to know', icon: 'info', tone: 'green' },
-      warn: { label: 'Watch out', icon: 'alert', tone: 'red' },
-      next: { label: 'Next up', icon: 'arrow', tone: 'violet' },
-    };
-
-    function renderHeader() {
-      document.title = opts.docTitle || w.title || 'Walkthrough';
-      $('title').textContent = w.title || '';
-      $('summary').textContent = w.summary || '';
-      $('question').hidden = !w.question;
-      $('question').textContent = w.question || '';
-      if (w.note) { $('note').hidden = false; $('note').textContent = `# ${w.note}`; }
-      const minutes = w.minutes ?? opts.minutes, level = w.level ?? opts.level;
-      const pills = [];
-      if (minutes) pills.push(['clock', `${minutes} min`, 'amber']);
-      if (level) pills.push(['level', level, 'green']);
-      pills.push(['layers', `${STEPS.length} steps`, 'violet']);
-      $('pills').innerHTML = pills.map(([ic, t, tone]) => `<li class="pill tone-${tone}">${iconHtml(ic)}${esc(t)}</li>`).join('');
-      $('stripHead').textContent = LBL.strip;
-      $('goalsHead').textContent = LBL.goals;
-      $('goals').hidden = !GOALS.length;
-      renderSources();
-    }
-
-    // The ledger under the goals: where each fact and number comes from, collapsed by default.
-    function renderSources() {
-      const list = Array.isArray(w.sources) ? w.sources.filter(isObject) : [];
-      $('sources').hidden = !list.length;
-      if (!list.length) return;
-      const kindOf = (s) => (s.kind === 'data' ? ['green', LBL.sourced] : s.kind === 'assumption' ? ['amber', LBL.assumed] : ['gray', String(s.kind ?? '?')]);
-      const counts = [['data', 'green', LBL.sourced], ['assumption', 'amber', LBL.assumed]]
-        .map(([kind, tone, label]) => [list.filter((s) => s.kind === kind).length, tone, label])
-        .filter(([n]) => n)
-        .map(([n, tone, label]) => ` · ${tagHtml(`${label} ${n}`, tone)}`).join('');
-      $('sourcesHead').innerHTML = `<span class="sources-h">${esc(LBL.sources)}</span>${counts}`;
-      $('sourcesList').innerHTML = list.map((s) => {
-        const [tone, tag] = kindOf(s);
-        const text = String(s.source ?? '').trim(), url = String(s.url ?? '').trim();
-        const from = /^https?:\/\//i.test(url) ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(text || url)}</a>` : esc(text || url);
-        return `<li>${tagHtml(tag, tone)}<div><p class="src-claim">${esc(s.claim ?? '')}</p>${from ? `<p class="src-from">${from}</p>` : ''}</div></li>`;
-      }).join('');
-    }
-
-    function renderLegend() {
-      $('legend').innerHTML = LEGEND.map((l) => {
-        const kind = KINDS.includes(l.kind) ? l.kind : 'request';
-        return `<li><svg viewBox="-8 -8 16 16" aria-hidden="true">${packetShape(kind)}</svg>${esc(l.label || kind)}</li>`;
-      }).join('');
-    }
-
-    /* ---------- Metric chips ---------- */
-
-    const chips = [];
-
-    function buildMetrics() {
-      const box = $('metrics');
-      box.hidden = !METRICS.length;
-      METRICS.forEach((m, k) => {
-        const el = document.createElement('div');
-        el.className = `chip${k === METRICS.length - 1 && METRICS.length > 1 ? ' total' : ''}`;
-        el.setAttribute('role', 'listitem');
-        el.innerHTML = `<span class="chip-l">${m.icon ? iconHtml(m.icon) : ''}${esc(m.label)}</span><span class="chip-v"><span class="chip-n">—</span><span class="chip-u"></span></span>`;
-        box.appendChild(el);
-        chips.push({ el, v: el.querySelector('.chip-v'), num: el.querySelector('.chip-n'), unit: el.querySelector('.chip-u'), m, value: null, token: 0 });
-      });
-    }
-
-    function setChip(c, v) {
-      c.num.textContent = v === null ? '—' : fmtNum(v);
-      c.unit.textContent = v === null ? '' : (c.m.unit || '');
-    }
-
-    function restartAnim(el, cls) {
-      el.classList.remove(cls);
-      void el.offsetWidth;
-      el.classList.add(cls);
-    }
-
-    function updateMetrics(i, animate) {
-      const vals = SCENES[i].metrics || {};
-      for (const c of chips) {
-        const v = typeof vals[c.m.id] === 'number' ? vals[c.m.id] : null;
-        if (v === c.value) continue;
-        const old = c.value;
-        c.value = v;
-        const token = ++c.token;
-        if (!animate || reduce || v === null || old === null) {
-          setChip(c, v);
-          if (animate && !reduce) restartAnim(c.v, 'swap');
-        } else {
-          const t0 = performance.now(), dec = decimalsOf(v);
-          c.unit.textContent = c.m.unit || '';
-          uiAnims.push((now) => {
-            if (token !== c.token) return true;
-            const u = Math.min(1, (now - t0) / 900);
-            c.num.textContent = u >= 1 ? fmtNum(v, dec) : fmtNum(Number(lerp(old, v, outCubic(u)).toFixed(dec)), dec);
-            return u >= 1;
-          });
-        }
-        if (animate && !reduce) restartAnim(c.el, 'flash');
-      }
-    }
-
-    /* ---------- Explanation ---------- */
-
-    function renderGuide(i, dir) {
-      const s = STEPS[i], guide = $('guide');
-      if (dir && !reduce && guide.childElementCount) {
-        const old = guide.cloneNode(true);
-        old.removeAttribute('data-ref');
-        old.removeAttribute('aria-live');
-        old.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
-        old.className = 'guide guide-old still';
-        old.setAttribute('aria-hidden', 'true');
-        old.inert = true;   // its buttons must not take focus while it fades out
-        old.style.left = `${guide.offsetLeft}px`;
-        old.style.top = `${guide.offsetTop}px`;
-        old.style.width = `${guide.offsetWidth}px`;
-        guide.parentNode.appendChild(old);
-        later(() => old.remove(), 200);
-      }
-      const blocks = [];
-      const chapter = s.chapter || 'setup';
-      blocks.push(`<div class="guide-head"><span>${i + 1} / ${STEPS.length}</span><span class="badge tone-${CHAPTER_TONE[chapter] || 'gray'}">${esc(LBL.chapters[chapter] || chapter)}</span></div>`);
-      blocks.push(`<h2>${esc(s.title || '')}</h2>`);
-      for (const para of s.body || []) blocks.push(/^\s*<(ul|ol|p)\b/i.test(para) ? `<div class="body">${para}</div>` : `<div class="body"><p>${para}</p></div>`);
-      if (tries[i]) blocks.push(tryBlock(tries[i]));
-      if (s.callout && s.callout.text) {
-        const c = CALLOUT[s.callout.kind] || CALLOUT.insight;
-        blocks.push(`<div class="callout tone-${c.tone}"><span class="callout-icon">${iconHtml(c.icon)}</span><div><strong>${c.label}</strong><p>${s.callout.text}</p></div></div>`);
-      }
-      if (s.changes && s.changes.length) {
-        const items = s.changes.map((line) => {
-          const str = String(line), ch = str.charAt(0);
-          const kind = ch === '+' ? ['+', 'green', 'added'] : ch === '~' ? ['~', 'amber', 'changed'] : (ch === '−' || ch === '-') ? ['−', 'red', 'removed'] : null;
-          const text = kind ? str.slice(1).trim() : str;
-          return `<li>${kind ? `<span class="mark tone-${kind[1]}" aria-hidden="true">${kind[0]}</span><span class="sr-only">${kind[2]}: </span>` : ''}<span>${esc(text)}</span></li>`;
-        }).join('');
-        blocks.push(`<section class="changes"><h3 class="section-h">${esc(LBL.changes)}</h3><ul>${items}</ul></section>`);
-      }
-      guide.className = dir && !reduce ? 'guide' : 'guide still';
-      guide.style.setProperty('--slide', `${dir > 0 ? 36 : -36}px`);
-      guide.innerHTML = blocks.map((b, k) => `<div class="blk" style="--i:${k}">${b}</div>`).join('');
-    }
-
-    /* ---------- Try it ---------- */
-    // A try step offers options; choosing one moves the stage to that option's scene without
-    // sliding the text. Reset, or leaving the step, returns to the step's own (base) scene.
-
-    const sceneNow = () => (choice >= 0 && tries[cur] ? tries[cur].options[choice].scene : cur);
-
-    function tryBlock(t) {
-      const buttons = t.options.map((o, k) => `<button type="button" class="btn try-opt" data-try="${k}" aria-pressed="false"><kbd aria-hidden="true">${k + 1}</kbd><span>${esc(o.label)}</span></button>`).join('');
-      return `<section class="try" aria-labelledby="dio-try-head" aria-live="off"><h3 class="section-h" id="dio-try-head">${esc(LBL.try)}</h3>`
-        + `${t.prompt ? `<p class="try-prompt">${esc(t.prompt)}</p>` : ''}`
-        + `<div class="try-options" role="group" aria-label="${esc(t.prompt || LBL.try)}">${buttons}`
-        + `<button type="button" class="btn small try-reset" data-try="reset" hidden>${iconHtml('replay')}<span>${esc(LBL.reset)}</span></button></div>`
-        + '<div class="try-verdict" hidden></div></section>';
-    }
-
-    function syncTry() {
-      const box = $('guide').querySelector('.try');
-      if (!box) return;
-      const o = choice >= 0 ? tries[cur].options[choice] : null;
-      for (const b of box.querySelectorAll('.try-opt')) b.setAttribute('aria-pressed', String(Number(b.dataset.try) === choice));
-      box.querySelector('.try-reset').hidden = !o;
-      const v = box.querySelector('.try-verdict');
-      v.hidden = !o;
-      v.className = `try-verdict tone-${o ? o.verdict.tone : 'paper'}`;
-      v.innerHTML = o ? `<p class="try-v-head"><span class="try-v-text">${esc(o.verdict.text)}</span><span class="try-v-opt">${esc(o.label)}</span></p>${o.verdict.why ? `<p class="try-v-why">${esc(o.verdict.why)}</p>` : ''}` : '';
-    }
-
-    function showChoice() {
-      const k = sceneNow();
-      setPaused(false);
-      syncTry();
-      updateMetrics(k, true);
-      describeScene(k);
-      renderPanelInline(k);
-      stageTo(k, false);
-    }
-
-    function choose(k) {
-      const t = tries[cur];
-      if (!t || k < 0 || k >= t.options.length || k === choice) return;
-      choice = k;
-      showChoice();
-      const o = t.options[k];
-      $('tryLive').textContent = `${o.label}: ${o.verdict.text.replace(/[.!?]$/, '')}.${o.verdict.why ? ` ${o.verdict.why}` : ''}`;
-    }
-
-    function resetTry() {
-      if (!tries[cur] || choice < 0) return;
-      choice = -1;
-      showChoice();
-      $('tryLive').textContent = LBL.reset;
-    }
-
-    // Keys on a try step: 1-5 choose, 0 resets. Returns false when the key means nothing here.
-    function tryKey(n) {
-      const t = tries[cur];
-      if (!t || n > t.options.length) return false;
-      if (n === 0) resetTry();
-      else choose(n - 1);
-      return true;
-    }
-
-    function renderTryHint(i) {
-      const t = tries[i], hint = $('tryHint');
-      hint.hidden = !t;
-      hint.innerHTML = t ? `<kbd>1</kbd>${t.options.length > 1 ? `–<kbd>${t.options.length}</kbd>` : ''} ${esc(LBL.try.toLocaleLowerCase())} · <kbd>0</kbd> ${esc(LBL.reset.toLocaleLowerCase())} · ` : '';
-    }
-
-    function renderNav(i) {
-      const back = $('backBtn'), next = $('nextBtn');
-      const toPrev = i === 0 && opts.prev;
-      back.innerHTML = `${iconHtml('back')}<span>${esc(LBL.back)}</span>`;
-      back.disabled = i === 0 && !opts.prev;
-      if (toPrev) back.setAttribute('aria-label', `${LBL.back}: ${opts.prev.title}`);
-      else back.removeAttribute('aria-label');
-      back.title = toPrev ? `${LBL.back}: ${opts.prev.title}` : '';
-      if (i === STEPS.length - 1) {
-        const end = opts.end || { label: LBL.restart, icon: 'replay' };
-        next.innerHTML = `<span>${esc(end.label)}</span>${iconHtml(end.icon || 'arrow')}`;
-      } else {
-        next.innerHTML = `<span>${esc(LBL.next)}: ${esc(STEPS[i + 1].short || `step ${i + 2}`)}</span>${iconHtml('arrow')}`;
-      }
-    }
-
-    function renderGoals(i) {
-      $('goalsList').innerHTML = GOALS.map((g) => {
-        const done = i >= g.step;
-        return `<li class="${done ? 'done' : ''}"><span class="check" aria-hidden="true">${iconHtml('check')}</span><span>${esc(g.text)}<span class="sr-only">${done ? ' (covered)' : ''}</span></span></li>`;
-      }).join('');
-    }
-
-    /* ---------- Step strip ---------- */
-
-    const stripButtons = [];
-    function buildStrip() {
-      const ol = $('stepStrip');
-      ol.style.setProperty('--n', STEPS.length);
-      STEPS.forEach((s, k) => {
-        const li = document.createElement('li');
-        const t = tries[k];
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = t ? 'step-btn has-try' : 'step-btn';
-        b.innerHTML = `<span class="dot-n" aria-hidden="true">${k + 1}</span>${t ? '<span class="try-mark" aria-hidden="true"></span>' : ''}<span class="step-short">${esc(s.short || `Step ${k + 1}`)}</span>`;
-        b.setAttribute('aria-label', `Step ${k + 1}: ${s.short || s.title || ''}${t ? ` (${LBL.try})` : ''}`);
-        if (t) b.title = LBL.try;
-        b.addEventListener('click', () => go(k));
-        li.appendChild(b);
-        ol.appendChild(li);
-        stripButtons.push(b);
-      });
-    }
-
-    function renderStrip(i) {
-      stripButtons.forEach((b, k) => {
-        b.classList.toggle('past', k < i);
-        b.classList.toggle('current', k === i);
-        if (k === i) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
-      });
-      $('stepStrip').style.setProperty('--p', STEPS.length > 1 ? i / (STEPS.length - 1) : 0);
-      $('stripCount').textContent = `step ${i + 1} of ${STEPS.length}`;
-      const sc = $('stripScroll'), b = stripButtons[i];
-      if (sc.scrollWidth > sc.clientWidth) sc.scrollLeft = b.parentNode.offsetLeft - sc.clientWidth / 2 + b.offsetWidth / 2;
-    }
-
-    /* ---------- Text alternative for the stage ---------- */
-
-    function describeScene(i) {
-      const { title, items } = M.describe(i, LBL.try);
-      $('sceneTitle').textContent = `Stage, ${title}`;
-      $('sceneText').innerHTML = `<ul>${items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>`;
-    }
-
-    /* ---------- Controls ---------- */
-
-    function setPaused(v) {
-      paused = v;
-      svg.classList.toggle('paused', v);
-      const b = $('pauseBtn');
-      b.setAttribute('aria-pressed', String(v));
-      b.innerHTML = v ? `${iconHtml('play')}<span>Resume</span>` : `${iconHtml('pause')}<span>Pause</span>`;
-    }
-
-    function replay() {
-      if (cur < 0) return;
-      setPaused(false);
-      const k = sceneNow();
-      if (reduce) { stageTo(k, true); return; }
-      if (k === cur) {
-        stageTo(cur - 1, true);   // step 1 has no previous scene, so this empties the stage
-        stageTo(k, false);
-        return;
-      }
-      // With an option chosen, replay the change from the step's base scene to that option: the
-      // stage, the metrics counting from the base values, and an inline summary card.
-      stageTo(cur, true);
-      updateMetrics(cur, false);
-      updateMetrics(k, true);
-      renderPanelInline(cur);
-      const end = stageTo(k, false);
-      after(Math.max(0, end - 300), () => renderPanelInline(k, true));
-    }
-
-    /* ================= Layout of the stage ================= */
-
-    function layoutStage() {
-      const wrapW = wrap.clientWidth;
-      let W = wrapW;
-      const H = svg.clientHeight || 400;
-      if (phoneQuery.matches) {
-        // On a phone the stage keeps a readable minimum scale (0.85) and pans sideways instead. A try
-        // step needs room for its base and every option, as its camera frames them all at once.
-        const need = Math.max(...M.stepBounds.map((b) => (b.x1 - b.x0) * .85 + 2 * VIEW.margin));
-        const hNeed = Math.max(...M.stepBounds.map((b) => (b.y1 - b.y0) * .85 + 2 * VIEW.margin));
-        if (need > wrapW && hNeed <= H) W = Math.ceil(Math.min(need, wrapW * 2.6));
-        else if (need > wrapW) W = Math.ceil(Math.min(need * H / hNeed, wrapW * 2.6));
-      }
-      svg.style.width = W > wrapW ? `${W}px` : '';
-      Object.assign(VIEW, viewFor(W, H, { inline: wrapW < 520, phone: phoneQuery.matches }));
-      $('scrollHint').hidden = W <= wrapW + 1;
-      cams = M.planCameras(VIEW);
-    }
-
-    function relayout() {
-      const prevW = VIEW.W, prevH = VIEW.H;
-      layoutStage();
-      if (prevW === VIEW.W && prevH === VIEW.H) return;
-      if (stageIdx >= 0) {
-        for (const k of ['x', 'y', 'w', 'h']) for (let t = tweens.length - 1; t >= 0; t--) if (tweens[t].target === cam && tweens[t].key === k) tweens.splice(t, 1);
-        Object.assign(cam, camTargetOf(cams[stageIdx]), { dirty: true });
-        hud.key = '__relayout';
-        setPanel(stageIdx, true, 0);
-      }
-      renderPanelInline(sceneNow());
-      centreScroll();
-    }
-
-    function centreScroll() {
-      if (wrap.scrollWidth > wrap.clientWidth) wrap.scrollLeft = (wrap.scrollWidth - wrap.clientWidth) / 2;
-    }
-
-    /* ================= Navigation ================= */
-
-    function go(i, opt = {}) {
-      if (!alive) return;
-      i = clamp(i, 0, STEPS.length - 1);
-      if (i !== cur || opt.force) {
-        const dir = cur < 0 ? 0 : Math.sign(i - cur);
-        cur = i;
-        choice = -1;
-        setPaused(false);
-        renderGuide(i, opt.instant ? 0 : dir);
-        updateMetrics(i, !opt.instant);
-        renderNav(i);
-        renderGoals(i);
-        renderStrip(i);
-        renderTryHint(i);
-        $('tryLive').textContent = '';
-        describeScene(i);
-        renderPanelInline(i);
-        stageTo(i, !!opt.instant);
-      }
-      if (opts.onStep) opts.onStep(i);
-    }
-
-    // The primary buttons may leave the walkthrough (previous or next one, home); keys never do.
-    function back() {
-      if (cur === 0 && opts.prev) opts.prev.go();
-      else go(cur - 1);
-    }
-    function forward() {
-      if (cur < STEPS.length - 1) go(cur + 1);
-      else if (opts.end) opts.end.go();
-      else go(0);
-    }
-
-    $('backBtn').addEventListener('click', back);
-    $('nextBtn').addEventListener('click', forward);
-    $('replayBtn').addEventListener('click', replay);
-    $('pauseBtn').addEventListener('click', () => setPaused(!paused));
-    $('guide').addEventListener('click', (e) => {
-      const b = e.target.closest('[data-try]');
-      if (!b) return;
-      if (b.dataset.try !== 'reset') { choose(Number(b.dataset.try)); return; }
-      resetTry();
-      const first = $('guide').querySelector('.try-opt');
-      if (first) first.focus({ preventScroll: true });
-    });
-    $('replayBtn').innerHTML = `${iconHtml('replay')}<span>Replay</span>`;
-    const onMotion = (e) => {
-      reduce = e.matches;
-      stageTo(sceneNow(), true);
-    };
-    motionQuery.addEventListener('change', onMotion);
-    let resizeQueued = false;
-    const resizeObserver = new ResizeObserver(() => {
-      if (resizeQueued) return;
-      resizeQueued = true;
-      nextFrame(() => { resizeQueued = false; relayout(); });
-    });
-    resizeObserver.observe(wrap);
-
-    function destroy() {
-      if (!alive) return;
-      alive = false;
-      for (const t of timeouts) clearTimeout(t);
-      for (const f of frames) cancelAnimationFrame(f);
-      timeouts.clear();
-      frames.clear();
-      tweens.length = 0;
-      timers.length = 0;
-      uiAnims.length = 0;
-      flows = [];
-      packets = [];
-      resizeObserver.disconnect();
-      motionQuery.removeEventListener('change', onMotion);
-      host.innerHTML = '';
-    }
-
-    /* ================= Start ================= */
-
-    renderHeader();
-    renderLegend();
-    buildMetrics();
-    buildStrip();
-    layoutStage();
-    const start = clamp(Math.floor(Number(opts.start) || 0), 0, STEPS.length - 1);
-    setPaused(false);
-    if (start === 0) {
-      // Opening on the first step lets its objects drop in; deep links open settled.
-      Object.assign(cam, camTargetOf(cams[0]), { dirty: true });
-      go(0);
-    } else {
-      go(start, { instant: true });
-    }
-    centreScroll();
-    nextFrame(frame);
-    nextFrame(() => nextFrame(() => $('stepStrip').classList.remove('still')));
-
-    return {
-      id: w.id,
-      kind: 'walkthrough',
-      get step() { return cur; },
-      get stepCount() { return STEPS.length; },
-      go: (i) => go(i),
-      next: () => go(cur + 1),
-      prev: () => go(cur - 1),
-      replay,
-      tryKey,
-      togglePause: () => setPaused(!paused),
-      focusTitle: () => $('title').focus({ preventScroll: true }),
-      destroy,
-    };
+  function iconHtml(name, set = GLYPH) {
+    return `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${set[name] || FALLBACK_GLYPH}</svg>`;
   }
 
   /* ================= Shared page pieces ================= */
@@ -2659,16 +93,61 @@
   const typingIn = (t) => !!(t && (t.isContentEditable || (t.closest && t.closest('input, textarea, select'))));
   const pillHtml = (icon, text, tone) => `<span class="pill tone-${tone}">${icon ? iconHtml(icon) : ''}${esc(text)}</span>`;
   const tagHtml = (text, tone) => `<span class="tag tone-${tone}">${esc(text)}</span>`;
+  const TONES = ['paper', 'green', 'amber', 'red', 'violet', 'gray'];
+  const toneOf = (t) => (TONES.includes(t) ? t : 'paper');
 
-  // ←/→ step, R replay, Space pause, and on a try step 1-5 choose, 0 reset. Returns true when the key was used.
-  function stepKey(e, view) {
-    if (!view || view.kind !== 'walkthrough' || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || typingIn(e.target)) return false;
-    if (e.key === 'ArrowRight') view.next();
-    else if (e.key === 'ArrowLeft') view.prev();
-    else if (e.key === 'r' || e.key === 'R') view.replay();
-    // Space always means pause, even on a focused button (Enter still activates buttons).
-    else if (e.key === ' ' || e.key === 'Spacebar') view.togglePause();
-    else if (!/^[0-5]$/.test(e.key) || !view.tryKey(Number(e.key))) return false;
+  // Plays a CSS animation on el again (a value that changed, a card that came back).
+  function restartAnim(el, cls) {
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+  }
+
+  // Timeouts, animation frames and listeners of one view, so that end() cancels all of them.
+  function lifetime() {
+    const timeouts = new Set(), frames = new Set(), offs = [];
+    return {
+      later(fn, ms) {
+        const t = setTimeout(() => { timeouts.delete(t); fn(); }, ms);
+        timeouts.add(t);
+      },
+      frame(fn) {
+        const f = requestAnimationFrame((now) => { frames.delete(f); fn(now); });
+        frames.add(f);
+      },
+      listen(target, type, fn, o) {
+        target.addEventListener(type, fn, o);
+        offs.push(() => target.removeEventListener(type, fn, o));
+      },
+      end() {
+        for (const t of timeouts) clearTimeout(t);
+        for (const f of frames) cancelAnimationFrame(f);
+        timeouts.clear();
+        frames.clear();
+        for (const off of offs) off();
+        offs.length = 0;
+      },
+    };
+  }
+
+  // The checks section of a contact sheet: what the automatic checks found, then what they do not
+  // cover (`uncovered` is HTML).
+  function sheetChecks(checks, uncovered) {
+    const findings = checks.warnings.map((m) => ['red', 'warning', m]).concat(checks.notes.map((m) => ['amber', 'note', m]));
+    const list = findings.length
+      ? `<ul class="sheet-findings">${findings.map(([tone, kind, m]) => `<li>${tagHtml(kind, tone)}<span>${esc(m)}</span></li>`).join('')}</ul>`
+      : '<p class="sheet-clear">The automatic checks found nothing.</p>';
+    return `<section class="sheet-checks card" aria-labelledby="dio-checks-head">
+    <h2 id="dio-checks-head" class="section-h">Checks · ${plural(checks.warnings.length, 'warning')} · ${plural(checks.notes.length, 'note')}</h2>
+    ${list}<p class="sheet-uncovered">${uncovered}</p>
+  </section>`;
+  }
+
+  // Keys go to the walkthrough on screen unless they are typed into a field, held with a modifier
+  // or already used; a contact sheet takes none. Returns true when the walkthrough used the key.
+  function pieceKey(e, view) {
+    if (!view || view.sheet || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || typingIn(e.target)) return false;
+    if (!view.v.key(e)) return false;
     e.preventDefault();
     return true;
   }
@@ -2699,96 +178,179 @@
     return app;
   }
 
-  /* ================= Contact sheet ================= */
-  // #/<id>/sheet, a review page that the reader's UI does not link to. Every step and every try
-  // option as a still at the framing a reader gets on the reference stage, with the results of
-  // the automatic checks, so a whole walkthrough can be reviewed from one or two screenshots.
+  /* ================= Labels ================= */
 
-  function mountSheet(host, w, opts) {
-    const M = modelOf(w), LBL = opts.labels;
-    const { STEPS, SCENES, META, METRICS, tries, refView, refCams, checks } = M;
-    const CHAPTER_TONE = { setup: 'gray', problem: 'red', technique: 'violet', solution: 'green', insight: 'amber', tradeoff: 'amber', recap: 'paper' };
-    const order = STEPS.flatMap((_, i) => [i, ...(tries[i] ? tries[i].options.map((o) => o.scene) : [])]);
-    const sources = Array.isArray(w.sources) ? w.sources.filter(isObject) : [];
-    const ofKind = (kind) => sources.filter((s) => s.kind === kind).length;
-    const optionCount = tries.reduce((n, t) => n + (t ? t.options.length : 0), 0);
-    const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
-    const counts = [plural(STEPS.length, 'step'), plural(optionCount, 'try option'), `sources: ${ofKind('data')} data, ${ofKind('assumption')} assumption`];
+  // The words the shell itself shows; a template adds its own (its labels).
+  const SHELL_LABELS = { next: 'Next', sections: 'Sections', home: 'Overview', continue: 'Continue', planned: 'planned', draft: 'draft' };
 
-    const findings = checks.warnings.map((m) => ['red', 'warning', m]).concat(checks.notes.map((m) => ['amber', 'note', m]));
-    const checksHtml = (findings.length
-      ? `<ul class="sheet-findings">${findings.map(([tone, kind, m]) => `<li>${tagHtml(kind, tone)}<span>${esc(m)}</span></li>`).join('')}</ul>`
-      : '<p class="sheet-clear">The automatic checks found nothing.</p>')
-      + `<p class="sheet-uncovered">Not checked automatically: whether the facts and the numbers in the text are right, whether each “${esc(LBL.changes)}” line matches the picture, and how the transitions look. Step through the walkthrough for those.</p>`;
-
-    // Word counts against their budget; a count over budget is flagged.
-    const budget = (label, n, max) => (n === null ? `<span>${label} –</span>` : `<span${n > max ? ' class="over"' : ''}>${label} ${n}${n > max ? ` &gt; ${max}` : ''}</span>`);
-
-    function tile(k) {
-      const m = META[k], s = STEPS[m.step], t = tries[m.step], opt = m.opt >= 0 ? t.options[m.opt] : null;
-      const chapter = s.chapter || 'setup';
-      const still = M.stillSvg(k, refCams[k], refView), scene = M.describe(k, LBL.try);
-      const vals = SCENES[k].metrics || {};
-      const metrics = METRICS.map((mt) => {
-        const v = vals[mt.id];
-        return `<span class="tile-metric">${esc(mt.label)} <b>${typeof v === 'number' ? `${fmtNum(v)}${mt.unit ? ` ${esc(mt.unit)}` : ''}` : '—'}</b></span>`;
-      }).join('');
-      const words = opt
-        ? [budget('verdict', M.words.text(opt.verdict.text), 4), budget('why', M.words.text(opt.verdict.why), 20)]
-        : (Array.isArray(s.body) ? s.body : []).map((p, j) => (M.isList(p) ? `<span>¶${j + 1} list ${M.words.html(p) ?? '–'}</span>` : budget(`¶${j + 1}`, M.words.html(p), 40)));
-      let extra = '';
-      if (opt) {
-        extra = `<p class="tile-opt"><span>${esc(LBL.try)}: <b>${esc(opt.label)}</b></span><span class="badge tone-${opt.verdict.tone}">${esc(opt.verdict.text || '?')}</span></p>`
-          + (opt.verdict.why ? `<p class="tile-why">${esc(opt.verdict.why)}</p>` : '');
-      } else if (t) {
-        extra = `<p class="tile-opt"><span>${esc(LBL.try)}: the base scene, before choosing (${plural(t.options.length, 'option')})</span></p>`;
+  // Later layers win: the shell's and the template's defaults, then the collection's labels, then
+  // the walkthrough's own. A default that is an object (such as the story's chapter names) is
+  // merged key by key; every other label is a string.
+  function mergeLabels(defaults, ...layers) {
+    const out = { ...SHELL_LABELS };
+    for (const k in defaults || {}) out[k] = isObject(defaults[k]) ? { ...defaults[k] } : defaults[k];
+    for (const l of layers) {
+      if (!l || typeof l !== 'object') continue;
+      for (const k in l) {
+        if (isObject(out[k])) { if (l[k] && typeof l[k] === 'object') Object.assign(out[k], l[k]); }
+        else if (typeof l[k] === 'string') out[k] = l[k];
       }
-      return `<li class="tile card${opt ? ' tile-option' : ''}">
-  <p class="tile-head"><span class="tile-id">${esc(m.id)}</span><span>·</span><span>${esc(s.short || '')}</span><span>·</span><span class="badge tone-${CHAPTER_TONE[chapter] || 'gray'}">${esc(LBL.chapters[chapter] || chapter)}</span></p>
-  <h2 class="tile-title"><a href="#/${encodeURIComponent(w.id)}/${m.step + 1}">${esc(s.title || '')}</a></h2>
-  ${extra}
-  <svg class="tile-scene st" viewBox="${still.viewBox}" role="img" aria-label="Still of ${esc(scene.title)}" aria-describedby="dio-still-${esc(m.id)}">${still.svg}</svg>
-  <div id="dio-still-${esc(m.id)}" class="sr-only"><ul>${scene.items.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></div>
-  ${METRICS.length ? `<p class="tile-metrics">${metrics}</p>` : ''}
-  <p class="tile-words">words ${words.join(' ')}</p>
-</li>`;
     }
-
-    document.title = opts.docTitle || `${w.title || 'Walkthrough'} · contact sheet`;
-    host.innerHTML = `<div class="sheet">
-  <svg class="sheet-defs" aria-hidden="true" focusable="false"><defs>${defsMarkup()}</defs></svg>
-  <header class="wt-head sheet-head"><div>
-    <p class="crumb">${opts.crumb ? `${esc(opts.crumb)} · ` : ''}Contact sheet</p>
-    <h1 tabindex="-1">${esc(w.title || '')}</h1>
-    ${w.question ? `<p class="question">${esc(w.question)}</p>` : ''}
-    <p class="sheet-counts">${counts.map(esc).join(' · ')}</p>
-  </div></header>
-  <section class="sheet-checks card" aria-labelledby="dio-checks-head">
-    <h2 id="dio-checks-head" class="section-h">Checks · ${plural(checks.warnings.length, 'warning')} · ${plural(checks.notes.length, 'note')}</h2>
-    ${checksHtml}
-  </section>
-  <ol class="sheet-grid" aria-label="Every step and try option">${order.map(tile).join('')}</ol>
-</div>`;
-    return {
-      id: w.id,
-      kind: 'sheet',
-      focusTitle: () => host.querySelector('h1').focus({ preventScroll: true }),
-      destroy: () => { host.innerHTML = ''; },
-    };
+    return out;
   }
 
-  // Why a walkthrough cannot be drawn, or null. Building its model reads and checks all of the data,
-  // so a fault the checks did not foresee still ends on the problem panel, never on an empty page.
-  function undrawable(w) {
-    const bad = unusable(w);
-    if (bad) return bad;
+  /* ================= Templates and stages ================= */
+  // A template file calls Diorama.defineTemplate(name, { stage }, factory) and a stage file
+  // Diorama.defineStage(name, factory). Each factory runs once, on first use: a stage's with the
+  // kit, a template's with the kit and its stage. What they must return is described in
+  // references/templates.md; the shell uses nothing else of them.
+
+  const DEFAULT_TEMPLATE = 'story';
+  const stageDefs = new Map(), stages = new Map();         // name → factory; name → what it returned
+  const templateDefs = new Map(), templates = new Map();   // name → { stage, factory }; name → what it returned
+  const files = new Map();                                 // url → its load, pending or done
+  const fromFiles = new Set();                             // 'template-x', 'stage-y' defined by a file loaded here
+
+  function defineStage(name, factory) {
+    if (typeof name !== 'string' || !KEBAB.test(name) || typeof factory !== 'function') { warn('Diorama.defineStage() expects a kebab-case name and a function'); return; }
+    if (stageDefs.has(name)) { warn(`the stage "${name}" is defined twice; the first definition is kept`); return; }
+    stageDefs.set(name, factory);
+  }
+
+  function defineTemplate(name, meta, factory) {
+    const stage = isObject(meta) ? meta.stage ?? null : undefined;
+    const stageOk = stage === null || (typeof stage === 'string' && KEBAB.test(stage));
+    if (typeof name !== 'string' || !KEBAB.test(name) || !stageOk || typeof factory !== 'function') {
+      warn('Diorama.defineTemplate() expects a kebab-case name, { stage: "<name>" or null } and a function');
+      return;
+    }
+    if (templateDefs.has(name)) { warn(`the template "${name}" is defined twice; the first definition is kept`); return; }
+    templateDefs.set(name, { stage, factory });
+  }
+
+  // The template a walkthrough names; none means the step story.
+  const templateOf = (w) => (w.template === undefined ? DEFAULT_TEMPLATE : w.template);
+
+  // What every walkthrough must be before a template reads it: an object that names a template
+  // in a form a file can have.
+  function pieceProblem(w) {
+    if (!isObject(w)) return 'it is missing or is not a JSON object';
+    if (w.template !== undefined && (typeof w.template !== 'string' || !KEBAB.test(w.template))) return `"template" ${JSON.stringify(w.template)} is not a template name such as "story"`;
+    return null;
+  }
+
+  // A stage or template, created on first use; null while it is not defined (for a template, also
+  // while its stage is not). Throws { file, reason } when its factory fails.
+  function create(name, kind, factory, args) {
     try {
-      modelOf(w);
+      return factory(...args);
+    } catch (err) {
+      console.error(err);
+      throw { file: `engine/${kind}-${name}.js`, reason: `failed to start (${err && err.message ? err.message : err})` };
+    }
+  }
+  function stageNow(name) {
+    if (!stages.has(name)) {
+      if (!stageDefs.has(name)) return null;
+      stages.set(name, create(name, 'stage', stageDefs.get(name), [kit]));
+    }
+    return stages.get(name);
+  }
+  function templateNow(name) {
+    if (!templates.has(name)) {
+      const d = templateDefs.get(name);
+      const stage = d && d.stage ? stageNow(d.stage) : null;
+      if (!d || (d.stage && !stage)) return null;
+      templates.set(name, create(name, 'template', d.factory, [kit, stage]));
+    }
+    return templates.get(name);
+  }
+
+  // Loads one engine file with a <script> or <link> tag (fetch is not allowed from file://).
+  // Rejects with { file, reason }; a failed load is tried again the next time it is asked for.
+  function loadFile(name) {
+    const url = ENGINE + name;
+    if (files.has(url)) return files.get(url);
+    const css = name.endsWith('.css');
+    const p = new Promise((resolve, reject) => {
+      const el = document.createElement(css ? 'link' : 'script');
+      let timer = 0;
+      const finish = (reason) => {
+        clearTimeout(timer);
+        el.onload = el.onerror = null;
+        if (!css || reason) el.remove();
+        if (!reason) { resolve(); return; }
+        files.delete(url);
+        reject({ file: `engine/${name}`, reason });
+      };
+      el.onload = () => finish(null);
+      el.onerror = () => finish('is missing or could not be read');
+      timer = setTimeout(() => finish(`did not load within ${LOAD_TIMEOUT / 1000} seconds`), LOAD_TIMEOUT);
+      if (css) { el.rel = 'stylesheet'; el.href = url; } else el.src = url;
+      document.head.appendChild(el);
+    });
+    files.set(url, p);
+    return p;
+  }
+
+  // A stage, loading stage-<name>.css and .js first unless the page already defines it.
+  async function ensureStage(name) {
+    const base = `stage-${name}`;
+    if (!stageDefs.has(name)) fromFiles.add(base);
+    if (fromFiles.has(base)) await Promise.all([loadFile(`${base}.css`), stageDefs.has(name) ? null : loadFile(`${base}.js`)]);
+    if (!stageDefs.has(name)) throw { file: `engine/${base}.js`, reason: `loaded but did not call Diorama.defineStage("${name}", ...)` };
+    return stageNow(name);
+  }
+
+  // A template with its stage, loading their files first unless the page already defines them.
+  // The stage's stylesheet goes in before the template's, as in the single-file page.
+  async function ensureTemplate(name) {
+    const base = `template-${name}`;
+    if (!templateDefs.has(name)) {
+      fromFiles.add(base);
+      await loadFile(`${base}.js`);
+      if (!templateDefs.has(name)) throw { file: `engine/${base}.js`, reason: `loaded but did not call Diorama.defineTemplate("${name}", ...)` };
+    }
+    const d = templateDefs.get(name);
+    await Promise.all([d.stage ? ensureStage(d.stage) : null, fromFiles.has(base) ? loadFile(`${base}.css`) : null]);
+    return templateNow(name);
+  }
+
+  // The template of a walkthrough if it is ready to use now, else null.
+  function readyTemplate(w) {
+    if (pieceProblem(w)) return null;
+    try {
+      const tpl = templateNow(templateOf(w));
+      return tpl && !tpl.unusable(w) ? tpl : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  // Why a walkthrough cannot be drawn by its template, or null. prepare() reads and checks all of
+  // the data, so a fault the checks did not foresee still ends on the problem panel, never on an
+  // empty page.
+  function undrawable(tpl, w) {
+    try {
+      const bad = tpl.unusable(w);
+      if (bad) return bad;
+      tpl.prepare(w);
       return null;
     } catch (err) {
       console.error(err);
       return `the engine could not read it (${err && err.message ? err.message : err})`;
     }
+  }
+
+  // A walkthrough's positions (its template's), made once per walkthrough object.
+  const positionCache = new WeakMap();
+  function positionsOf(tpl, w) {
+    if (!positionCache.has(w)) positionCache.set(w, tpl.positions(w));
+    return positionCache.get(w);
+  }
+  // A position stored in this browser, checked by its template: written out and read back.
+  function restore(ps, at) {
+    try { return ps.parse(String(ps.format(at)), true); } catch (err) { return null; }
   }
 
   /* ================= Single-file page ================= */
@@ -2798,41 +360,61 @@
     const app = appRoot('dio-single');
     app.innerHTML = '<main class="dio-main"></main>';
     const main = app.firstChild;
-    const bad = undrawable(w);
+    const stop = (body) => {
+      main.innerHTML = statusMarkup({ title: 'Walkthrough', heading: 'This walkthrough cannot be shown', tone: 'red', icon: 'alert', alert: true, body });
+    };
+    let bad = pieceProblem(w), tpl = null;
+    if (!bad) {
+      const name = templateOf(w), d = templateDefs.get(name);
+      let missing = null;
+      try {
+        tpl = templateNow(name);
+      } catch (err) {
+        missing = `${err.file} ${err.reason}`;
+      }
+      if (!tpl) {
+        missing = missing || (d ? `this page does not include the stage "${d.stage}" it needs` : 'this page does not include it');
+        warn(`${typeof w.id === 'string' ? w.id : 'walkthrough'}: the template "${name}" cannot be used: ${missing}`);
+        stop(`<p>It uses the template <code>${esc(name)}</code>, and ${esc(missing)}.</p>`
+          + `<p class="muted">A single-file page carries only the template it was built with. Build one for this template with <code>python3 tools/build-single.py --template ${esc(name)}</code>.</p>`);
+        return;
+      }
+      bad = undrawable(tpl, w);
+    }
     if (bad) {
       warn(`the walkthrough cannot be shown: ${bad}`);
-      main.innerHTML = statusMarkup({
-        title: 'Walkthrough', heading: 'This walkthrough cannot be shown', tone: 'red', icon: 'alert', alert: true,
-        body: `<p>The <code>&lt;script type="application/json" id="walkthrough"&gt;</code> block in this file cannot be used: ${esc(bad)}. The browser console has details.</p>`,
-      });
+      stop(`<p>The <code>&lt;script type="application/json" id="walkthrough"&gt;</code> block in this file cannot be used: ${esc(bad)}. The browser console has details.</p>`);
       return;
     }
-    const hashOf = (i) => `#/${encodeURIComponent(w.id)}/${i + 1}`;
-    // A step index (0-based), 'sheet', or null when the hash is not about this walkthrough.
+    const ps = positionsOf(tpl, w);
+    const hashOf = (at) => `#/${encodeURIComponent(w.id)}/${ps.format(at)}`;
+    // { at } for a position of this walkthrough, 'sheet', or null when the hash is not about it.
     const parseHash = () => {
-      const m = /^#\/([^/]+)\/(\d+|sheet)$/.exec(location.hash);
+      const m = /^#\/([^/]+)\/([^/]+)$/.exec(location.hash);
       if (!m || decodeURIComponent(m[1]) !== w.id) return null;
       if (m[2] === 'sheet') return 'sheet';
-      const n = Number(m[2]);
-      return n >= 1 && n <= w.steps.length ? n - 1 : null;
+      const at = ps.parse(m[2], false);
+      return at === null ? null : { at };
     };
-    const labels = mergeLabels(w.labels);
+    const labels = mergeLabels(tpl.labels, w.labels);
     let view = null;
-    const show = (at) => {
-      if (view) view.destroy();
+    const show = (to) => {
+      if (view) view.v.destroy();
       main.scrollTop = 0;
-      view = at === 'sheet'
-        ? mountSheet(main, w, { labels })
-        : mountWalkthrough(main, w, { labels, start: at ?? 0, onStep: (i) => { if (location.hash !== hashOf(i)) location.replace(hashOf(i)); } });
+      const sheet = to === 'sheet';
+      const v = sheet
+        ? tpl.mountSheet(main, w, { labels })
+        : tpl.mount(main, w, { labels, start: to ? to.at : ps.first, onMove: (at) => { if (location.hash !== hashOf(at)) location.replace(hashOf(at)); } });
+      view = { sheet, v };
     };
     show(parseHash());
     window.addEventListener('hashchange', () => {
-      const at = parseHash();
-      if (at === null) return;
-      if (at === 'sheet' || view.kind === 'sheet') show(at);
-      else view.go(at);
+      const to = parseHash();
+      if (to === null) return;
+      if (to === 'sheet' || view.sheet) show(to);
+      else view.v.go(to.at);
     });
-    document.addEventListener('keydown', (e) => stepKey(e, view));
+    document.addEventListener('keydown', (e) => pieceKey(e, view));
   }
 
   /* ================= Collection: registration and loading ================= */
@@ -2940,7 +522,7 @@
   // Reading progress lives in this browser only, under a key derived from the collection id.
   function progressStore(cid, enabled) {
     const key = `diorama:${cid}:progress`;
-    const data = { read: {}, last: {}, recent: null };
+    const data = { read: {}, last: {}, recent: null, at: {} };
     if (enabled) {
       try {
         const v = JSON.parse(localStorage.getItem(key) || 'null');
@@ -2948,6 +530,10 @@
           if (isObject(v.read)) Object.assign(data.read, v.read);
           if (isObject(v.last)) Object.assign(data.last, v.last);
           if (typeof v.recent === 'string') data.recent = v.recent;
+          // Where each walkthrough was left, as its template writes it: { seg, label, first }.
+          for (const [id, a] of Object.entries(isObject(v.at) ? v.at : {})) {
+            if (isObject(a) && typeof a.seg === 'string' && typeof a.label === 'string') data.at[id] = { seg: a.seg, label: a.label, first: !!a.first };
+          }
         }
       } catch (err) { /* storage blocked or unreadable: start with no progress */ }
     }
@@ -2962,19 +548,11 @@
 
   const plainText = (html) => String(html).replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 
-  // Step titles, short labels and marked terms of one walkthrough, for search.
-  const stepIndexCache = new WeakMap();
-  function stepIndex(w) {
-    let list = stepIndexCache.get(w);
-    if (!list) {
-      list = w.steps.map((s, i) => {
-        const html = [].concat(s.body || [], s.callout && s.callout.text ? [s.callout.text] : []).join(' ');
-        const terms = [...html.matchAll(/<span\s+class=["']term["']\s*>([\s\S]*?)<\/span>/gi)].map((m) => plainText(m[1]));
-        return { i, title: String(s.title || ''), short: String(s.short || ''), terms: [...new Set(terms)] };
-      });
-      stepIndexCache.set(w, list);
-    }
-    return list;
+  // A walkthrough's entries for search, from its template, made once per walkthrough object.
+  const searchCache = new WeakMap();
+  function searchIndex(tpl, w) {
+    if (!searchCache.has(w)) searchCache.set(w, tpl.search(w));
+    return searchCache.get(w);
   }
 
   function highlight(text, tokens) {
@@ -3009,7 +587,7 @@
   function createShell(app, c) {
     if (typeof c.id !== 'string' || !KEBAB.test(c.id)) warn('collection.js: "id" should be a kebab-case string; reading progress is stored under it');
     const cid = typeof c.id === 'string' && c.id ? c.id : 'collection';
-    const L = mergeLabels(c.labels);
+    const L = mergeLabels(null, c.labels);
     const outline = buildOutline(c);
     const opt = outline.opt;
     const progress = progressStore(cid, opt.progress);
@@ -3020,10 +598,10 @@
     const list = opt.ordered ? 'ol' : 'ul';
     const checked = new Set();   // ids whose title and summary were compared with collection.js
 
-    let view = null;             // the mounted walkthrough view, if any
+    let view = null;             // { id, sheet, v (the template's view), ps (its positions) } on screen, if any
     let currentId = null;        // the item shown in the main area (loading, open or failed)
     let navToken = 0;            // invalidates loads that finish after the reader moved on
-    let pendingStep = null;      // { id, step: 'last' } for Back into the previous walkthrough
+    let pendingAt = null;        // { id, at: 'first' | 'last' } for Next and Back into another walkthrough
     let firstRoute = true, wantFocus = false, gAt = 0, drawerOpen = false;
     let collapsed = false;
     try { collapsed = localStorage.getItem(mapKey) === 'collapsed'; } catch (err) { /* storage blocked */ }
@@ -3144,7 +722,7 @@
     /* ---------- Main area ---------- */
 
     function teardown() {
-      if (view) { view.destroy(); view = null; }
+      if (view) { view.v.destroy(); view = null; }
     }
 
     function resetScroll() {
@@ -3157,14 +735,15 @@
       if (h) h.focus({ preventScroll: true });
     }
 
-    // Where Continue leads: the walkthrough last visited if unfinished, else the next unread one.
+    // Where Continue leads: the walkthrough last visited if unfinished, else the next unread one,
+    // at the place it was left (as stored by moved()).
     function continueTarget() {
       const open = outline.open;
       const recent = open.find((e) => e.id === P.recent);
-      if (recent && !P.read[recent.id]) return { e: recent, step: P.last[recent.id] || 0 };
+      if (recent && !P.read[recent.id]) return { e: recent, at: P.at[recent.id] };
       const from = recent ? open.indexOf(recent) + 1 : 0;
       const e = open.slice(from).concat(open.slice(0, from)).find((x) => !P.read[x.id]);
-      return e ? { e, step: P.last[e.id] || 0 } : null;
+      return e ? { e, at: P.at[e.id] } : null;
     }
 
     function renderHome() {
@@ -3178,7 +757,7 @@
       if (opt.progress && outline.open.length) {
         const t = continueTarget(), n = readCount(outline.open);
         s += '<div class="home-actions">';
-        if (t) s += `<a class="btn primary" href="#/${t.e.id}/${t.step + 1}"><span>${esc(L.continue)}: ${esc(t.e.title)}${t.step ? ` · step ${t.step + 1}` : ''}</span>${iconHtml('arrow')}</a>`;
+        if (t) s += `<a class="btn primary" href="#/${t.e.id}${t.at ? `/${esc(t.at.seg)}` : ''}"><span>${esc(L.continue)}: ${esc(t.e.title)}${t.at && !t.at.first ? ` · ${esc(t.at.label)}` : ''}</span>${iconHtml('arrow')}</a>`;
         s += `<span class="home-count">${n.read} of ${n.total} read</span></div>`;
       }
       s += '</header>';
@@ -3240,9 +819,9 @@
       return parts.join(' · ');
     }
 
-    // `step` is the route that failed (as for openItem), so Try again opens the same place: a sheet
+    // `at` is the route that failed (as for openItem), so Try again opens the same place: a sheet
     // stays a sheet. It reads the file again, in case the data it holds was the problem.
-    function showLoadError(e, reason, focus, step) {
+    function showLoadError(e, reason, focus, at) {
       const file = fileOf(e.id);
       warn(`could not open ${file}: ${reason}`);
       $('main').innerHTML = statusMarkup({
@@ -3250,28 +829,55 @@
         body: `<p>File <code>${esc(file)}</code>: ${esc(reason)}</p><p class="muted">The rest of the collection still works. Fix the file, then try again.</p>`,
         actions: `<button class="btn primary" type="button" data-act="retry">${iconHtml('replay')}<span>Try again</span></button><a class="btn" href="#/">${iconHtml('home')}<span>${esc(L.home)}</span></a>`,
       });
-      $('main').querySelector('[data-act="retry"]').addEventListener('click', () => { currentId = null; walkthroughs.delete(e.id); openItem(e.id, step, true, true); });
+      $('main').querySelector('[data-act="retry"]').addEventListener('click', () => { currentId = null; walkthroughs.delete(e.id); openItem(e.id, at, true, true); });
       if (focus) focusMain();
     }
 
-    function stepped(e, i, last) {
-      const h = `#/${e.id}/${i + 1}`;
+    // A walkthrough whose template, or the template's stage, cannot be loaded or started.
+    function showTemplateError(e, name, err, focus, at) {
+      const file = err && err.file ? err.file : `engine/template-${name}.js`, reason = err && err.reason ? err.reason : String(err);
+      warn(`${e.id}: the template "${name}" cannot be used: ${file} ${reason}`);
+      $('main').innerHTML = statusMarkup({
+        crumb: crumbOf(e), title: e.title, summary: e.summary, heading: 'This walkthrough cannot be shown', tone: 'red', icon: 'alert', alert: true,
+        body: `<p>It uses the template <code>${esc(name)}</code>, and <code>${esc(file)}</code> ${esc(reason)}.</p><p class="muted">The rest of the collection still works. Put the template's files in the engine folder, then try again.</p>`,
+        actions: `<button class="btn primary" type="button" data-act="retry">${iconHtml('replay')}<span>Try again</span></button><a class="btn" href="#/">${iconHtml('home')}<span>${esc(L.home)}</span></a>`,
+      });
+      $('main').querySelector('[data-act="retry"]').addEventListener('click', () => { currentId = null; openItem(e.id, at, true, true); });
+      if (focus) focusMain();
+    }
+
+    // The template moved to position `at`: the address and the reading progress follow it.
+    function moved(e, ps, at) {
+      const seg = ps.format(at), h = `#/${e.id}/${seg}`;
       if (location.hash !== h) location.replace(h);
       if (!opt.progress) return;
-      P.last[e.id] = i;
+      P.last[e.id] = at;
+      P.at[e.id] = { seg, label: ps.label(at), first: seg === ps.format(ps.first) };
       P.recent = e.id;
-      if (i === last && !P.read[e.id]) { P.read[e.id] = true; renderMap(); }
+      if (seg === ps.format(ps.last) && !P.read[e.id]) { P.read[e.id] = true; renderMap(); }
       progress.save();
     }
 
-    // step: a 0-based index, 'last', 'sheet', or null for "where the reader left off".
-    async function openItem(id, step, focusNew, focusSame) {
+    // The position to open at: the one the address names, the first or the last, or else where the
+    // reader left off (`current` while it is open, otherwise as stored in this browser).
+    function placeOf(ps, at, id, current) {
+      if (at === 'first') return ps.first;
+      if (at === 'last') return ps.last;
+      const named = at && typeof at.seg === 'string' ? ps.parse(at.seg, true) : null;
+      if (named !== null) return named;
+      if (current !== null && current !== undefined) return current;
+      const stored = opt.progress && Object.hasOwn(P.last, id) ? restore(ps, P.last[id]) : null;
+      return stored === null ? ps.first : stored;
+    }
+
+    // at: { seg } from the address, 'first', 'last', 'sheet', or null for "where the reader left off".
+    async function openItem(id, at, focusNew, focusSame) {
       const e = outline.byId.get(id);
       if (!e || !e.openable) { showUnavailable(id, e); if (focusNew) focusMain(); return; }
-      if (view && view.id === id && currentId === id && (view.kind === 'sheet') === (step === 'sheet')) {
-        // A bare #/<id> for the open walkthrough keeps the current step (and restores the step in the URL).
-        if (view.kind === 'walkthrough') view.go(step === null ? view.step : step === 'last' ? view.stepCount - 1 : step);
-        if (focusSame) view.focusTitle();
+      if (view && view.id === id && currentId === id && view.sheet === (at === 'sheet')) {
+        // A bare #/<id> for the open walkthrough keeps its place (and restores the place in the URL).
+        if (!view.sheet) view.v.go(placeOf(view.ps, at, id, view.v.position));
+        if (focusSame) view.v.focusTitle();
         return;
       }
       teardown();
@@ -3280,56 +886,71 @@
       const token = ++navToken;
       const file = fileOf(id);
       document.title = `${e.title} · ${c.title || ''}`;
-      if (!walkthroughs.has(id)) {
-        $('main').innerHTML = statusMarkup({ crumb: crumbOf(e), title: e.title, summary: e.summary, heading: 'Loading…', body: `<p>Reading <code>${esc(file)}</code>.</p>`, icon: 'clock', busy: true });
-      }
+      const loading = (what) => {
+        $('main').innerHTML = statusMarkup({ crumb: crumbOf(e), title: e.title, summary: e.summary, heading: 'Loading…', body: `<p>Reading <code>${esc(what)}</code>.</p>`, icon: 'clock', busy: true });
+      };
+      if (!walkthroughs.has(id)) loading(file);
       let w;
       try {
         w = await loadWalkthrough(id);
       } catch (err) {
-        if (token === navToken) showLoadError(e, err && err.reason ? err.reason : String(err), focusNew, step);
+        if (token === navToken) showLoadError(e, err && err.reason ? err.reason : String(err), focusNew, at);
         return;
       }
       if (token !== navToken) return;
-      const bad = undrawable(w);
-      if (bad) { showLoadError(e, `the walkthrough cannot be drawn: ${bad}.`, focusNew, step); return; }
+      let bad = pieceProblem(w);
+      if (bad) { showLoadError(e, `the walkthrough cannot be drawn: ${bad}.`, focusNew, at); return; }
+      // Its template is loaded on first use; once loaded, opening is immediate.
+      const name = templateOf(w);
+      let tpl = templates.get(name);
+      if (!tpl) {
+        if (!templateDefs.has(name)) loading(`engine/template-${name}.js`);
+        try {
+          tpl = await ensureTemplate(name);
+        } catch (err) {
+          if (token === navToken) showTemplateError(e, name, err, focusNew, at);
+          return;
+        }
+        if (token !== navToken) return;
+      }
+      bad = undrawable(tpl, w);
+      if (bad) { showLoadError(e, `the walkthrough cannot be drawn: ${bad}.`, focusNew, at); return; }
       if (!checked.has(id)) {
         checked.add(id);
         if (w.title !== e.title) warn(`collection.js calls "${id}" ${JSON.stringify(e.title)} but ${file} says ${JSON.stringify(w.title)}; keep the titles identical`);
         if (w.summary !== e.summary) warn(`collection.js and ${file} give different summaries for "${id}"; keep them identical`);
       }
-      const labels = mergeLabels(c.labels, w.labels);
-      if (step === 'sheet') {
+      const labels = mergeLabels(tpl.labels, c.labels, w.labels);
+      if (at === 'sheet') {
         resetScroll();
-        view = mountSheet($('main'), w, { labels, crumb: crumbOf(e), docTitle: `${w.title || e.title} · contact sheet · ${c.title || ''}` });
-        if (focusNew) view.focusTitle();
+        view = { id, sheet: true, v: tpl.mountSheet($('main'), w, { labels, crumb: crumbOf(e), docTitle: `${w.title || e.title} · contact sheet · ${c.title || ''}` }) };
+        if (focusNew) view.v.focusTitle();
         return;
       }
-      const last = w.steps.length - 1;
-      let start = step === 'last' ? last : step;
-      if (start === null) start = opt.progress && Number.isInteger(P.last[id]) ? P.last[id] : 0;
+      const ps = positionsOf(tpl, w);
       const k = outline.open.indexOf(e);
       const prevE = opt.ordered && k > 0 ? outline.open[k - 1] : null;
       const nextE = opt.ordered && k < outline.open.length - 1 ? outline.open[k + 1] : null;
       resetScroll();
-      view = mountWalkthrough($('main'), w, {
-        labels, start: clamp(start, 0, last), crumb: crumbOf(e), searchHint: true,
+      const v = tpl.mount($('main'), w, {
+        labels, start: placeOf(ps, at, id, null), crumb: crumbOf(e), searchHint: true,
         docTitle: `${w.title || e.title} · ${c.title || ''}`, minutes: e.minutes, level: e.level,
         prev: prevE ? { title: prevE.title, go: () => navigate(prevE.id, 'last') } : null,
         end: nextE
-          ? { label: `${labels.next}: ${nextE.title}`, icon: 'arrow', go: () => navigate(nextE.id, 0) }
+          ? { label: `${labels.next}: ${nextE.title}`, icon: 'arrow', go: () => navigate(nextE.id, 'first') }
           : { label: L.home, icon: 'home', go: navigateHome },
-        onStep: (i) => stepped(e, i, last),
+        onMove: (pos) => moved(e, ps, pos),
       });
-      if (focusNew) view.focusTitle();
+      view = { id, sheet: false, v, ps };
+      if (focusNew) view.v.focusTitle();
     }
 
-    /* ---------- Routing: #/ home, #/<id> where the reader left off, #/<id>/<step>, #/<id>/sheet ---------- */
+    /* ---------- Routing: #/ home, #/<id> where the reader left off, #/<id>/<place>, #/<id>/sheet ---------- */
 
     function parseRoute() {
-      const m = /^#\/([^/]+)(?:\/(\d+|sheet))?\/?$/.exec(location.hash);
+      const m = /^#\/([^/]+)(?:\/([^/]+))?\/?$/.exec(location.hash);
       if (!m) return { home: true };
-      return { id: decodeURIComponent(m[1]), step: m[2] === 'sheet' ? 'sheet' : m[2] ? Math.max(0, Number(m[2]) - 1) : null };
+      return { id: decodeURIComponent(m[1]), at: m[2] === 'sheet' ? 'sheet' : m[2] ? { seg: m[2] } : null };
     }
 
     function route() {
@@ -3345,16 +966,18 @@
         if (focusNew) focusMain();
         return;
       }
-      let step = r.step;
-      if (step === null && pendingStep && pendingStep.id === r.id) step = pendingStep.step;
-      pendingStep = null;
-      openItem(r.id, step, focusNew, focusSame);
+      let at = r.at;
+      if (at === null && pendingAt && pendingAt.id === r.id) at = pendingAt.at;
+      pendingAt = null;
+      openItem(r.id, at, focusNew, focusSame);
     }
 
-    function navigate(id, step) {
+    // Opens another walkthrough at its first or last position. Only its template knows how to write
+    // that, so the address names the walkthrough alone until it opens and writes its place.
+    function navigate(id, at) {
       wantFocus = true;
-      let h = `#/${id}/${step + 1}`;
-      if (step === 'last') { pendingStep = { id, step }; h = `#/${id}`; }
+      pendingAt = { id, at };
+      const h = `#/${id}`;
       if (location.hash === h) route(); else location.hash = h;
     }
 
@@ -3367,14 +990,19 @@
 
     const search = { open: false, opener: null, primed: false, pending: 0, failed: 0 };
 
-    // The first search reads every listed walkthrough, so steps and terms of unopened ones are found too.
+    // The first search reads every listed walkthrough and its template, so the contents of unopened
+    // ones are found too.
     function primeSearch() {
       search.primed = true;
       for (const e of outline.open) {
-        if (walkthroughs.has(e.id)) continue;
+        const known = walkthroughs.get(e.id);
+        if (known && (pieceProblem(known) || templates.has(templateOf(known)))) continue;
         search.pending++;
         loadWalkthrough(e.id)
-          .catch((err) => { search.failed++; warn(`search could not read ${fileOf(e.id)}: ${err && err.reason ? err.reason : err}`); })
+          .then(
+            (w) => (pieceProblem(w) ? null : ensureTemplate(templateOf(w)).catch((err) => warn(`search cannot read inside ${fileOf(e.id)}: ${err && err.file ? `${err.file} ${err.reason}` : err}`))),
+            (err) => { search.failed++; warn(`search could not read ${fileOf(e.id)}: ${err && err.reason ? err.reason : err}`); },
+          )
           .finally(() => { search.pending--; if (search.open) renderResults(); });
       }
     }
@@ -3384,12 +1012,13 @@
       const has = (text) => { const low = text.toLowerCase(); return tokens.every((t) => low.includes(t)); };
       const hits = [];
       for (const e of outline.open) {
-        if (has(`${e.title} ${e.summary}`)) hits.push({ e, step: null, title: e.title, sub: e.summary, href: `#/${e.id}`, rank: e.title.toLowerCase().includes(q) ? 0 : 1 });
-        const w = walkthroughs.get(e.id);
-        if (!w || unusable(w)) continue;
-        for (const st of stepIndex(w)) {
-          if (!has(`${st.title} ${st.short} ${st.terms.join(' ')}`)) continue;
-          hits.push({ e, step: st.i, title: st.title, sub: st.terms.join(' · '), href: `#/${e.id}/${st.i + 1}`, rank: st.title.toLowerCase().includes(q) ? 2 : 3 });
+        if (has(`${e.title} ${e.summary}`)) hits.push({ e, where: null, title: e.title, sub: e.summary, href: `#/${e.id}`, rank: e.title.toLowerCase().includes(q) ? 0 : 1 });
+        const w = walkthroughs.get(e.id), tpl = w && readyTemplate(w);
+        if (!tpl) continue;
+        const ps = positionsOf(tpl, w);
+        for (const st of searchIndex(tpl, w)) {
+          if (!has(st.text)) continue;
+          hits.push({ e, where: ps.label(st.at), title: st.title, sub: st.sub, href: `#/${e.id}/${ps.format(st.at)}`, rank: st.title.toLowerCase().includes(q) ? 2 : 3 });
         }
       }
       return { tokens, hits: hits.sort((a, b) => a.rank - b.rank).slice(0, 40) };
@@ -3397,9 +1026,9 @@
 
     function renderResults() {
       const q = $('searchInput').value.trim().toLowerCase();
-      const { tokens, hits } = q ? findHits(q) : { tokens: [], hits: outline.open.map((e) => ({ e, step: null, title: e.title, sub: e.summary, href: `#/${e.id}` })) };
+      const { tokens, hits } = q ? findHits(q) : { tokens: [], hits: outline.open.map((e) => ({ e, where: null, title: e.title, sub: e.summary, href: `#/${e.id}` })) };
       $('searchResults').innerHTML = hits.map((h) => {
-        const where = h.step === null ? `${h.e.num ? `${h.e.num} · ` : ''}walkthrough` : `${h.e.title} · step ${h.step + 1}`;
+        const where = h.where === null ? `${h.e.num ? `${h.e.num} · ` : ''}walkthrough` : `${h.e.title} · ${h.where}`;
         return `<li><a class="hit" href="${h.href}"><span class="hit-where">${esc(where)}</span><span class="hit-title">${highlight(h.title, tokens)}</span>`
           + `${h.sub ? `<span class="hit-sub">${highlight(h.sub, tokens)}</span>` : ''}</a></li>`;
       }).join('');
@@ -3468,7 +1097,7 @@
       if (k === 'g') { gAt = performance.now(); return; }
       if (k === 'h' && gAt && performance.now() - gAt < 1500) { gAt = 0; ev.preventDefault(); navigateHome(); return; }
       gAt = 0;
-      stepKey(ev, view);
+      pieceKey(ev, view);
     });
 
     /* ---------- Start ---------- */
@@ -3478,11 +1107,24 @@
     route();
   }
 
+  /* ================= The kit: what templates and stages may use ================= */
+
+  const kit = Object.freeze({
+    version: VERSION,
+    esc, clamp, lerp, n1, n2, linear, inOut, outCubic, outBack, plural,
+    isObject, KEBAB, warn, plainText, typingIn,
+    GLYPH: Object.freeze(GLYPH), FALLBACK_GLYPH, iconHtml, pillHtml, tagHtml, TONES, toneOf,
+    motion: motionQuery,
+    restartAnim, lifetime, sheetChecks,
+  });
+
   window.Diorama = Object.freeze({
     version: VERSION,
     collection: registerCollection,
     walkthrough: registerWalkthrough,
     startCollection,
     startSingle,
+    defineTemplate,
+    defineStage,
   });
 })();
