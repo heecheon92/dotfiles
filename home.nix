@@ -14,6 +14,7 @@ let
     tern-update = "handmade/tern-update";
     mermaid = "handmade/mermaid";
     termaid = "handmade/termaid";
+    stepwise-explainer = "handmade/stepwise-explainer";
     create-readme = "external/github-awesome-copilot/create-readme";
   };
   aerospaceEnabled = desktopProfile == "aerospace";

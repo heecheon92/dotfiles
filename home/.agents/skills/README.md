@@ -34,7 +34,7 @@ activation.
 Dotfiles is the source registry; the `selectedAgentSkills` map in
 [`home.nix`](../../../home.nix) is the explicit default installation allowlist.
 Each entry maps a flat runtime skill name to its relative grouped source path.
-The eleven defaults are:
+The twelve defaults are:
 
 - `chatgpt-review` → `handmade/chatgpt-review`
 - `lantern` → `handmade/lantern`
@@ -46,6 +46,7 @@ The eleven defaults are:
 - `herdr-update` → `handmade/herdr-update`
 - `mermaid` → `handmade/mermaid`
 - `termaid` → `handmade/termaid`
+- `stepwise-explainer` → `handmade/stepwise-explainer`
 - `create-readme` → `external/github-awesome-copilot/create-readme`
 
 The remaining 49 skills stay available in this registry for deliberate standalone
@@ -67,7 +68,7 @@ nor rewrites that lock, so it cannot reintroduce a removed standalone skill.
 
 This is the human-maintained source registry for the skills checked into this
 repository, not an inventory of every skill installed on a machine. The lists
-below cover all 60 registered skills: 12 handmade and 48 externally imported.
+below cover all 61 registered skills: 13 handmade and 48 externally imported.
 
 ### Handmade skills
 
@@ -85,6 +86,7 @@ or documentation inside a handmade skill are not its installation source.
 - [`herdr-update`](./handmade/herdr-update/SKILL.md)
 - [`termaid`](./handmade/termaid/SKILL.md)
 - [`documentation-lifecycle`](./handmade/documentation-lifecycle/SKILL.md)
+- [`stepwise-explainer`](./handmade/stepwise-explainer/SKILL.md)
 - [`frontend-patterns`](./handmade/nextjs-react/frontend-patterns/SKILL.md)
 - [`react-ui-ux`](./handmade/nextjs-react/react-ui-ux/SKILL.md)
 
@@ -237,6 +239,25 @@ using the project's existing API, authorization, localization, and design rules.
 Read the [frontend-patterns guide](./handmade/nextjs-react/frontend-patterns/README.md)
 and [react-ui-ux guide](./handmade/nextjs-react/react-ui-ux/README.md) for scope and
 examples. These skills do not require other marketplace skills to be installed.
+
+### stepwise-explainer
+
+Explains a multi-step flow, or the difference between a familiar system and a new
+one, as one small click-through HTML page: actors as columns, one message per step,
+the concrete data for that step, and a running view of state that is normally
+hidden. The agent copies the bundled template and edits a single data block; the
+page has no dependencies, build step, or network access. For short two-actor flows
+it uses the same structure as a numbered list in chat.
+
+```text
+Use stepwise-explainer to show how programmatic tool calling differs from
+basic tool calling.
+```
+
+This is a lightweight single-page tool, separate from the Diorama plugin's
+illustrated walkthroughs and collections. Hand-written messages are labelled as a
+simulation. See the [skill](./handmade/stepwise-explainer/SKILL.md) and its
+[template](./handmade/stepwise-explainer/assets/template.html).
 
 ### documentation-lifecycle
 
