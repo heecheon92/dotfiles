@@ -87,6 +87,9 @@ autocompleteMaxVisible: 20
 defaultThinkingLevel: high
 personality: pragmatic
 providers:
+  # Try to deliver corrections while a supported Codex response is still streaming.
+  # If rejected, OMP keeps the message for normal steering.
+  openaiLiveSteering: true
   openai-codex:
     daybreak: true
   autoThinkingMaxEffort: xhigh
