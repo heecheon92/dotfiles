@@ -64,9 +64,19 @@ for its own conversation. Keep the shared AGENTS.md harness-neutral.
   reverse engineering, or security testing the standard models decline, or
   when the user asks for it. Do not use it for ordinary coding, review, or
   planning, and do not move it to a newer GPT version without confirming that
-  model offers `daybreak_blue`. `security-reviewer` stays pinned to `@advisor`
-  and cannot take this override; use `task` or another unpinned agent. OpenAI
-  may use Daybreak session content to improve its models.
+  model offers `daybreak_blue`. `security-reviewer` is pinned to the ordered
+  list `@mythos, @daybreak, @advisor` and takes no per-call model: dispatch
+  it by name, or use `task` or another unpinned agent for a per-call
+  choice. OpenAI may use Daybreak session content to improve its models.
+- **Mythos:** `anthropic/claude-mythos-5-2:high` (the `mythos` role) is the
+  Anthropic model with loosened restrictions for security work, available
+  through the user's approved access. Like Daybreak, no agent definition is
+  wired to it; select it per call for the same kind of security assignment,
+  or when the user asks for it, and not for ordinary coding, review, or
+  planning. When either would fit, prefer Mythos over Daybreak; use Daybreak
+  when the user asks for it or Mythos is unavailable or declines, and name the
+  substitution. Use the exact `-5-2` id: the plain
+  `claude-mythos-5` id is not served.
 - **Luna:** preserve scout for read-only exploration and sonic for strictly
   mechanical work. Do not replace these specialists with expensive general
   workers merely because per-call overrides are available.

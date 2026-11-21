@@ -53,7 +53,8 @@ OMP 18.20.2의 [설정 저장 경로](https://github.com/can1357/oh-my-pi/blob/v
   속도를 이유로 정확성이나 필요한 검증을 생략하지 않습니다.
 - `reviewer`: 번들 정의의 `@slow`, `openai-codex/gpt-6.2-astra:xhigh`.
   코드 리뷰의 기본 경로이며 읽기 전용 범위는 그대로입니다.
-- `security-reviewer`: `@advisor`, Astra `high`.
+- `security-reviewer`: `@mythos, @daybreak, @advisor` 순서 목록. 기본은 Mythos
+  `high`이고, 실패하면 Daybreak(GPT-6 Sol `max`), 그다음 Astra `high`로 넘어갑니다.
 - `docs-writer`: `@docs`, Fable `medium`. 아래 문서 작성 경로처럼
   `model`을 생략해 호출합니다.
 - `plan` 역할은 Fable `high`입니다. 이 역할은 `planner`라는 번들 에이전트가
@@ -64,7 +65,7 @@ OMP 18.20.2의 [설정 저장 경로](https://github.com/can1357/oh-my-pi/blob/v
   `@spark` 등 기존 경량 역할은 Luna를 유지합니다. `vision`과 `browser`는
   Terra를 유지합니다.
 
-`agentModelOverrides`로 고정된 에이전트는 `security-reviewer`(`@advisor`)와
+`agentModelOverrides`로 고정된 에이전트는 `security-reviewer`(위 순서 목록)와
 `sonic`(`@spark`)뿐입니다. 이 둘은 호출 시 `model`을 생략하세요. `task`,
 `fast-task`, `reviewer`의 고정은 제거했으므로 이들은 위 역할을 기본값으로
 쓰되 호출별 `model`로 바꿀 수 있습니다.
@@ -100,7 +101,7 @@ OpenRouter 요청은 API 크레딧을 사용합니다. `docs`와 빈 `image` 체
 ### 호출별 모델 선택
 
 `task.perCallModel: on`은 task 및 Eval 위임에서 호출별 `model` 선택을
-허용합니다. `task.perCallModelAllow`는 명시적 선택을 다음 여덟 선택자로
+허용합니다. `task.perCallModelAllow`는 명시적 선택을 다음 아홉 선택자로
 제한합니다.
 
 - `openai-codex/gpt-6.2-sol`
@@ -110,6 +111,7 @@ OpenRouter 요청은 API 크레딧을 사용합니다. `docs`와 빈 `image` 체
 - `openai-codex/gpt-6.1-terra`
 - `openai-codex/gpt-6-luna`
 - `openai-codex/gpt-6-sol` (Daybreak 전용)
+- `anthropic/claude-mythos-5-2` (Mythos 전용)
 - `deploy/deepseek-ai/deepseek-v4.1-flash-1017`
 
 Astra, Opus, Fable을 새로 추가했고 Sol, Terra, Luna, Deploy DeepSeek는
@@ -135,11 +137,21 @@ override에 쓸 수 없습니다. fallback 체인과 호출별 허용 목록은 
 않았습니다. 대신 메인 에이전트가 취약점 연구, 익스플로잇·악성코드 분석, 바이너리
 리버스 엔지니어링, 일반 모델이 거절하는 보안 테스트처럼 해당 접근이 필요한
 작업이거나 사용자가 요청할 때 호출별로 `openai-codex/gpt-6-sol:max`를 선택합니다.
-일반 구현·리뷰·계획에는 쓰지 않습니다. `security-reviewer`는 `@advisor`에
-고정되어 있어 이 override를 받을 수 없으므로 `task` 같은 고정되지 않은
-에이전트로 위임합니다. 호출별 허용은 공급자 설정
+일반 구현·리뷰·계획에는 쓰지 않습니다. `security-reviewer`는 순서 목록에
+고정되어 있어 호출별 `model`을 받을 수 없으므로, 호출별로 고르려면 `task` 같은
+고정되지 않은 에이전트로 위임합니다. 호출별 허용은 공급자 설정
 `providers.openai-codex.daybreak`와 별개이며, 실제 Daybreak 적용에는 그 설정과
 계정·모델별 승인이 모두 필요합니다.
+
+`anthropic/claude-mythos-5-2`는 보안 작업에 대한 제한이 완화된 Anthropic 모델로,
+계정이 승인받은 접근을 통해 사용합니다. `mythos` 역할(`:high`)이 이 선택자를
+가리키며 Daybreak와 같은 방식으로 씁니다. 에이전트 정의에 고정하지 않고, 같은
+종류의 보안 작업이거나 사용자가 요청할 때만 호출별로
+`anthropic/claude-mythos-5-2:high`를 선택합니다. 2026-11-21 기준 저장된 OMP
+Anthropic 로그인으로 `claude-mythos-5-2`와 `claude-mythos-5-1`이 응답했고,
+접미사 없는 `claude-mythos-5`는 404를 반환한 뒤 fallback 모델이 대신
+응답했으므로 정확한 `-5-2` ID를 사용하세요. Daybreak와 달리 별도의 공급자
+설정은 없습니다.
 
 ### OMP 전용 자율 선택 정책
 
@@ -160,6 +172,9 @@ override에 쓸 수 없습니다. fallback 체인과 호출별 허용 목록은 
 - Terra는 시각 추론과 컴퓨터 사용 작업에, Luna는 `scout`와 `sonic`에 유지합니다.
 - Daybreak(`openai-codex/gpt-6-sol:max`)는 cyber 접근이 필요한 보안 작업이나
   사용자 요청이 있을 때만 호출별로 선택합니다. 에이전트 정의에 고정하지 않습니다.
+- Mythos(`anthropic/claude-mythos-5-2:high`)도 같은 조건에서 호출별로 선택합니다.
+  에이전트 정의에 고정하지 않습니다. 둘 다 맞는 작업에서는 Daybreak보다 Mythos를
+  우선하고, Daybreak는 사용자가 요청하거나 Mythos를 쓸 수 없을 때 선택합니다.
 - 문서 작업에는 아래 `docs-writer` 경로를 우선합니다.
 
 에이전트는 모델보다 먼저 지침·도구·읽기/쓰기 범위를 기준으로 고릅니다.
@@ -494,7 +509,7 @@ alias와 파일 연결을 처음 추가한 뒤에는 `./rebuild.sh`로 적용해
 
 `home/.omp/agent/config-ultra.yml`은 Codex OAuth 구독 사용량을 적극적으로
 사용하도록 구성한 overlay입니다. `modelRoles`와 `retry.fallbackChains`만 덮어쓰며,
-나머지 설정(재시도 횟수·정책, 도구, UI, security-reviewer의 `@advisor` 연결)은
+나머지 설정(재시도 횟수·정책, 도구, UI, security-reviewer의 모델 고정)은
 기본 `config.yml`을 그대로 상속합니다.
 
 - `slow`·`plan`·`advisor`: `openai-codex/gpt-6-astra:max`

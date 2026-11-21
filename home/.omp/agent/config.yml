@@ -31,6 +31,11 @@ modelRoles:
   # 2026-11-18; gpt-6.2-sol/astra are standard-only). Do not bump it with the
   # other GPT roles without checking; see docs/agents.md, Daybreak section.
   daybreak: openai-codex/gpt-6-sol:max
+  # Special role: Anthropic's Mythos, which has loosened restrictions for
+  # security work on this account's approved access (5-2 and 5-1 answered on
+  # 2026-11-21; plain claude-mythos-5 returns 404). Not a general coding role;
+  # see docs/agents.md, Mythos paragraph.
+  mythos: anthropic/claude-mythos-5-2:high
 systemPromptTemplates:
   openai-codex/gpt-6.2-sol: ~/.omp/agent/system-templates/gpt-6.2.md
   openai-codex/gpt-6.2-astra: ~/.omp/agent/system-templates/gpt-6.2.md
@@ -49,6 +54,7 @@ cycleOrder:
   - default
   - docs
   - daybreak
+  - mythos
 theme:
   dark: monokai-custom
   light: monokai-custom
@@ -190,12 +196,16 @@ task:
     # Daybreak (cyber access) model: agents may pick it per call when a
     # security assignment needs it; no agent definition is wired to it.
     - openai-codex/gpt-6-sol
+    # Mythos (Anthropic security access) model: same per-call use as Daybreak.
+    - anthropic/claude-mythos-5-2
     - deploy/deepseek-ai/deepseek-v4.1-flash-1017
   completionProbe: true
   speculativeLaunch: false
   agentModelOverrides:
     # Keep these specialists pinned; other agents use overridable role defaults.
-    security-reviewer: "@advisor"
+    # Ordered list: the first resolvable role is primary, the rest are that
+    # spawn's fallbacks (Mythos, then Daybreak, then Astra).
+    security-reviewer: "@mythos, @daybreak, @advisor"
     sonic: "@spark"
   eager: preferred
   autoParallel: suggest
