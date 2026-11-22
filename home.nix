@@ -245,7 +245,7 @@ in
       pull = "git pull";
       m = "git switch main";
       n = "nvim";
-      cc = "claude --dangerously-skip-permissions";
+      cc = "claude --permission-mode auto";
       cx = "codex --yolo";
       ob = "omp --config ~/.omp/agent/config-budget.yml";
       oe = "omp --config ~/.omp/agent/config-experimental.yml";
