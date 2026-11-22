@@ -26,13 +26,24 @@
             ./configuration.nix
             nix-homebrew.darwinModules.nix-homebrew
             home-manager.darwinModules.home-manager
-            {
+            ({ pkgs, ... }: {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
-              home-manager.backupFileExtension = "before-home-manager";
+              # Move a file that blocks a managed link to a unique timestamped
+              # name. A fixed extension stops activation as soon as one backup
+              # exists, which Tern triggers by replacing its settings link.
+              home-manager.backupCommand = pkgs.writeShellScript "home-manager-backup" ''
+                set -eu
+                # Home Manager's link check also runs this with no argument
+                # (backticks inside its log message); do nothing then.
+                [ "$#" -ge 1 ] || exit 0
+                target="$1"
+                stamp="$(${pkgs.coreutils}/bin/date +%Y%m%d-%H%M%S)"
+                ${pkgs.coreutils}/bin/mv -- "$target" "$target.before-home-manager.$stamp.$$"
+              '';
               home-manager.extraSpecialArgs = { inherit desktopProfile user; };
               home-manager.users.${user} = import ./home.nix;
-            }
+            })
           ];
         };
     in

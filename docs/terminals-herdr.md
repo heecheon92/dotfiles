@@ -51,15 +51,17 @@ readlink "$HOME/Library/Application Support/Tern/settings.json"
 git diff -- home/.config/tern/settings.json
 ```
 
-링크가 사라졌으면 rebuild 전에 활성 파일의 변경을 저장소에 반영하고 백업하세요.
+링크가 사라졌으면 rebuild 전에 활성 파일의 변경을 저장소에 반영하세요.
 `TERN_CONFIG_DIR`로 전체 상태 디렉터리를 저장소에 옮기지는 않습니다.
 
-Home Manager가 `settings.json.before-home-manager`를 덮어쓸 수 없다는 오류로
-중단되면 기존 백업을 날짜가 붙은 별도 이름으로 보존한 뒤 다시 rebuild하세요.
-기존 백업을 삭제하거나 강제 덮어쓰기를 켜지 않습니다. 이 충돌 검사는 파일 링크를
-만들기 전에 실행되므로, Tern과 무관한 새 skill 링크도 설치되지 않을 수 있습니다.
-빌드 성공이나 새 system profile 선택만으로 activation 성공을 판단하지 말고,
-rebuild 종료 상태와 실제 `~/.agents/skills/<name>` 링크를 확인하세요.
+Tern이 링크를 일반 파일로 바꾼 상태에서 rebuild하면 Home Manager는
+`flake.nix`의 `home-manager.backupCommand`로 그 파일을
+`settings.json.before-home-manager.<날짜-시각>.<PID>` 이름으로 옮기고 링크를
+다시 만듭니다. 기존 백업을 덮어쓰지 않으므로 백업 이름 충돌로 activation이
+중단되지 않습니다. 저장소에 반영하지 않은 Preferences 변경은 그 백업 파일에만
+남으니 필요하면 직접 저장소 파일로 옮기세요. 오래된 백업은 자동으로 지워지지
+않습니다. 빌드 성공이나 새 system profile 선택만으로 activation 성공을 판단하지
+말고, rebuild 종료 상태와 실제 `~/.agents/skills/<name>` 링크를 확인하세요.
 
 Tern의 릴리스 검토와 안전한 업데이트 절차는
 [`tern-update`](../home/.agents/skills/handmade/tern-update/README.md)를
