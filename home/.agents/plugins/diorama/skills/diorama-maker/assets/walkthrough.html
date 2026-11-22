@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Walkthrough</title>
 <!--
-  Diorama single-file walkthrough, engine 0.4.0. Opens from disk: no server, no network.
+  Diorama single-file walkthrough, engine 0.5.0. Opens from disk: no server, no network.
   The styles and code are generated copies of the engine; only the data block below is edited.
 -->
 <style>
@@ -13,10 +13,11 @@
 /* Diorama engine styles shared by every template: the page, cards, buttons, messages, the
    collection shell and the frame of a contact sheet. Each template and stage brings its own
    stylesheet (template-<name>.css, stage-<name>.css), which loads after this one.
-   Paper, ink borders and hard offset shadows; light and dark follow the system setting. */
+   Paper, ink borders and hard offset shadows. Light values sit in :root and dark ones in
+   :root[data-theme="dark"]; the shell sets data-theme from the reader's choice (diorama.js). */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
   /* Paper, ink and chrome */
@@ -40,8 +41,8 @@
   --gray-b: #ece6dd;   --gray-f: #5e574f;
   --blue-b: #dfe9f7;   --blue-f: #234a7d;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
+:root[data-theme="dark"] {
+    color-scheme: dark;
     --page: #181512;
     --card: #221e1a;
     --card-2: #2a2520;
@@ -60,7 +61,10 @@
     --violet-b: #362b4c; --violet-f: #cbb8ef;
     --gray-b: #37322c;   --gray-f: #c9bfb1;
     --blue-b: #22324a;   --blue-f: #a9c4ee;
-  }
+}
+/* Before the engine script has set data-theme, the empty page follows the system. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) { color-scheme: dark; --page: #181512; }
 }
 
 * { box-sizing: border-box; }
@@ -149,6 +153,19 @@ a.btn { text-decoration: none; }
 .icon-btn:hover { background: var(--card-2); }
 .icon-btn:active { transform: translateY(2px); box-shadow: 0 0 0 var(--drop); }
 .icon-btn .ic { width: 16px; height: 16px; }
+/* Theme button: one icon per choice, stacked; the chosen one turns in. Changing the theme
+   reveals the new one in a circle from the button (setTheme in diorama.js). */
+.theme-btn { position: relative; }
+.theme-btn .ic { position: absolute; inset: 0; margin: auto; opacity: 0; transform: rotate(-90deg) scale(.4); transition: opacity .2s, transform .45s cubic-bezier(.34, 1.56, .64, 1); }
+[data-theme-choice="system"] .theme-ic-system, [data-theme-choice="light"] .theme-ic-light, [data-theme-choice="dark"] .theme-ic-dark { opacity: 1; transform: none; }
+.theme-turn::view-transition-old(root), .theme-turn::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+/* Single page: the button sits in the top right corner, and the header leaves room for it. */
+.dio-single { position: relative; }
+.dio-single > .theme-btn { position: absolute; top: 16px; right: 24px; z-index: 5; }
+.dio-single .wt-head { min-height: 66px; }
+.dio-single .wt-head h1 { padding-right: 46px; }
+@media (min-width: 1100px) and (min-height: 640px) { .dio-single > .theme-btn { top: 14px; right: 20px; } }
+@media (max-width: 760px) { .dio-single > .theme-btn { top: 10px; right: 12px; } }
 mark { background: var(--amber-b); color: inherit; border-radius: 3px; }
 
 /* Messages in place of the stage: loading, a broken file, an item that cannot be opened */
@@ -201,6 +218,7 @@ a.map-item:hover { background: var(--card-2); color: var(--ink); }
   .dio-collection[data-map="collapsed"] .map-title,
   .dio-collection[data-map="collapsed"] .map-body { display: none; }
   .dio-collection[data-map="collapsed"] .map-rail { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .dio-collection[data-map="collapsed"] .map-top .theme-btn { order: 1; }
 }
 @media (min-width: 1100px) and (min-height: 640px) {
   .dio-collection { height: 100dvh; }
@@ -340,8 +358,7 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
   --dead: #9b958d;
   --zone: #fffaf2;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
+:root[data-theme="dark"] {
     --grid: #b29d7d;
     --grid-o: .14;
     --shadow: #000;
@@ -377,7 +394,6 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
     --spot: #5cc26f;
     --dead: #59544e;
     --zone: #26211c;
-  }
 }
 
 /* Stage */
@@ -1018,7 +1034,7 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
 (() => {
   'use strict';
 
-  const VERSION = '0.4.0';
+  const VERSION = '0.5.0';
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
   const warn = (m) => console.warn(`[diorama] ${m}`);
   const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -1081,11 +1097,76 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     sidebar: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M9.5 4.5v15"/>',
     close: '<path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/>',
+    sun: '<circle cx="12" cy="12" r="3.8"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/>',
+    moon: '<path d="M19.5 14.2A8 8 0 0 1 9.8 4.5a8 8 0 1 0 9.7 9.7z"/>',
+    monitor: '<rect x="3.5" y="4.5" width="17" height="11.5" rx="2"/><path d="M9 20h6M12 16v4"/>',
   };
   const FALLBACK_GLYPH = '<circle cx="12" cy="12" r="2.8" class="gl-dot"/>';
   function iconHtml(name, set = GLYPH) {
     return `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${set[name] || FALLBACK_GLYPH}</svg>`;
   }
+
+  /* ================= Theme ================= */
+
+  // The reader picks light, dark or the system's theme with the theme button. The choice lives in
+  // this browser and is shared by every Diorama page. The shell writes the theme in effect to
+  // <html data-theme="light|dark">, which is what the stylesheets read: a stylesheet never asks
+  // the system itself. <html data-theme-choice> holds the choice and picks the button's icon.
+  const THEME_KEY = 'diorama:theme';
+  const THEME_ICON = { system: 'monitor', light: 'sun', dark: 'moon' };
+  const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+  const systemTheme = () => (darkQuery.matches ? 'dark' : 'light');
+  let themeChoice = 'system';
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'light' || saved === 'dark') themeChoice = saved;
+  } catch (err) { /* storage blocked: follow the system */ }
+  const themeNow = () => (themeChoice === 'system' ? systemTheme() : themeChoice);
+  // The first press always changes the page: from the system's theme to the other one, then to
+  // the system's own theme as a fixed choice, then back to following the system.
+  function themeAfter(choice) {
+    const order = ['system', systemTheme() === 'dark' ? 'light' : 'dark', systemTheme()];
+    return order[(order.indexOf(choice) + 1) % order.length];
+  }
+  function paintTheme() {
+    const root = document.documentElement;
+    root.dataset.theme = themeNow();
+    root.dataset.themeChoice = themeChoice;
+    const title = `Theme: ${themeChoice}`;
+    for (const b of document.querySelectorAll('.theme-btn')) {
+      b.title = title;
+      b.lastElementChild.textContent = `${title}. Switch to ${themeAfter(themeChoice)}.`;
+    }
+  }
+  function setTheme(choice, from) {
+    const before = themeNow();
+    themeChoice = choice;
+    try {
+      if (choice === 'system') localStorage.removeItem(THEME_KEY);
+      else localStorage.setItem(THEME_KEY, choice);
+    } catch (err) { /* storage blocked: the choice lasts until the page closes */ }
+    if (themeNow() === before || motionQuery.matches || !document.startViewTransition) { paintTheme(); return; }
+    // The new theme spreads over the page in a circle that grows from the button.
+    const root = document.documentElement, r = from.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const reach = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    root.classList.add('theme-turn');
+    const turn = document.startViewTransition(paintTheme);
+    turn.ready.then(() => root.animate(
+      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${reach}px at ${x}px ${y}px)`] },
+      { duration: 480, easing: 'cubic-bezier(.4, 0, .2, 1)', pseudoElement: '::view-transition-new(root)' },
+    )).catch(() => { /* the transition was skipped; the theme is set all the same */ });
+    turn.finished.catch(() => {}).then(() => root.classList.remove('theme-turn'));
+  }
+  // One button with an icon per choice; the stylesheet shows the chosen one. Call paintTheme()
+  // after putting it on the page, which names it.
+  const themeButtonHtml = () => `<button class="icon-btn theme-btn" type="button">${Object.entries(THEME_ICON).map(([choice, icon]) => iconHtml(icon).replace('class="ic"', `class="ic theme-ic-${choice}"`)).join('')}<span class="sr-only"></span></button>`;
+  paintTheme();
+  darkQuery.addEventListener('change', () => { if (themeChoice === 'system') paintTheme(); });
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest ? e.target.closest('.theme-btn') : null;
+    if (b) setTheme(themeAfter(themeChoice), b);
+  });
 
   /* ================= Shared page pieces ================= */
 
@@ -1357,8 +1438,9 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
   function startSingle(w) {
     if (!claimStart('startSingle')) return;
     const app = appRoot('dio-single');
-    app.innerHTML = '<main class="dio-main"></main>';
-    const main = app.firstChild;
+    app.innerHTML = `${themeButtonHtml()}<main class="dio-main"></main>`;
+    paintTheme();
+    const main = app.lastChild;
     const stop = (body) => {
       main.innerHTML = statusMarkup({ title: 'Walkthrough', heading: 'This walkthrough cannot be shown', tone: 'red', icon: 'alert', alert: true, body });
     };
@@ -1609,11 +1691,13 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
   <button class="icon-btn" type="button" data-ref="drawerBtn" aria-controls="dio-map" aria-expanded="false">${iconHtml('menu')}<span class="sr-only">Contents</span></button>
   <a class="app-bar-title" href="#/">${esc(c.title || '')}</a>
   <button class="icon-btn" type="button" data-ref="barSearch" aria-haspopup="dialog">${iconHtml('search')}<span class="sr-only">Search</span></button>
+  ${themeButtonHtml()}
 </header>
 <div class="app-scrim" data-ref="scrim" hidden></div>
 <nav class="map card" id="dio-map" data-ref="map" aria-label="Contents">
   <div class="map-top">
     <a class="map-title" href="#/"><span class="map-kicker">${esc(L.home)}</span><span class="map-name">${esc(c.title || '')}</span></a>
+    ${themeButtonHtml()}
     <button class="icon-btn" type="button" data-ref="mapToggle" aria-controls="dio-map-body"></button>
   </div>
   <div class="map-rail">
@@ -1634,6 +1718,7 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
     <ul class="search-results" id="dio-search-results" data-ref="searchResults"></ul>
   </div>
 </div>`;
+    paintTheme();
     const R = {};
     for (const el of app.querySelectorAll('[data-ref]')) R[el.dataset.ref] = el;
     const $ = (name) => R[name];

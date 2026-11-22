@@ -40,8 +40,7 @@
   --dead: #9b958d;
   --zone: #fffaf2;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
+:root[data-theme="dark"] {
     --grid: #b29d7d;
     --grid-o: .14;
     --shadow: #000;
@@ -77,7 +76,6 @@
     --spot: #5cc26f;
     --dead: #59544e;
     --zone: #26211c;
-  }
 }
 
 /* Stage */

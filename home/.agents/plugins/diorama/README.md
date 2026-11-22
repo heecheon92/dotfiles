@@ -129,7 +129,10 @@ agent will propose the rest.
     again (each new step starts from the author's framing);
   - tracing: point at an object, focus it with Tab or tap it, and it stays bright with its
     links and the objects they lead to while the rest of the scene dims; point at a link to
-    see its two ends.
+    see its two ends;
+  - a theme button: light, dark, or follow the system. It is in the top right corner of a
+    single page, and in the map and the top bar of a collection. The choice is kept in the
+    reader's browser.
 - **For the author and the reviewer:** a sheet at `#/<walkthrough-id>/sheet` that shows
   every step and every try-it option as a still picture on one page, and automatic checks
   listed at its top: broken references, totals that do not add up, labels that overlap,
@@ -267,7 +270,7 @@ If you remember three things:
 ## Maintaining
 
 The engine has one source, `skills/diorama-maker/assets/collection/engine/` (version
-0.4.0), in three layers. The shell (`diorama.js`, `diorama.css`) is the page around a
+0.5.0), in three layers. The shell (`diorama.js`, `diorama.css`) is the page around a
 walkthrough: the collection, search, progress and links. The stage (`stage-iso.*`) draws
 the isometric picture. The template (`template-story.*`) is the step story, the only
 template today. `skills/diorama-maker/references/templates.md` describes the contracts

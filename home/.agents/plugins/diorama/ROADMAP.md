@@ -43,7 +43,9 @@ inside an initiative track its parts; they are not separate statuses.
 > examples unchanged. The reader can zoom and pan the stage and trace connections by
 > pointing at an object or a link; both were built and verified by an agent in Chromium on
 > a locked screen at about 30 frames a second, and wait for the owner's check at full frame
-> rate before they count as shipped. None of 0.3.0 or 0.4.0 is committed yet. The trace
+> rate before they count as shipped. None of 0.3.0 or 0.4.0 is committed yet. Engine 0.5.0
+> adds a theme button (light, dark, system) to every page; an agent built and checked it in
+> Chromium, and it waits for the owner's check of the animation. The trace
 > template is next. The planner and reviewer skills have still not been run end to end by
 > an agent on a real collection.
 
@@ -344,7 +346,8 @@ Depends on: initiative 5.
 
 - [ ] **Proposed:** a walkthrough or a collection can choose a named colour scheme.
 
-Why: there is one scheme, in light and dark. Different subjects and audiences suit
+Why: there is one scheme, in light and dark. Since 0.5.0 the reader can switch between light
+and dark, but not between schemes. Different subjects and audiences suit
 different looks, and a collection may need to match a brand.
 
 Scope:

@@ -1,10 +1,11 @@
 /* Diorama engine styles shared by every template: the page, cards, buttons, messages, the
    collection shell and the frame of a contact sheet. Each template and stage brings its own
    stylesheet (template-<name>.css, stage-<name>.css), which loads after this one.
-   Paper, ink borders and hard offset shadows; light and dark follow the system setting. */
+   Paper, ink borders and hard offset shadows. Light values sit in :root and dark ones in
+   :root[data-theme="dark"]; the shell sets data-theme from the reader's choice (diorama.js). */
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 
   /* Paper, ink and chrome */
@@ -28,8 +29,8 @@
   --gray-b: #ece6dd;   --gray-f: #5e574f;
   --blue-b: #dfe9f7;   --blue-f: #234a7d;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
+:root[data-theme="dark"] {
+    color-scheme: dark;
     --page: #181512;
     --card: #221e1a;
     --card-2: #2a2520;
@@ -48,7 +49,10 @@
     --violet-b: #362b4c; --violet-f: #cbb8ef;
     --gray-b: #37322c;   --gray-f: #c9bfb1;
     --blue-b: #22324a;   --blue-f: #a9c4ee;
-  }
+}
+/* Before the engine script has set data-theme, the empty page follows the system. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) { color-scheme: dark; --page: #181512; }
 }
 
 * { box-sizing: border-box; }
@@ -137,6 +141,19 @@ a.btn { text-decoration: none; }
 .icon-btn:hover { background: var(--card-2); }
 .icon-btn:active { transform: translateY(2px); box-shadow: 0 0 0 var(--drop); }
 .icon-btn .ic { width: 16px; height: 16px; }
+/* Theme button: one icon per choice, stacked; the chosen one turns in. Changing the theme
+   reveals the new one in a circle from the button (setTheme in diorama.js). */
+.theme-btn { position: relative; }
+.theme-btn .ic { position: absolute; inset: 0; margin: auto; opacity: 0; transform: rotate(-90deg) scale(.4); transition: opacity .2s, transform .45s cubic-bezier(.34, 1.56, .64, 1); }
+[data-theme-choice="system"] .theme-ic-system, [data-theme-choice="light"] .theme-ic-light, [data-theme-choice="dark"] .theme-ic-dark { opacity: 1; transform: none; }
+.theme-turn::view-transition-old(root), .theme-turn::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+/* Single page: the button sits in the top right corner, and the header leaves room for it. */
+.dio-single { position: relative; }
+.dio-single > .theme-btn { position: absolute; top: 16px; right: 24px; z-index: 5; }
+.dio-single .wt-head { min-height: 66px; }
+.dio-single .wt-head h1 { padding-right: 46px; }
+@media (min-width: 1100px) and (min-height: 640px) { .dio-single > .theme-btn { top: 14px; right: 20px; } }
+@media (max-width: 760px) { .dio-single > .theme-btn { top: 10px; right: 12px; } }
 mark { background: var(--amber-b); color: inherit; border-radius: 3px; }
 
 /* Messages in place of the stage: loading, a broken file, an item that cannot be opened */
@@ -189,6 +206,7 @@ a.map-item:hover { background: var(--card-2); color: var(--ink); }
   .dio-collection[data-map="collapsed"] .map-title,
   .dio-collection[data-map="collapsed"] .map-body { display: none; }
   .dio-collection[data-map="collapsed"] .map-rail { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .dio-collection[data-map="collapsed"] .map-top .theme-btn { order: 1; }
 }
 @media (min-width: 1100px) and (min-height: 640px) {
   .dio-collection { height: 100dvh; }

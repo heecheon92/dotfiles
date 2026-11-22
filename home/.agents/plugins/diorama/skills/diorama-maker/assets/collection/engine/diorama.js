@@ -19,7 +19,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '0.4.0';
+  const VERSION = '0.5.0';
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
   const warn = (m) => console.warn(`[diorama] ${m}`);
   const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -82,11 +82,76 @@
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
     sidebar: '<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M9.5 4.5v15"/>',
     close: '<path d="m6.5 6.5 11 11M17.5 6.5l-11 11"/>',
+    sun: '<circle cx="12" cy="12" r="3.8"/><path d="M12 3v2.2M12 18.8V21M3 12h2.2M18.8 12H21M5.6 5.6l1.6 1.6M16.8 16.8l1.6 1.6M18.4 5.6l-1.6 1.6M7.2 16.8l-1.6 1.6"/>',
+    moon: '<path d="M19.5 14.2A8 8 0 0 1 9.8 4.5a8 8 0 1 0 9.7 9.7z"/>',
+    monitor: '<rect x="3.5" y="4.5" width="17" height="11.5" rx="2"/><path d="M9 20h6M12 16v4"/>',
   };
   const FALLBACK_GLYPH = '<circle cx="12" cy="12" r="2.8" class="gl-dot"/>';
   function iconHtml(name, set = GLYPH) {
     return `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${set[name] || FALLBACK_GLYPH}</svg>`;
   }
+
+  /* ================= Theme ================= */
+
+  // The reader picks light, dark or the system's theme with the theme button. The choice lives in
+  // this browser and is shared by every Diorama page. The shell writes the theme in effect to
+  // <html data-theme="light|dark">, which is what the stylesheets read: a stylesheet never asks
+  // the system itself. <html data-theme-choice> holds the choice and picks the button's icon.
+  const THEME_KEY = 'diorama:theme';
+  const THEME_ICON = { system: 'monitor', light: 'sun', dark: 'moon' };
+  const darkQuery = matchMedia('(prefers-color-scheme: dark)');
+  const systemTheme = () => (darkQuery.matches ? 'dark' : 'light');
+  let themeChoice = 'system';
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'light' || saved === 'dark') themeChoice = saved;
+  } catch (err) { /* storage blocked: follow the system */ }
+  const themeNow = () => (themeChoice === 'system' ? systemTheme() : themeChoice);
+  // The first press always changes the page: from the system's theme to the other one, then to
+  // the system's own theme as a fixed choice, then back to following the system.
+  function themeAfter(choice) {
+    const order = ['system', systemTheme() === 'dark' ? 'light' : 'dark', systemTheme()];
+    return order[(order.indexOf(choice) + 1) % order.length];
+  }
+  function paintTheme() {
+    const root = document.documentElement;
+    root.dataset.theme = themeNow();
+    root.dataset.themeChoice = themeChoice;
+    const title = `Theme: ${themeChoice}`;
+    for (const b of document.querySelectorAll('.theme-btn')) {
+      b.title = title;
+      b.lastElementChild.textContent = `${title}. Switch to ${themeAfter(themeChoice)}.`;
+    }
+  }
+  function setTheme(choice, from) {
+    const before = themeNow();
+    themeChoice = choice;
+    try {
+      if (choice === 'system') localStorage.removeItem(THEME_KEY);
+      else localStorage.setItem(THEME_KEY, choice);
+    } catch (err) { /* storage blocked: the choice lasts until the page closes */ }
+    if (themeNow() === before || motionQuery.matches || !document.startViewTransition) { paintTheme(); return; }
+    // The new theme spreads over the page in a circle that grows from the button.
+    const root = document.documentElement, r = from.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.top + r.height / 2;
+    const reach = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    root.classList.add('theme-turn');
+    const turn = document.startViewTransition(paintTheme);
+    turn.ready.then(() => root.animate(
+      { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${reach}px at ${x}px ${y}px)`] },
+      { duration: 480, easing: 'cubic-bezier(.4, 0, .2, 1)', pseudoElement: '::view-transition-new(root)' },
+    )).catch(() => { /* the transition was skipped; the theme is set all the same */ });
+    turn.finished.catch(() => {}).then(() => root.classList.remove('theme-turn'));
+  }
+  // One button with an icon per choice; the stylesheet shows the chosen one. Call paintTheme()
+  // after putting it on the page, which names it.
+  const themeButtonHtml = () => `<button class="icon-btn theme-btn" type="button">${Object.entries(THEME_ICON).map(([choice, icon]) => iconHtml(icon).replace('class="ic"', `class="ic theme-ic-${choice}"`)).join('')}<span class="sr-only"></span></button>`;
+  paintTheme();
+  darkQuery.addEventListener('change', () => { if (themeChoice === 'system') paintTheme(); });
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest ? e.target.closest('.theme-btn') : null;
+    if (b) setTheme(themeAfter(themeChoice), b);
+  });
 
   /* ================= Shared page pieces ================= */
 
@@ -358,8 +423,9 @@
   function startSingle(w) {
     if (!claimStart('startSingle')) return;
     const app = appRoot('dio-single');
-    app.innerHTML = '<main class="dio-main"></main>';
-    const main = app.firstChild;
+    app.innerHTML = `${themeButtonHtml()}<main class="dio-main"></main>`;
+    paintTheme();
+    const main = app.lastChild;
     const stop = (body) => {
       main.innerHTML = statusMarkup({ title: 'Walkthrough', heading: 'This walkthrough cannot be shown', tone: 'red', icon: 'alert', alert: true, body });
     };
@@ -610,11 +676,13 @@
   <button class="icon-btn" type="button" data-ref="drawerBtn" aria-controls="dio-map" aria-expanded="false">${iconHtml('menu')}<span class="sr-only">Contents</span></button>
   <a class="app-bar-title" href="#/">${esc(c.title || '')}</a>
   <button class="icon-btn" type="button" data-ref="barSearch" aria-haspopup="dialog">${iconHtml('search')}<span class="sr-only">Search</span></button>
+  ${themeButtonHtml()}
 </header>
 <div class="app-scrim" data-ref="scrim" hidden></div>
 <nav class="map card" id="dio-map" data-ref="map" aria-label="Contents">
   <div class="map-top">
     <a class="map-title" href="#/"><span class="map-kicker">${esc(L.home)}</span><span class="map-name">${esc(c.title || '')}</span></a>
+    ${themeButtonHtml()}
     <button class="icon-btn" type="button" data-ref="mapToggle" aria-controls="dio-map-body"></button>
   </div>
   <div class="map-rail">
@@ -635,6 +703,7 @@
     <ul class="search-results" id="dio-search-results" data-ref="searchResults"></ul>
   </div>
 </div>`;
+    paintTheme();
     const R = {};
     for (const el of app.querySelectorAll('[data-ref]')) R[el.dataset.ref] = el;
     const $ = (name) => R[name];

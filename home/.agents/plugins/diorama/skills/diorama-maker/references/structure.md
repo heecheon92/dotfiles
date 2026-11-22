@@ -147,7 +147,8 @@ See [collection.md](collection.md) for the folder layout and shell.
 | Deep link | `#/<walkthrough-id>/<step>` |
 | Sheet | `#/<walkthrough-id>/sheet`: every step and try option as stills, with the automatic checks. For authors and reviewers; not linked from the page (`walkthrough-schema.md`, "The sheet") |
 | Search | Across walkthroughs and terms, ⌘K |
-| Language, light/dark | In the header |
+| Language | In the header |
+| Theme | One button that steps through light, dark and system; the new theme spreads from the button. Top right of a single page; in the map and the top bar of a collection. The choice is kept in the browser |
 
 ## Visual language
 

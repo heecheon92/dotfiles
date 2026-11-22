@@ -171,3 +171,9 @@ existing file needs an edit. The step story reads and looks the same. Two detail
 collection differ: for a walkthrough not yet opened under 0.4.0, the home view's Continue
 link points at the walkthrough without a step number, and an address whose last segment is
 not recognised opens where the reader left off instead of the home view.
+
+Engine 0.5.0 adds the theme button (light, dark or system) to every page, with no change to
+the data format or to `index.html`. The update is the same procedure. Dark colours now sit
+under `:root[data-theme="dark"]` instead of `@media (prefers-color-scheme: dark)`, so a
+template or stage of your own must move its dark values the same way, or they will no longer
+apply.

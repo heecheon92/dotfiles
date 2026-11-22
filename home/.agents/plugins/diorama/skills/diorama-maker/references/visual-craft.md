@@ -208,6 +208,9 @@ Dark colours are computed from the light ones: light pastels become deep, less
 saturated versions of the same hue; neutrals invert; ink becomes a warm off-white; shadows
 become black. Hand-picked illustration colours (skin, a laptop lid) are left alone.
 
+The page opens in the system's theme. The reader can fix it to light or dark with the theme
+button, which the shell draws on every page.
+
 ## Network trace stage (trace walkthroughs)
 
 The same ideas with a different subject: devices on an isometric floor, packets travelling

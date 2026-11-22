@@ -25,6 +25,14 @@ The engine has three layers. Read this before adding a template (such as the tra
   query), `restartAnim`, `lifetime()` (`later`, `frame`, `listen`, `end`) and `sheetChecks`.
 - Every template and stage has both a `.js` and a `.css` file; the CSS may be empty. Its rules
   stay in the page after the reader moves on, so scope them to the template's own class names.
+- **Colours and themes:** put light values in `:root` and dark values in
+  `:root[data-theme="dark"]`, as `diorama.css` and `stage-iso.css` do. The shell sets
+  `data-theme` on `<html>` from the reader's choice (the theme button: light, dark or system)
+  and the system setting. Do not use `@media (prefers-color-scheme)`: it would ignore that
+  choice. The shell draws the theme button itself, in the map and top bar of a collection and
+  in the top right corner of a single page, so a template never adds one. On a single page,
+  start with the shell's `.wt-head`, which leaves room for the button, or keep the top right
+  46 px of the page clear.
 - **Collection:** `index.html` loads only `engine/diorama.css` and `engine/diorama.js`. When a
   walkthrough opens, the shell loads `engine/template-<name>.js`, then the stage's CSS and JS and
   the template's CSS (stage CSS first), with `<script>`/`<link>` tags, and waits for them. A
