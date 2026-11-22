@@ -32,10 +32,13 @@ for its own conversation. Keep the shared AGENTS.md harness-neutral.
   verified implementation facts and scope; do not ask it to invent product
   decisions or implement code. Explicit user model choices still take precedence.
 
-- **Opus:** use the normal `task` route (`@task`, Opus high) for general
-  implementation and debugging. Omit `model` unless the assignment has a concrete
-  reason to use another model. An explicit selection uses
-  `anthropic/claude-opus-5-5:high`.
+- **Sol (task trial):** use the normal `task` route (`@task`, GPT-6.2 Sol high)
+  for general implementation and debugging. The user is trialling Sol as the main
+  task implementer; Opus is its first fallback. Omit `model` unless the assignment
+  has a concrete reason to use another model.
+- **Opus:** retain `anthropic/claude-opus-5-5:high` as an explicit per-call
+  alternative for a coding assignment or independent second approach when
+  task-specific evidence favors it. Do not automatically replace the Sol default.
 - **Fable:** use `@plan` (Fable high) for planning. The `plan` role is not a
   bundled agent named `planner`; for a planning assignment delegated to `task`,
   explicitly select `anthropic/claude-fable-5-2:high`.
@@ -47,9 +50,8 @@ for its own conversation. Keep the shared AGENTS.md harness-neutral.
 - **Astra:** use the normal `reviewer` route (`@slow`, Astra xhigh) for code
   review. Omit `model` for that default; an explicit selection uses
   `openai-codex/gpt-6.2-astra:xhigh`. The reviewer's read-only scope still applies.
-- **Sol:** retain `openai-codex/gpt-6.2-sol:high` as an explicit alternative for
-  a coding assignment or independent second approach when task-specific evidence
-  favors it. Do not automatically replace the requested Opus/Fable/Astra defaults.
+- **Sol elsewhere:** an explicit Sol selection uses `openai-codex/gpt-6.2-sol:high`.
+  Do not automatically replace the Fable/Astra defaults with it.
 - **Deploy DeepSeek:** retain for explicit user requests, concrete task-specific
   reasons, and lower-priority automatic fallbacks, not as the default implementation
   or review route. Use `deploy/deepseek-ai/deepseek-v4.1-flash-1017:high` unless the

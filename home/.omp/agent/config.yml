@@ -1,6 +1,6 @@
 setupVersion: 3
 modelRoles:
-  # Opus implements, Fable plans, and Astra reviews; defaults remain overridable.
+  # Sol implements (trial), Fable plans, and Astra reviews; defaults remain overridable.
   default: anthropic/claude-fable-5-2:medium
   smol: openai-codex/gpt-6-luna:high
   spark: openai-codex/gpt-6-luna:medium
@@ -9,7 +9,10 @@ modelRoles:
   image: openai/gpt-image-2.6-sunburst
   plan: anthropic/claude-fable-5-2:high
   commit: openai-codex/gpt-6-luna:medium
-  task: anthropic/claude-opus-5-5:high
+  # Trial from 2026-11-22: Sol is the main task implementer for a few weeks.
+  # Previous value: anthropic/claude-opus-5-5:high (now first in the task fallback chain).
+  # To end the trial, follow docs/sol-task-trial-rollback.md, then delete that file.
+  task: openai-codex/gpt-6.2-sol:high
   # Deliberate primary: this Codex account offers Ultrafast for GPT-6.2 Sol.
   # Before proposing a replacement, verify its Ultrafast access and update the tier hook if needed.
   fast_task: openai-codex/gpt-6.2-sol:high
@@ -148,6 +151,7 @@ retry:
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     task:
+      - anthropic/claude-opus-5-5:high
       - anthropic/claude-fable-5-2:high
       - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
       - openrouter/z-ai/glm-5.3-flash:max

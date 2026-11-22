@@ -38,12 +38,13 @@ OMP 18.20.2의 [설정 저장 경로](https://github.com/can1357/oh-my-pi/blob/v
 ## OMP 모델 역할과 위임
 
 기본 대화 역할 `default`는 `anthropic/claude-fable-5-2:medium`입니다.
-위임은 Opus가 구현하고, Fable이 계획하고, Astra가 리뷰하도록 나눕니다.
+위임은 Sol이 구현하고(2026-11-22부터 몇 주간 시험), Fable이 계획하고, Astra가 리뷰하도록 나눕니다.
 이 분리는 사용자가 정한 출발점이며 모델의 우열이나 벤치마크 결과를 뜻하지
 않습니다. 메인 에이전트가 작업 범위와 위험도를 보고 위임 유형을 선택합니다.
 
-- `task`: `@task`, `anthropic/claude-opus-5-5:high`. 일반 구현과 디버깅의
-  기본 위임입니다.
+- `task`: `@task`, `openai-codex/gpt-6.2-sol:high`. 일반 구현과 디버깅의
+  기본 위임입니다. 시험 기간 동안 Sol을 쓰며, 이전 값인
+  `anthropic/claude-opus-5-5:high`는 `task` fallback 체인의 첫 항목입니다.
 - `fast-task`: `@fast_task`, `openai-codex/gpt-6.2-sol:high`. 접근 방법과
   범위가 명확한 구현에 씁니다. 이 계정에서 GPT-6.2 Sol의 Ultrafast를 쓸 수 있어
   사용자가 기본 모델로 선택했습니다. `high`는 추론 수준이고, Ultrafast는
@@ -85,7 +86,7 @@ DeepSeek → OpenRouter GLM → OpenRouter DeepSeek를 복원했으며, 이전 �
 추론 수준을 유지합니다. 이 경로들은 낮은 우선순위의 자동 fallback이며,
 OpenRouter 요청은 API 크레딧을 사용합니다. `docs`와 빈 `image` 체인에는
 추가하지 않았습니다. OpenRouter `judge`(`openrouter/~typesafe/jev-latest`)
-역할은 유지합니다. opt-in prewalk는 `@task`(Opus `high`)로 인계합니다. 이 설정은 인증이나 계정 선택을 바꾸지 않으며,
+역할은 유지합니다. opt-in prewalk는 `@task`(시험 기간에는 Sol `high`)로 인계합니다. 이 설정은 인증이나 계정 선택을 바꾸지 않으며,
 각 모델의 계정 권한이나 과금 여부는 이 문서에서 확인하지 않았습니다.
 
 `task.eager: preferred`는 메인 에이전트가 위임을 선호하도록 지시합니다.
@@ -160,13 +161,13 @@ Anthropic 로그인으로 `claude-mythos-5-2`와 `claude-mythos-5-1`이 응답�
 다음과 같습니다.
 
 - 확신이 없으면 선택한 에이전트의 기본 역할을 쓰고 `model`을 생략합니다.
-  구현·디버깅은 `task`(Opus `high`), 범위가 명확한 구현은 `fast-task`
+  구현·디버깅은 `task`(시험 기간에는 Sol `high`), 범위가 명확한 구현은 `fast-task`
   (Sol `high`, Ultrafast 요청), 코드 리뷰는 `reviewer`(Astra `xhigh`)입니다.
 - 계획은 `@plan`(Fable `high`)을 씁니다. `task`에 위임하는 계획 작업에는
   `anthropic/claude-fable-5-2:high`를 명시합니다.
-- `fast-task` 이외에서 Sol(`openai-codex/gpt-6.2-sol:high`)은 코딩 작업이나 독립적인 두 번째
+- Opus(`anthropic/claude-opus-5-5:high`)는 코딩 작업이나 독립적인 두 번째
   접근이 필요하고 작업별 근거가 있을 때만 명시적으로 선택하는 대안입니다.
-  Opus·Fable·Astra 기본값을 자동으로 대체하지 않습니다.
+  Sol·Fable·Astra 기본값을 자동으로 대체하지 않습니다.
 - Deploy DeepSeek는 사용자의 명시적 요청이나 구체적인 작업별 이유가 있을 때
   선택하며, 낮은 우선순위의 자동 fallback에도 유지합니다. 기본 구현·리뷰 경로가 아닙니다.
 - Terra는 시각 추론과 컴퓨터 사용 작업에, Luna는 `scout`와 `sonic`에 유지합니다.
@@ -185,7 +186,7 @@ Anthropic 로그인으로 `claude-mythos-5-2`와 `claude-mythos-5-1`이 응답�
 오버레이가 선택을 제한하면 권한을 넓히지 않고 기존 경로를 따릅니다.
 
 `@deepseek`는 기존 `high` 매핑을 유지합니다. opt-in prewalk의 인계 대상은
-`@task`(Opus `high`)이며, `/prewalk restart`의 계획 역할은 `@plan`(Fable `high`)입니다.
+`@task`(시험 기간에는 Sol `high`)이며, `/prewalk restart`의 계획 역할은 `@plan`(Fable `high`)입니다.
 이 기본값은 사용자가 선호하는 역할 분담이며 벤치마크 순위나 측정한 속도를
 근거로 하지 않습니다. 모델 카탈로그 가격은 공급자별 추정치이며 Codex 구독의
 실제 청구액이 아닙니다.
