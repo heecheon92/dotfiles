@@ -76,6 +76,9 @@ Control, Claude in Chrome, computer use는 쓸 수 없습니다. 끄려면 값�
   `high`이고, 실패하면 Daybreak(GPT-6 Sol `max`), 그다음 Astra `high`로 넘어갑니다.
 - `docs-writer`: `@docs`, Fable `medium`. 아래 문서 작성 경로처럼
   `model`을 생략해 호출합니다.
+- `ui-ux-specialist`: Fable `high`, 실패하면 Opus `xhigh`. 조사, 설계, 리뷰를 맡습니다.
+- `ui-ux-implementer`: Fable `medium`, 그다음 Opus `high`, Astra `medium`, Sol `high`
+  순서. 구현을 맡습니다. 둘 다 아래 UI/UX 경로처럼 `model`을 생략해 호출합니다.
 - `plan` 역할은 Fable `high`입니다. 이 역할은 `planner`라는 번들 에이전트가
   아니므로, 계획 작업을 `task`에 위임할 때는 호출에
   `anthropic/claude-fable-5-2:high`를 명시합니다.
@@ -99,11 +102,11 @@ Fable `xhigh`, `plan`은 Astra `high`, `vision`은 Astra `high` 다음
 Fable `medium`입니다.
 `commit`과 `spark`는 Fable `low`, `task`는 Fable `high`, `fast_task`는
 Fable `medium`, `advisor`는 Fable `high`, `docs`는 Astra `medium`으로
-대체합니다. 기존 DeepSeek·GLM 체인이 있던 열 개 역할에는 그 뒤로 Deploy
-DeepSeek → OpenRouter GLM → OpenRouter DeepSeek를 복원했으며, 이전 역할별
-추론 수준을 유지합니다. 이 경로들은 낮은 우선순위의 자동 fallback이며,
-OpenRouter 요청은 API 크레딧을 사용합니다. `docs`와 빈 `image` 체인에는
-추가하지 않았습니다. OpenRouter `judge`(`openrouter/~typesafe/jev-latest`)
+대체합니다. `default`의 유일한 대체 모델은 Astra `high`입니다. 기존 DeepSeek·GLM
+체인을 사용하는 다른 역할은 직접 경로 뒤에 Deploy DeepSeek → OpenRouter GLM →
+OpenRouter DeepSeek 순으로 시도합니다. OpenRouter 요청은 API 크레딧을 사용합니다.
+`docs`와 빈 `image` 체인에도 이 경로를 추가하지 않았습니다.
+OpenRouter `judge`(`openrouter/~typesafe/jev-latest`)
 역할은 유지합니다. opt-in prewalk는 `@task`(시험 기간에는 Sol `high`)로 인계합니다. 이 설정은 인증이나 계정 선택을 바꾸지 않으며,
 각 모델의 계정 권한이나 과금 여부는 이 문서에서 확인하지 않았습니다.
 
@@ -194,7 +197,8 @@ Anthropic 로그인으로 `claude-mythos-5-2`와 `claude-mythos-5-1`이 응답�
 - Mythos(`anthropic/claude-mythos-5-2:high`)도 같은 조건에서 호출별로 선택합니다.
   에이전트 정의에 고정하지 않습니다. 둘 다 맞는 작업에서는 Daybreak보다 Mythos를
   우선하고, Daybreak는 사용자가 요청하거나 Mythos를 쓸 수 없을 때 선택합니다.
-- 문서 작업에는 아래 `docs-writer` 경로를 우선합니다.
+- 문서 작업에는 아래 `docs-writer` 경로를, UI/UX 작업에는 `ui-ux-specialist`와
+  `ui-ux-implementer` 경로를 우선합니다.
 
 에이전트는 모델보다 먼저 지침·도구·읽기/쓰기 범위를 기준으로 고릅니다.
 모델을 바꿔도 읽기 전용 에이전트가 구현 작업자가 되지는 않습니다.
@@ -253,6 +257,60 @@ Home Manager는 `~/.omp/agent/agents/docs-writer.md`만 개별 연결합니다.
 새 호스트에서는 `./rebuild.sh`로 설치하고, 이미 실행 중인 메인 세션에 새 설명과
 라우팅 정책을 확실히 반영하려면 OMP를 다시 시작하세요. 이 에이전트는 자체
 작성 지침을 가지므로 메인 전용 append 파일의 자식 상속에 의존하지 않습니다.
+
+### 제품 UI/UX 작업: ui-ux-specialist와 ui-ux-implementer
+
+화면이 어떻게 보이고 읽히고 쓰이는지가 주된 결과인 작업은 두 에이전트가 나눠
+맡습니다. 웹, 네이티브, 터미널 UI를 모두 다룹니다. 지침은 같은 원칙을 공유하고,
+작업 종류와 추론 수준이 다릅니다.
+
+| 에이전트 | 맡는 일 | 모델 순서 |
+| --- | --- | --- |
+| `ui-ux-specialist` | 조사, 설계, 리뷰. 제품 코드는 수정하지 않습니다 | Fable `high` → Opus `xhigh` |
+| `ui-ux-implementer` | 구현과 다듬기 | Fable `medium` → Opus `high` → Astra `medium` → Sol `high` |
+
+정의 파일은 `home/.omp/agent/agents/ui-ux-specialist.md`와
+`home/.omp/agent/agents/ui-ux-implementer.md`입니다. 모델 순서는 각 정의 파일의
+frontmatter `model` 목록에만 적혀 있습니다. 목록의 첫 모델이 기본이고 나머지가 그
+호출의 fallback 체인 전체입니다. 메인 에이전트는 `model` 없이 에이전트 이름만
+고르며, 그러면 모델과 추론 수준이 함께 정해집니다. `task.enableEffort`가 꺼져
+있어 추론 수준만 따로 넘길 수는 없습니다. budget, experimental, ultra overlay도
+이 목록을 바꾸지 않습니다.
+
+두 에이전트는 `task.agentModelOverrides`에 고정하지 않았습니다. 그래서 사용자가
+“이번에는 Opus로”처럼 모델을 지정하면 메인 에이전트가 그 호출에만 `model`을 넘길
+수 있습니다. 넘길 수 있는 모델은 `config.yml`의 `modelRoles`에 있고
+`task.perCallModelAllow` 목록에도 있는 모델이며, 에이전트 정의 파일에 적혀 있을
+필요는 없습니다. 이렇게 지정한 호출은 그 모델 하나로만 실행되고 fallback이
+없습니다.
+
+`APPEND_SYSTEM.md`는 UI/UX 작업을 이 두 에이전트에 맡기고, 이 경로가 일반 모델
+선택 기준과 `task` 경로보다 우선하도록 지정합니다. 위임할 때는 사용자가 이미 내린
+제품 결정을 전달하고, 구현을 맡길 때는 설계나 리뷰 결과가 있으면 함께 전달합니다.
+
+예: “ui-ux-specialist로 설정 화면의 빈 상태와 오류 상태를 조사하고 개선안을
+설계해 줘. 사용자가 결정해야 할 항목은 따로 정리해 줘.” 그다음
+“ui-ux-implementer로 이 설계대로 구현해 줘.”
+
+두 에이전트 모두 기존 디자인 토큰과 컴포넌트를 먼저 재사용하고, 결과는 코드만
+읽지 않고 실제 화면에서 확인하며, 확인하지 못한 부분은 보고에 밝힙니다. 범위,
+브랜드, 가격처럼 소유자가 정할 일은 대신 결정하지 않습니다. 구현 에이전트는 빈
+상태, 로딩, 오류, 긴 내용 등 모든 상태와 키보드 접근, 대비, 좁은 화면,
+라이트·다크, reduced motion을 확인합니다.
+
+리뷰는 추가된 기능, 화면, 흐름을 평가만 하고 아무것도 수정하지 않습니다. 제품에
+명시된 UX 요구사항이나 디자인 기준이 있으면 그것을 먼저 기준으로 삼습니다. 그런
+기준이 없으면 한 가지만 봅니다. 사용자가 두 번 생각하지 않고 쓸 수 있는가입니다.
+화면이 무엇을 위한 것인지, 다음에 무엇을 해야 하는지, 버튼을 누르면 어떻게 되는지,
+보이는 정보가 지금 내릴 결정에 무엇을 뜻하는지를 사용자가 멈춰서 따져 봐야 한다면
+그 지점이 지적 사항입니다. 각 지적에는 사용자가 무엇을 보고 어떻게 오해하거나
+망설이는지, 그리고 그 의문을 없애는 가장 작은 변경을 적습니다.
+
+코드가 올바른지는 `reviewer`가, 사람이 쓰기 쉬운지는 `ui-ux-specialist`가
+판단합니다. 두 판단이 모두 필요한 변경에는 둘 다 사용합니다.
+
+Home Manager는 두 정의 파일을 `~/.omp/agent/agents/`에 개별 연결합니다. 이미 실행
+중인 메인 세션에 새 에이전트와 라우팅 정책을 반영하려면 OMP를 다시 시작하세요.
 
 ### 실제 브라우저 작업: web-operator
 

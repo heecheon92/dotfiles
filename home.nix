@@ -435,6 +435,12 @@ in
   home.file.".omp/agent/agents/web-operator.md".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/agents/web-operator.md";
+  home.file.".omp/agent/agents/ui-ux-specialist.md".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/agent/agents/ui-ux-specialist.md";
+  home.file.".omp/agent/agents/ui-ux-implementer.md".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/agent/agents/ui-ux-implementer.md";
   home.file.".omp/agent/extensions/herdr-runtime-context.ts".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/extensions/herdr-runtime-context.ts";

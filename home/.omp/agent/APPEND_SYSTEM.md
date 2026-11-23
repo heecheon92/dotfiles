@@ -31,6 +31,25 @@ for its own conversation. Keep the shared AGENTS.md harness-neutral.
   model preferences below. For mixed code/documentation work, give the writer
   verified implementation facts and scope; do not ask it to invent product
   decisions or implement code. Explicit user model choices still take precedence.
+- **UI/UX:** two specialists cover work whose main outcome is how a product
+  looks, reads, or is used, on web, native, or terminal surfaces. Pick by the
+  kind of work and dispatch by agent name without `model`: each agent's own
+  definition sets its model order and effort. Pass `model` for one of them only
+  when the user names a model for that dispatch.
+  - `ui-ux-specialist` for research, planning flows and states, and reviewing
+    an added feature or screen. It does not change product code. Fable high,
+    then Opus xhigh.
+  - `ui-ux-implementer` for building and polishing UI in code. Fable medium,
+    then Opus high, Astra medium, Sol high.
+  This route takes precedence over the general model preferences below,
+  including the normal `task` route for interface work. Pass the product
+  decisions the user has already made, and give the implementer the plan or
+  review findings when there are any.
+  A UI/UX review goes to `ui-ux-specialist`, not to `reviewer`: `reviewer` judges
+  whether code is correct, the specialist judges whether people can use the
+  result without thinking twice. Pass any UX requirements or design reference
+  the product has; without one it reviews for intuitiveness. Use both agents
+  when a change needs both judgements.
 
 - **Sol (task trial):** use the normal `task` route (`@task`, GPT-6.2 Sol high)
   for general implementation and debugging. The user is trialling Sol as the main

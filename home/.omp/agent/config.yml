@@ -118,11 +118,9 @@ retry:
     image: []
     # Try direct Codex/Anthropic alternatives first, then Deploy DeepSeek,
     # OpenRouter GLM, and OpenRouter DeepSeek. OpenRouter uses API credits.
+    # Main session: keep Astra as the only alternative to Fable.
     default:
       - openai-codex/gpt-6.2-astra:high
-      - deploy/deepseek-ai/deepseek-v4.1-flash-1017:high
-      - openrouter/z-ai/glm-5.3:max
-      - openrouter/deepseek/deepseek-v4.1-flash-1017:high
     smol:
       - openai-codex/gpt-6.1-terra:medium
       - anthropic/claude-fable-5-2:low
