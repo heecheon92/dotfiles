@@ -11,6 +11,9 @@ Use these examples when choosing how a reader should explore a subject. They are
 
 ## References for specific reader actions
 
+- **Connect code to a physical result — [Learn Arduino](https://learn-arduino-red.vercel.app/), Dilum Sanjaya.** Wire an LED on a 3D board, then run the code and watch the LED. For a Lab, give the reader a visible way to check their prediction.
+- **Read the same circuit two ways — [Learn ESP32](https://learn-esp32.vercel.app/), Dilum Sanjaya.** Use the 3D board to study where a wire goes and the schematic to see what it connects. A useful pairing when physical layout alone makes a connection hard to follow.
+- **Follow a physical procedure — [Backcountry 101](https://backcountry-101.vercel.app/), Dilum Sanjaya.** Look at the lean-to lesson as a reference for self-assembly: what does the reader need to see about each part’s position for the next step to make sense?
 - **Inspect a selected message — [Wireshark's main window](https://www.wireshark.org/docs/wsug_html_chunked/ChUseMainWindowSection.html) ([screenshot](https://www.wireshark.org/docs/wsug_html_chunked/images/ws-main.png)).** Selecting a packet connects a row in the exchange to its decoded fields. Borrow that relationship for Trace, not the density of the interface.
 - **Look inside a machine — [Mechanical Watch](https://ciechanow.ski/mechanical-watch/), Bartosz Ciechanowski.** Drag to change the viewing angle and use a slider to see inside. For a 3D stage or self-assembly piece, ask which parts must separate for the reader to see how they fit.
 - **Compare alternatives — [Sorting Algorithms Animations](https://www.toptal.com/developers/sorting-algorithms).** Play one row to compare different algorithms on the same starting condition. Keeping the input and visual scale fixed makes the effect of the design choice legible.
