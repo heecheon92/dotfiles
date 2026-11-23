@@ -120,7 +120,7 @@ retry:
     # OpenRouter GLM, and OpenRouter DeepSeek. OpenRouter uses API credits.
     # Main session: keep Astra as the only alternative to Fable.
     default:
-      - openai-codex/gpt-6.2-astra:high
+      - openai-codex/gpt-6.2-astra:medium
     smol:
       - openai-codex/gpt-6.1-terra:medium
       - anthropic/claude-fable-5-2:low
