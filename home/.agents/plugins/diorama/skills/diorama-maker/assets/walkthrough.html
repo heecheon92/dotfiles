@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Walkthrough</title>
 <!--
-  Diorama single-file walkthrough, engine 0.5.0. Opens from disk: no server, no network.
+  Diorama single-file walkthrough, engine 0.5.1. Opens from disk: no server, no network.
   The styles and code are generated copies of the engine; only the data block below is edited.
 -->
 <style>
@@ -1034,7 +1034,7 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
 (() => {
   'use strict';
 
-  const VERSION = '0.5.0';
+  const VERSION = '0.5.1';
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
   const warn = (m) => console.warn(`[diorama] ${m}`);
   const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -3533,7 +3533,9 @@ Diorama.defineStage('iso', (kit) => {
       items.forEach((a, x) => {
         const inner = shape(a, -1.5);
         plan.hullIds.forEach((id, h) => {
-          if (id !== a.own && convexOverlap(plan.ctx.hulls[h], inner)) out.push(`${a.what} overlaps the ${q(plan.props[id].label || id)} object`);
+          if (id !== a.own && convexOverlap(plan.ctx.hulls[h], inner)) {
+            out.push(`${a.what} overlaps the ${JSON.stringify(String(plan.props[id].label || id))} object`);
+          }
         });
         for (let y = x + 1; y < items.length; y++) {
           const b = items[y];

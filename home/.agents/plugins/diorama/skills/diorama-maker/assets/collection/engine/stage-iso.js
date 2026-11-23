@@ -1317,7 +1317,9 @@ Diorama.defineStage('iso', (kit) => {
       items.forEach((a, x) => {
         const inner = shape(a, -1.5);
         plan.hullIds.forEach((id, h) => {
-          if (id !== a.own && convexOverlap(plan.ctx.hulls[h], inner)) out.push(`${a.what} overlaps the ${q(plan.props[id].label || id)} object`);
+          if (id !== a.own && convexOverlap(plan.ctx.hulls[h], inner)) {
+            out.push(`${a.what} overlaps the ${JSON.stringify(String(plan.props[id].label || id))} object`);
+          }
         });
         for (let y = x + 1; y < items.length; y++) {
           const b = items[y];
