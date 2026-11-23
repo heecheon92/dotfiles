@@ -272,7 +272,7 @@ If you remember three things:
 ## Maintaining
 
 The engine has one source, `skills/diorama-maker/assets/collection/engine/` (version
-0.5.0), in three layers. The shell (`diorama.js`, `diorama.css`) is the page around a
+0.5.1), in three layers. The shell (`diorama.js`, `diorama.css`) is the page around a
 walkthrough: the collection, search, progress and links. The stage (`stage-iso.*`) draws
 the isometric picture. The template (`template-story.*`) is the step story, the only
 template today. `skills/diorama-maker/references/templates.md` describes the contracts
