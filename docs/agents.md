@@ -26,7 +26,25 @@ OMP 18.20.2의 [설정 저장 경로](https://github.com/can1357/oh-my-pi/blob/v
 `configuration.nix`는 Homebrew의 `claude-code@latest` cask로 Claude Code를 관리합니다.
 일반 `claude-code` cask와는 충돌하므로 두 cask를 동시에 선언하거나 설치하지 않습니다.
 다른 호스트에 일반 cask가 설치되어 있다면 재빌드 전에 해당 cask를 제거하고
-`claude-code@latest`로 전환하세요. 인증과 로컬 설정은 저장소에 넣지 않습니다.
+`claude-code@latest`로 전환하세요.
+
+## Claude Code 개인 설정
+
+Home Manager는 `~/.claude/settings.json`을 `home/.claude/settings.json`에 연결합니다.
+이 파일은 개인 계정용 설정으로, 기본 모델과 권한 모드, 플러그인, 세션 시작 hook,
+그리고 실험 기능인 Code Mode(`env.CLAUDE_CODE_EXPERIMENTAL_CODE_MODE`)를 담습니다.
+Claude Code뿐 아니라 다른 도구가 이 설정을 바꿔도 링크를 통해
+저장소 파일이 바로 바뀌므로, 변경 내용은 Git diff에서 확인한 뒤 커밋하세요.
+
+인증 정보와 실행 상태(`~/.claude.json`, 세션, 기록, 캐시)는 저장소에 넣지 않습니다.
+회사 계정용 설정 디렉터리(`CLAUDE_CONFIG_DIR`로 지정하는 별도 경로)도 관리하지
+않습니다. 재빌드할 때 기존 `settings.json`이 일반 파일이면 Home Manager가 백업한 뒤
+링크로 바꿉니다. 그 전에 로컬 파일과 저장소 파일의 차이를 먼저 확인하세요.
+
+Code Mode에서는 Claude가 여러 도구 호출을 하나의 JavaScript로 묶어 실행합니다.
+Code Mode로 시작한 세션은 Code Mode가 켜진 상태에서만 이어서 열 수 있고, Remote
+Control, Claude in Chrome, computer use는 쓸 수 없습니다. 끄려면 값을 `"0"`으로
+바꾸거나 해당 줄을 지운 뒤 새 세션을 시작합니다.
 
 ## 공유 에이전트 스킬
 
