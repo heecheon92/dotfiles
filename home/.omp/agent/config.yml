@@ -239,5 +239,9 @@ tui:
 codexResets:
   autoRedeem5h: unset
   autoRedeemWeekly: unset
+claudeResets:
+  autoRedeem5h: unset
+  autoRedeemWeekly: unset
+  autoRedeemFable: unset
 generate_image:
   enabled: true
