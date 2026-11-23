@@ -12,6 +12,8 @@ one moving part and one number, sourced numbers, try-it steps, review on a sheet
 [SIMULAB](https://github.com/ecapri-dev/simulab-skill) by @0xKapri (MIT licence). Diorama
 is a separate implementation and contains none of their text, artwork, code or fonts.
 
+See [Template references](TEMPLATE-REFERENCES.md) for live examples, images and notes on what to study in each.
+
 ## Skills
 
 | Skill | Use it to | Needs |

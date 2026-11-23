@@ -3,6 +3,8 @@
 This file is the one place that records what is planned, in progress and done for the
 Diorama plugin. Other documents describe how Diorama behaves now; none of them tracks status.
 
+For examples of the reader interactions behind these proposals, see [Template references](TEMPLATE-REFERENCES.md).
+
 ## Status legend
 
 ```md
@@ -246,9 +248,9 @@ Words used below:
 
 Rules that hold for each of these initiatives:
 
-- **A template is chosen in one of three ways.** The user names it; or the agent suggests
-  two or three with a reason each and a recommendation; or the agent decides and says which
-  it chose and why.
+- **Choose per walkthrough.** Use the template the user names. If they ask for options,
+  recommend one and explain the alternatives. Otherwise the agent chooses a suitable
+  template and briefly explains why; it need not ask just because several fit.
 - **Diorama itself requires nothing.** The core maker, the isometric stage, every
   interactivity and every colour scheme keep working with no dependency, no network and no
   build step.
@@ -413,9 +415,9 @@ all three ways to work: naming one, being offered a choice, or leaving it to the
 Scope:
 
 - The user names a template: the agent uses it, and says so plainly if the subject fits it badly.
-- The request leaves it open and more than one fits: the agent offers two or three, each
-  with one line on what the reader would get, and recommends one.
-- Otherwise the agent decides, and the handoff says which template it chose and why.
+- The user asks for options: offer suitable templates and recommend one based on what the reader needs to do.
+- No template or options requested: choose from the available templates for this walkthrough
+  and briefly explain why. The collection's default is a starting point, not a restriction.
 - A selection guide in the maker: which kind of subject suits which format.
 - The planner does the same for a collection's default and for any piece that departs from it.
 
@@ -426,7 +428,7 @@ Acceptance:
 - [ ] The maker's workflow has a "choose the template" step covering the three ways.
 - [ ] The selection guide lists every template in the catalog, and the maintainer check fails if one is missing.
 - [ ] The planner's outline shows the template of each piece, and the reviewer's rubric asks whether the template fits the subject.
-- [ ] Tried with an agent on three requests: one naming a template, one open, one where only one fits.
+- [ ] Tried with an agent on three requests: one naming a template, one asking for options, and one leaving the choice to the agent even though several fit.
 
 Depends on: initiative 5, and on a second template existing (initiative 10).
 
@@ -481,6 +483,8 @@ Acceptance:
 
 - [x] The chosen format is named here and its scope written before work starts.
 - [ ] An example trace ships with the maker and plays through from disk, in the single page and in a collection.
+- [ ] From one collection outline, read Story → Trace → Story without leaving the collection.
+  Open each walkthrough by direct link and open its review sheet.
 - [ ] Play, pause, step forward and back, speed, jump to a phase and open a message all work by pointer and by keyboard.
 - [ ] The stage, the message list and the detail always show the same position, including after a link straight to a message.
 - [ ] Lost, protected and slow messages are each visibly different on the stage and in the list.
@@ -489,8 +493,7 @@ Acceptance:
 - [ ] The step story is unchanged.
 - [ ] The owner has read a trace made for a real subject.
 
-Open questions: whether a field may be marked as an example value that differs per run;
-whether a collection can mix traces and step stories in one outline from its first version.
+Open question: whether a field may be marked as an example value that differs per run.
 
 Candidates not chosen now are listed under [Collected for later](#collected-for-later).
 
