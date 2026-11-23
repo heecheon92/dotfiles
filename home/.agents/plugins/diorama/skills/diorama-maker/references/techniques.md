@@ -59,8 +59,10 @@ They are grouped by the decision they belong to, in the order the decisions are 
 16. **Say what changed.** A short `+ / ~ / −` list after every step, matching what is visible.
 17. **Earn every number.** Counters above the stage start empty and fill in when the stage
     shows the cost. The total is always the sum the reader can check.
-18. **Fill the stage.** No lonely object in a wide empty floor, and no floor so wide that
-    labels shrink. `visual-craft.md` gives the numbers.
+18. **Give every object room.** Neighbours about 9 grid units apart, so tags and labels do
+    not pile up, and no lonely object in a wide empty floor. The reader zooms and pans, so
+    do not crowd objects to keep every label large at the first framing.
+    `visual-craft.md` gives the numbers.
 19. **One highlight per step:** the thing that changed. Two glowing nodes compete; the
     reader looks at neither.
 20. **Colour is a code.** One colour per role, fixed for the collection; green/amber/red for

@@ -103,12 +103,20 @@ wireframe box for something that is gone.
 
 Judge these on the sheet's tiles, which show each step at the framing a reader gets.
 
-- **The scene fills the stage.** Aim for the visible objects to span about two thirds of
-  the stage. One object alone in step 1 looks lost: start with two, 7–9 grid units apart.
-- **Labels stay readable.** The smallest text on the stage is the 9 px line under a node's
-  name; link labels are 9.5 px. When the view has to pull so far out that the smallest text
-  falls under 8 px on screen, the page raises a note. Bring the nodes closer (7–9 units
-  between neighbours, never under 6), or use fewer far-flung ones.
+- **Room before fit.** Place neighbours 9 grid units apart (7 at the least, never under 6).
+  A block is 4 units wide, so 9 leaves about 5 units of floor between two objects, room
+  for their tags, pills and link labels. At 7 the objects read as crowded.
+- **The reader zooms; do not cram for the first framing.** The camera fits every visible
+  object, and the reader can zoom up to 4×, pan and double-click an object to centre it.
+  Do not pull objects closer only so that the whole scene's labels stay large at the
+  default framing.
+- **Labels stay readable when zoomed.** The smallest text on the stage is the 9 px line under
+  a node's name; link labels are 9.5 px. When the view pulls so far out that the smallest
+  text falls under 8 px on screen, the page raises a note. A note caused by 9-unit spacing
+  may stand; say so in the handoff. When the scene is far wider than that, use fewer
+  far-flung objects or fold a long row, rather than closing the gaps.
+- **No lonely object.** One object alone in a wide empty floor looks lost: start step 1
+  with two, 9 grid units apart.
 - **One highlight per step.** The spotlight already marks what is new or changed. Add at
   most one `heat` glow, on the node the step is about; leave the rest calm or `dim`.
 - **Tags are two or three words.** A longer value belongs in the text.
@@ -120,7 +128,8 @@ names, is fixed in the data with a coordinate or a text. Try in this order:
 
 1. Shorten the text: a link label to the two words that matter, a tag to its value, a
    summary-card line to its number.
-2. Move a node: change its `x` or `y` by 1–3 units, keeping neighbours 7–9 apart. A node
+2. Move a node: change its `x` or `y` by 1–3 units, keeping neighbours about 9 apart (never
+   under 6). Moving objects apart usually beats moving them closer. A node
    has one position for the whole walkthrough, so look at every tile again afterwards.
 3. Change a link's `route` (`x-first` or `y-first`) so its label has free line to sit on.
 

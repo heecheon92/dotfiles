@@ -109,7 +109,7 @@ that shows numbers needs `sources`; `note` alone does not say which numbers are 
 | Field | Rule |
 |---|---|
 | `type` | `block` (a machine or service) \| `db` (a cylinder: stored data) \| `device` (a laptop; `form: "phone"` or `"reader"` for a handset or wall unit) \| `actor` (one person) \| `crowd` (many people on a platform) \| `queue` (a line of waiting items) \| `zone` (a dashed floor area that groups nodes) |
-| `x`, `y` | position on the floor in grid units. `x` runs down-right, `y` runs up-right. A block is 4 units wide, so place neighbours 7–9 units apart. A node never moves between steps |
+| `x`, `y` | position on the floor in grid units. `x` runs down-right, `y` runs up-right. A block is 4 units wide; place neighbours 9 units apart (7 at the least) so each object has floor around it. A node never moves between steps |
 | `color` | `blue` \| `orange` \| `yellow` \| `green` \| `violet` \| `gray`. Colour means role: one colour per kind of thing, kept for the whole collection |
 | `glyph` | icon on the top face: `server`, `balancer`, `globe`, `database`, `cache`, `lock`, `key`, `cloud`, `chip`, `queue`, `mail`, `user`, `door`, `card`, `clock`, `shield`, `bolt`, `file`, `search`, `gear` |
 | `label`, `sub` | name on the front face (1–2 words) and an optional smaller second line |
@@ -297,7 +297,8 @@ Notes are raised for:
 - step 1 showing more than 2 nodes, or a later step adding more than 2 (zones do not count);
 - a last step that is not `recap`;
 - a view so far out that the smallest label is under 8 px on screen at the reference stage
-  size (960×540 px, about a 1440×900 window);
+  size (960×540 px, about a 1440×900 window). This note may stand when it comes from giving
+  objects room: the reader zooms and pans the stage. Say so in the handoff;
 - more than 2 try steps, a `verdict.text` over 4 words, a `verdict.why` over 20 words;
 - metrics or number tags in a walkthrough that has neither `sources` nor `note`.
 

@@ -66,7 +66,7 @@ and step strip in the references. The other rules apply the list above.
 8. **Check** against `references/checklist.md`. Fix or report every miss.
 9. **Render** in the mode the user asked for (below).
 10. **Review on the sheet.** Open `#/<id>/sheet`. Read the Checks block and clear every
-    warning. Look at every tile: overlaps, a lonely or shrunken scene, numbers that differ
+    warning. Look at every tile: overlaps, a lonely or crowded scene, numbers that differ
     from the data. Then step through the walkthrough once for the transitions and choose
     every option of every try step. Do this again after every change.
 11. **Hand off.** Say what you checked on the sheet and what you fixed, write out the hand

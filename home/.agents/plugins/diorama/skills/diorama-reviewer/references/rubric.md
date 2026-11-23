@@ -33,7 +33,7 @@ Read on the sheet first, then in the walkthrough for transitions.
 | What the picture implies is true: arrows point the way things really flow, a cut link is really cut in that scenario | B |
 | Dots show real traffic: direction, round trips, more dots only where there is more traffic | S |
 | Each colour means one thing throughout; the legend covers every dot kind used | S |
-| Every tile looks deliberate: not one lonely object, not a floor so wide that labels shrink | C |
+| Every tile looks deliberate: not one lonely object, not objects crowded together (neighbours under about 9 grid units apart). Small labels at the default framing are fine: the reader can zoom | C |
 | One thing is highlighted per step: what changed | C |
 | A step that compresses time or scale says so in a tag or in the text | S |
 

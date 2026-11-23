@@ -36,7 +36,7 @@ story's. `templates.md` holds the contracts a template follows.
 
 - [ ] The Checks block lists no warnings. Every note is fixed or explained in the handoff.
 - [ ] No tile shows objects or labels covering each other (label, tag, gauge, link label, summary card), or a label covering the thing it names.
-- [ ] No tile shows text that is cut off or too small to read, a lonely object, or a floor so wide that labels shrink.
+- [ ] No tile shows text that is cut off, a lonely object, or objects crowded together (neighbours under about 9 grid units apart). Labels that are small at the default framing are acceptable: the reader can zoom to them.
 - [ ] On every tile the numbers match what the picture shows.
 - [ ] No step adds more than two new objects; step 1 shows at most two.
 - [ ] No object changes position between steps.
