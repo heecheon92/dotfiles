@@ -19,6 +19,7 @@ lib.mkMerge [
   };
 
   nixpkgs.config.allowUnfree = true;
+  environment.etc."codex/config.toml".source = ./etc/codex/config.toml;
   # Home Manager owns this user's interactive completion and prompt setup.
   # Keep nix-darwin from repeating compinit, bashcompinit, and a prompt that
   # Starship immediately replaces.

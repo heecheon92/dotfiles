@@ -8,6 +8,19 @@ OMP의 모델 역할, 내장 에이전트, 위임 시 모델 선택 우선순위
 이 문서는 사람이 요청할 때 확인한 최신 안정 버전의 동작만 유지하며, Home Manager로
 `~/.omp/agent/MODEL-ROUTING.md`에도 연결합니다.
 
+## Codex CLI 기능 설정
+
+공유할 기본값은 [`etc/codex/config.toml`](../etc/codex/config.toml)의 `[features]`에서
+관리합니다. `code_mode`는 Code Mode를, `default_mode_request_user_input`은 기본 모드에서
+에이전트가 `request_user_input` 도구로 질문할 수 있게 합니다. `code_mode_only`는 켜지 않습니다.
+
+`./rebuild.sh`를 실행하면 nix-darwin이 `/etc/codex/config.toml`에 이 파일을 설치합니다.
+Codex는 모든 사용자의 기본값으로 이 파일을 읽고, `~/.codex/config.toml`에 같은 키가
+있으면 사용자 값을 우선합니다. 로컬 파일은 재빌드로 수정하지 않습니다. 프로젝트 신뢰,
+플러그인, MCP 서버와 인증 관련 설정은 로컬에 두세요. 이전 동기화 방식에서 옮길 때는
+재빌드 후 로컬 `[features]`에서 두 키만 지워야 이후 공유 기본값 변경도 상속됩니다.
+새 세션의 유효 값은 `codex features list`로 확인하세요. OMP 설정과는 별개입니다.
+
 ## OMP 설정 주석 보존
 
 설정은 `home/.omp/agent/config.yml` 원본에서 필요한 줄만 수정하세요.

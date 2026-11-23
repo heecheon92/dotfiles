@@ -1,0 +1,4 @@
+# Only these features are shared. Codex's writable user config stays local.
+[features]
+code_mode = true
+default_mode_request_user_input = true
