@@ -205,8 +205,7 @@ WezTerm은 이 placeholder를 지원하지 않으므로 Markdown 이미지 위�
 floating preview를 기본 fallback으로 사용합니다. terminal identity나 `SNACKS_` 환경 변수를
 강제로 지정하지 않습니다. 직접 실행한 WezTerm에서는 PNG 이미지 buffer 표시를 확인했지만,
 이미지 buffer에서 Markdown 미리보기로 전환할 때 이전 이미지가 남는 현상도 관찰했습니다.
-따라서 WezTerm의 미리보기 정리까지 완전하게 지원된다고 보장하지 않습니다. Herdr 안에서의
-실제 이미지 transport는 아직 검증하지 않았으므로 직접 실행한 결과와 구분합니다.
+따라서 WezTerm의 미리보기 정리까지 완전하게 지원된다고 보장하지 않습니다.
 
 이미지 변환·크기 조절에 필요한 ImageMagick은 `home.nix`의 `home.packages`로 관리합니다.
 처음 추가한 의존성을 설치하려면 Nix rebuild가 필요하며, 적용 후 Neovim을 다시 시작합니다.

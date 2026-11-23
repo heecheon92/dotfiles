@@ -38,7 +38,7 @@ Use `--app /path/to/Tern.app` before `status` to inspect a specific bundle. An a
 
 In this dotfiles configuration, Home Manager links the shared `home/.config/tern/settings.json` preferences file, not the Tern app or its daemon, account and agent state. If the live preferences file has replaced its link, compare it with the repository source first and preserve the latest portable preferences. Machine-specific paths, dimensions and secrets are not blindly copied. Preserve existing backups, including collisions under unique timestamped names, and do not force a link or run an unrelated rebuild.
 
-See [Tern settings](../../../../../docs/terminals-herdr.md#tern-설정) for the local Home Manager arrangement. The product's official pages are [Stencil Tern](https://stencil.so/tern), its [documentation](https://docs.stencil.so/tern), and its [build page](https://build.stencil.so/tern). Same-name products are not interchangeable sources.
+See [Tern settings](../../../../../docs/terminals.md#tern-설정) for the local Home Manager arrangement. The product's official pages are [Stencil Tern](https://stencil.so/tern), its [documentation](https://docs.stencil.so/tern), and its [build page](https://build.stencil.so/tern). Same-name products are not interchangeable sources.
 
 ## Install outside dotfiles
 

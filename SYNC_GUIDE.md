@@ -207,10 +207,11 @@ Do not edit the generated host file. It reports `aerospace = true` only for the
 AeroSpace host, which makes the shared Lua disable WezTerm's `Alt+Enter` default
 assignment there.
 
-Herdr's active `~/.config/herdr/config.toml` remains a writable local regular
-file. If it does not exist, first activation seeds it from the portable
-configuration. If it already exists, activation performs the three-way key
-merge described below instead of replacing it.
+Herdr is being retired, but its configuration is still present. Its active
+`~/.config/herdr/config.toml` remains a writable local regular file. If it does
+not exist, first activation seeds it from the portable configuration. If it
+already exists, activation merges the shared keys into it instead of replacing
+it; see [Herdr (being retired)](#herdr-being-retired).
 
 Official reference:
 [nix-darwin getting started](https://github.com/nix-darwin/nix-darwin#flakes)
@@ -285,8 +286,9 @@ files are not accidentally published.
 
 ### First rebuild on an existing host
 
-Before the first rebuild that enables managed Herdr key synchronization, review
-the existing writable file without copying it into the repository:
+Herdr is being retired, but the rebuild still merges shared keys into the
+writable `~/.config/herdr/config.toml`. Before the first rebuild on a host that
+already has that file, review it without copying it into the repository:
 
 ```bash
 ls -l ~/.config/herdr/config.toml
@@ -296,8 +298,6 @@ Run the normal `./rebuild.sh`. Activation creates the one-time mode-`0600`
 backup `~/.config/herdr/config.toml.before-dotfiles-sync` before rewriting an
 existing file, and records the managed baseline in
 `~/.config/herdr/config.toml.dotfiles-keys.json`. Keep both files machine-local.
-The merge preserves unrelated settings, Radar comments, local key overrides,
-and local key deletions; there is no manual-copy step.
 
 ## Machine-local shell configuration
 
@@ -398,7 +398,7 @@ questionnaire review with isolated serving, authenticated HTTPS access, tracked
 polling/replies, user-controlled ending, and scoped cleanup. It requires an
 independently preinstalled system `lavish-axi`; Home Manager installs only this
 skill, not the CLI. It does not modify the upstream `lavish` skill or require
-OMP, Claude, or Herdr. Runtime artifacts, URLs, credentials, and answers stay
+OMP or Claude. Runtime artifacts, URLs, credentials, and answers stay
 outside tracked dotfiles; standalone third-party HTML publishing is not a live
 feedback session.
 
@@ -478,100 +478,40 @@ associated files.
 Reference:
 [nix-homebrew](https://github.com/zhaofengli/nix-homebrew)
 
-## Herdr configuration, integrations, and plugins
+## Herdr (being retired)
 
-The repository file `home/.config/herdr/config.toml` is the portable source for
-command-binding arrays such as `[[keys.command]]`, with one string `key` per
-shared entry. It is not linked over the active config. Built-in local `[keys]`
-settings, indexed bindings, and local command aliases remain local.
-During every rebuild, Home Manager runs `home/bin/sync-herdr-config.py` with
-Nix-provided Python and `tomlkit` before file links are created. The helper uses
-the binding's mode and `key` as its identity and compares:
+Herdr is being retired, but its configuration is still present in this
+repository. Until it is removed, `configuration.nix` installs the `herdr`
+Homebrew package and every rebuild does the following:
 
-1. the current portable source;
-2. the previously managed values in
-   `~/.config/herdr/config.toml.dotfiles-keys.json`; and
-3. the current writable `~/.config/herdr/config.toml`.
+- Runs `home/bin/sync-herdr-config.py`, which merges the shared key bindings
+  from `home/.config/herdr/config.toml` and the style overrides from
+  `home/.config/herdr/sidebar-overrides.toml` into the machine-local
+  `~/.config/herdr/config.toml`. The active file is a regular file, not a link;
+  a missing file is seeded from the portable config. Local key edits and local
+  deletions win. Incomplete or overlapping Radar markers in the active file
+  stop the sync before any write.
+- Backs up the original active file once as
+  `~/.config/herdr/config.toml.before-dotfiles-sync` and records the managed
+  bindings in `~/.config/herdr/config.toml.dotfiles-keys.json`. The active,
+  backup, and state files are written with mode `0600`; keep them out of the
+  repository.
+- Links `~/.config/herdr/plugin-sources.txt` to the repository file. It never
+  installs or removes plugins.
+- If a `herdr` binary is found, reloads the configuration with
+  `herdr server reload-config` when the running server is compatible, then
+  installs or refreshes the integrations declared in `home.nix` (`claude`,
+  `codex`, `omp`, `opencode`, `pi`) and records them in
+  `~/.config/herdr/nix-managed-integrations`. An integration removed from that
+  list is uninstalled only if it was previously recorded there. If Herdr is not
+  installed, activation prints a warning and continues.
 
-On the first run, an identical local binding is adopted and a missing portable
-binding is added. A conflicting local value is preserved. On later runs, a
-previously managed binding is updated or removed only while the active value
-still matches the prior managed value. Local edits and local deletions therefore
-win. Settings outside `[keys]`, plugin-generated sections, and Radar comments
-remain local except for the narrow sidebar style policy below. A missing active
-file is seeded from the portable config.
+The rebuild never stops Herdr: stopping its server ends all pane processes. If
+activation warns that the running server is incompatible and skips the reload,
+save your work and restart Herdr yourself.
 
-The original active file is backed up once as
-`~/.config/herdr/config.toml.before-dotfiles-sync`, and the active, backup, and
-state files are written with mode `0600`. Change shared keys in the repository,
-then run `./rebuild.sh`; do not manually copy the portable file over the active
-file.
-
-Radar's marked tab-bar and theme blocks are preserved verbatim. The sidebar block
-has one explicit exception: Home Manager passes
-`home/.config/herdr/sidebar-overrides.toml` as the helper's optional third argument.
-Its `[agents]` table maps token names to `fg` and/or `dim` overrides, applied to
-matching tokens in default Agents rows and every per-agent row definition. The
-current six overrides use `#9a9eb3` with `dim = false`. Other token attributes,
-Spaces rows, comments, layout, and status/brand colors remain unchanged. Without
-that argument, all marked Radar blocks retain the original verbatim behavior.
-Missing sidebar blocks are not created. Incomplete or overlapping markers stop
-the sync before any write rather than risking damage to plugin-owned configuration.
-
-This is a sync-time override, not a Radar plugin customization or watcher.
-Radar can overwrite it when regenerating appearance settings; rerun the helper
-and reload the compatible Herdr server afterward. The
-[Herdr guide](docs/terminals-herdr.md#herdr-설정과-radar) includes the standalone
-command, which avoids a full system rebuild. Generated blocks and installed
-plugin files must not be copied into the portable baseline.
-
-Run the helper's regression tests with the same pinned Python dependency:
-
-```bash
-nix shell --impure --expr \
-  'let p = (builtins.getFlake (toString ./.)).darwinConfigurations."MacBook-Pro".pkgs; in p.python3.withPackages (ps: [ ps.tomlkit ])' \
-  -c python -m unittest discover -s tests -v
-```
-
-Herdr calls its Claude, Codex, and OpenCode hooks **integrations** rather than
-plugins. Their desired set is declared in `home.nix`. During Home Manager
-activation, Herdr installs missing integrations, refreshes outdated ones, and
-records which integrations are Nix-managed.
-
-The generated hook scripts and agent-local settings remain local because they
-are produced by the installed Herdr version and may coexist with other local
-agent configuration. Removing an integration from the Nix list causes a later
-rebuild to uninstall only integrations previously recorded as Nix-managed.
-
-After a Homebrew upgrade, `herdr status server --json` can report
-`compatible: false` because the running server is still old. Activation saves
-the config and updates integration files but warns and skips server reload.
-It never stops Herdr: stopping its server ends all pane processes. Save your
-work and restart Herdr deliberately before using new server-dependent plugins
-such as Radar (server and client both need 0.9.0+).
-
-The portable list of third-party plugin sources lives in
-`home/.config/herdr/plugin-sources.txt`. Each non-comment line is an unpinned
-GitHub source accepted by `herdr plugin install`, such as `owner/repository`.
-Install the listed plugins separately on each machine:
-
-```bash
-while IFS= read -r source; do
-  [[ -n "$source" && "$source" != \#* ]] || continue
-  herdr plugin install "$source"
-done < ~/.config/herdr/plugin-sources.txt
-```
-
-The install command intentionally shows Herdr's trust preview and resolves the
-current plugin revision on that machine. No `--ref` is recorded. Herdr validates
-the plugin's declared `min_herdr_version` and refuses an incompatible install;
-it does not automatically choose an older compatible revision. Re-running an
-install replaces that source's Herdr-managed checkout.
-
-Herdr's resolved plugin registry, checkouts, enabled state, plugin
-configuration, and runtime state remain local to each Mac. Do not add them to
-the repository; plugin configuration may contain machine-specific paths or
-secrets.
+Before uninstalling the Radar plugin, follow
+[Radar 제거](docs/terminals.md#radar-제거).
 
 ## Rollback
 

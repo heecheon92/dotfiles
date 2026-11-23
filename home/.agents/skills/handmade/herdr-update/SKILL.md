@@ -133,7 +133,7 @@ For each affected value record effective value, source layer/precedence, writabl
 
 Track plugin-provided skills by proven owner, installed/target paths, and symlink targets; distinguish them from user-authored skills and independently installed skills. Plan reconciliation only for that plugin's owned links after its supported update, preserving user files and unrelated skill destinations. Skill deletion or workflow replacement requires an explicit material choice; do not overwrite user-authored skills or replace the official runtime-control skill.
 
-In this dotfiles repository, read the **current** `home.nix`, `docs/terminals-herdr.md`, `home/bin/sync-herdr-config.py`, and relevant `SYNC_GUIDE.md` before choosing an application path:
+In this dotfiles repository, read the **current** `home.nix`, `docs/terminals.md`, `home/bin/sync-herdr-config.py`, and relevant `SYNC_GUIDE.md` before choosing an application path:
 
 - `home/.config/herdr/config.toml` is the portable shared key/mode baseline, not a full copy of active config.
 - Active `$HOME/.config/herdr/config.toml` is a writable local regular file. The existing helper three-way-merges shared keys using mode/key identity and a local previous-managed baseline; local edits/deletions take precedence. Use that established merge, not manual whole-file copying or a second merge convention.

@@ -56,7 +56,7 @@ ln -sfn "$(pwd -P)" "$HOME/.dotfiles"
 - [Neovim 편집 환경](./docs/editor.md)
 - [투명 배경의 Neovim 가독성 문제 대응 (에이전트 지침)](./AGENTS.md#neovim-foreground-visibility)
 - [macOS 데스크톱 환경](./docs/desktop.md)
-- [터미널, Herdr와 셸](./docs/terminals-herdr.md)
+- [터미널과 셸](./docs/terminals.md)
 - [에이전트와 보조 도구](./docs/agents.md)
 - [Zsh 시작 성능 운영 가이드](./ZSH_PERFORMANCE.md)
 - [공유 에이전트 스킬 카탈로그](./home/.agents/skills/README.md)
@@ -71,7 +71,7 @@ ln -sfn "$(pwd -P)" "$HOME/.dotfiles"
 - **셸**: Home Manager 기반 Zsh·Starship, FNM/NVM/Conda 지연 로딩, FZF 기록 검색
 - **편집기**: LazyVim, Mason 언어 도구, Blink·Conform, Jupyter 노트북
 - **터미널**: WezTerm, iTerm2 Dynamic Profile, 호스트별 전역 단축키
-- **에이전트**: Pi·OMP 설정, 공유 스킬, Herdr 통합과 Radar 로컬 상태
+- **에이전트**: Pi·OMP 설정, 공유 스킬
 
 ## 일반 동기화
 
