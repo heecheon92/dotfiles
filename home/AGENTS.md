@@ -49,6 +49,9 @@ they conflict with these defaults.
   scoped change and validate it in proportion to its risk.
 - Prefer current authoritative sources for unstable, niche, or high-stakes
   facts. Distinguish verified facts from inferences and memory.
+- For interactive web browsing, prefer `ego-browser`, whether you browse
+  directly or delegate to a subagent. Read the `ego-browser` skill before the
+  first browser action. For static pages, use a web fetch or search instead.
 - Never call work complete without concrete evidence. Say what was checked,
   what passed, and what remains unverified.
 
