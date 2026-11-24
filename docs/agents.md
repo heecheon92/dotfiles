@@ -45,7 +45,9 @@ OMP 18.20.2의 [설정 저장 경로](https://github.com/can1357/oh-my-pi/blob/v
 
 Home Manager는 `~/.claude/settings.json`을 `home/.claude/settings.json`에 연결합니다.
 이 파일은 개인 계정용 설정으로, 기본 모델과 권한 모드, 플러그인, 세션 시작 hook,
-그리고 실험 기능인 Code Mode(`env.CLAUDE_CODE_EXPERIMENTAL_CODE_MODE`)를 담습니다.
+그리고 실험 기능인 Code Mode와 Agent Teams를 담습니다. Agent Teams는
+`env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`를 `"1"`로 켭니다. 새 대화형 세션에서
+팀을 만들어 달라고 요청하면 팀원들이 별도 컨텍스트에서 작업하고 서로 메시지를 보낼 수 있습니다.
 Claude Code뿐 아니라 다른 도구가 이 설정을 바꿔도 링크를 통해
 저장소 파일이 바로 바뀌므로, 변경 내용은 Git diff에서 확인한 뒤 커밋하세요.
 
