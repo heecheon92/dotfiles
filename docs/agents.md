@@ -34,6 +34,13 @@ OMP 18.20.2의 [설정 저장 경로](https://github.com/can1357/oh-my-pi/blob/v
 저장 후 주석이 사라졌다면 값 변경은 유지하고 Git diff에서 주석과 주변 배치만 복원합니다.
 이는 편집 절차상의 예방책이며 OMP 자체의 저장 동작을 수정하거나 차단하지는 않습니다.
 
+## OMP TermDraw 제거
+
+OMP 19.2부터 `@termdraw/pi` 0.4.1이 사용하는 이전 UI API를 불러올 수 없어
+`/termdraw`를 제거했습니다. Home Manager도 더 이상 이 패키지를 설치하지 않습니다.
+다른 Mac에서는 dotfiles를 반영하고 재빌드한 뒤 `omp plugin list`로 로컬 설치를
+확인하세요. 남아 있다면 `omp plugin uninstall @termdraw/pi`로 해당 패키지만 제거합니다.
+
 ## Claude Code 설치 채널
 
 `configuration.nix`는 Homebrew의 `claude-code@latest` cask로 Claude Code를 관리합니다.

@@ -447,26 +447,6 @@ in
   home.file.".omp/agent/extensions/model-service-tier.ts".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/extensions/model-service-tier.ts";
-  # Keep OMP's plugin registry reproducible while leaving downloaded packages
-  # machine-local. The activation below restores them from the pinned lockfile.
-  home.file.".omp/plugins/package.json".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/plugins/package.json";
-  home.file.".omp/plugins/bun.lock".source =
-    config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/plugins/bun.lock";
-  home.file.".omp/plugins/omp-plugins.lock.json".source =
-    config.lib.file.mkOutOfStoreSymlink
-      "${dotfiles}/home/.omp/plugins/omp-plugins.lock.json";
-
-  home.activation.syncOmpPlugins =
-    lib.hm.dag.entryAfter [ "linkGeneration" ] ''
-      ompPluginsDir="${config.home.homeDirectory}/.omp/plugins"
-      run mkdir -p "$ompPluginsDir"
-      (
-        cd "$ompPluginsDir"
-        run ${pkgs.bun}/bin/bun install --frozen-lockfile
-      )
-    '';
-
   # The previous generation linked this whole directory into the repository.
   # Replace only that known symlink before Home Manager creates child links, so
   # Herdr can keep its generated Pi integration machine-local.

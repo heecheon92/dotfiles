@@ -231,8 +231,9 @@ scripts, or styles.
   `{ name, question, answer }` entries, with option labels in `answer`;
   `details.timedOut` indicates a timeout when present. Other text is returned
   as the value for a radio group or appended to a checkbox group's array.
-- Require an answer for the primary decision (`required` on its controls).
-  An omitted or empty answer is unresolved, not consent.
+- Mark the primary decision `required` for feedback. Since OMP 19.2, HTML
+  constraints do not block submission. Check the returned value before acting:
+  an omitted, empty, or invalid answer leaves the decision unresolved.
 - A configured timeout submits the form's current values, including defaults
   or choices made so far; it is not an explicit decision. Leave the point
   unresolved and retry through chat. `ask.timeout` defaults to disabled, and
