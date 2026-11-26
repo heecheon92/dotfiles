@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Walkthrough</title>
 <!--
-  Diorama single-file walkthrough, engine 0.6.0. Opens from disk: no server, no network.
+  Diorama single-file walkthrough, engine 0.7.0. Opens from disk: no server, no network.
   The styles and code are generated copies of the engine; only the data block below is edited.
 -->
 <style>
@@ -582,14 +582,65 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
    clear of the pane's rounded corners. Firefox has no such pseudo-elements and gets a thin
    bar in the same colours. */
 @supports selector(::-webkit-scrollbar) {
-  .explain::-webkit-scrollbar { width: 12px; }
-  .explain::-webkit-scrollbar-track { background: transparent; margin: 10px 0; }
-  .explain::-webkit-scrollbar-thumb { background: var(--line); border: 4px solid transparent; border-radius: 999px; background-clip: padding-box; min-height: 36px; }
-  .explain:hover::-webkit-scrollbar-thumb, .explain:focus-within::-webkit-scrollbar-thumb { background-color: var(--muted); }
-  .explain::-webkit-scrollbar-button, .explain::-webkit-scrollbar-corner { display: none; }
+  .explain::-webkit-scrollbar, .rail::-webkit-scrollbar, .more::-webkit-scrollbar { width: 12px; }
+  .explain::-webkit-scrollbar-track, .rail::-webkit-scrollbar-track, .more::-webkit-scrollbar-track { background: transparent; margin: 10px 0; }
+  .explain::-webkit-scrollbar-thumb, .rail::-webkit-scrollbar-thumb, .more::-webkit-scrollbar-thumb { background: var(--line); border: 4px solid transparent; border-radius: 999px; background-clip: padding-box; min-height: 36px; }
+  .explain:hover::-webkit-scrollbar-thumb, .explain:focus-within::-webkit-scrollbar-thumb, .rail:hover::-webkit-scrollbar-thumb, .more:hover::-webkit-scrollbar-thumb { background-color: var(--muted); }
+  .explain::-webkit-scrollbar-button, .explain::-webkit-scrollbar-corner, .rail::-webkit-scrollbar-button, .more::-webkit-scrollbar-button { display: none; }
 }
 @supports not selector(::-webkit-scrollbar) {
-  .explain { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .explain, .rail, .more { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+}
+
+/* The step's text sits in a slot as tall as the walkthrough's longest step: every step's text is
+   in it, invisible, under the shown one. Back and Next below it then stay in one place from step
+   to step, and the card around them keeps its size. Only where the explanation is beside the
+   picture: under it, the page scrolls and Back and Next are held at the bottom of the screen. */
+.guide-slot { display: grid; min-width: 0; }
+.guide-slot > .guide, .guide-sizers, .guide-sizers > .guide { grid-area: 1 / 1; min-width: 0; }
+.guide-sizers { display: none; visibility: hidden; pointer-events: none; }
+@container dio (min-width: 1100px) {
+  .guide-sizers { display: grid; }
+}
+
+/* "side": the explanation is a column of three cards beside the stage card, as in engine 0.5:
+   the step with Back and Next, the running numbers as rows, then the goals and the sources.
+   On a narrow page the column follows the stage card. */
+.rail { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.side .stage-top { justify-content: flex-end; }
+.side .explain { margin: 0; padding: 16px 18px 14px; border-top: 1.3px solid var(--ink); }
+.side .explain .nav { margin: 12px -18px 0; padding: 10px 18px; }
+.numbers { padding: 12px 14px 10px 18px; }
+.numbers .section-h { margin: 0 0 6px; }
+.side .metrics { display: grid; gap: 2px; margin-left: -8px; }
+.side .chip { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 2px 8px; border-color: transparent; background: none; --cs: 0 0 0 transparent; }
+.side .chip-l { font-size: 12.5px; color: var(--ink); white-space: normal; }
+.side .chip-v { font-size: 15px; }
+.side .chip.total { border-color: var(--ink); background: var(--amber-b); }
+.more { padding: 0 18px 4px; }
+.more .goals { border-top: 0; margin-top: 0; }
+/* A number the step changed stays tinted until the next step. */
+.chip.now:not(.total) { border-color: var(--ink); background: var(--green-b); }
+.chip.now:not(.total) .chip-l, .chip.now:not(.total) .chip-u { color: var(--green-f); }
+@container dio (min-width: 1100px) {
+  .layout.side { grid-template-columns: minmax(0, 1fr) clamp(340px, 30%, 430px); }
+  .layout.side > .stage, .layout.side > .strip { grid-column: 1; }
+  .layout.side > .rail { grid-column: 2; grid-row: 1 / span 2; }
+  .side .stage-body { grid-template-columns: minmax(0, 1fr); }
+  .side .explain { grid-column: auto; grid-row: auto; align-self: auto; margin: 0; border-radius: 16px; box-shadow: 0 3px 0 var(--drop); }
+}
+/* Desktop app shell: the column fills the height beside the stage. The step card takes the
+   room the numbers and the closed goals card leave (--more, measured by the template), up to
+   its full height, and scrolls inside itself when that is less, keeping Back and Next at its
+   bottom edge. Opening the goals or the sources never shrinks it: the open list scrolls inside
+   the goals card. Below the step card's smallest size the column itself scrolls. */
+@media (min-width: 1100px) and (min-height: 640px) {
+  @container dio (min-width: 1100px) {
+    .side .rail { display: grid; grid-template-rows: minmax(220px, max-content) max-content minmax(var(--more, 0px), 1fr); min-height: 0; overflow-y: auto; margin: 0 -6px; padding: 0 6px 4px; }
+    .side .explain { grid-row: 1; min-height: 0; max-height: none; }
+    .side .numbers { grid-row: 2; }
+    .side .more { grid-row: 3; align-self: start; min-height: 0; max-height: 100%; overflow-y: auto; }
+  }
 }
 
 /* Stage */
@@ -1075,7 +1126,7 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
 (() => {
   'use strict';
 
-  const VERSION = '0.6.0';
+  const VERSION = '0.7.0';
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
   const warn = (m) => console.warn(`[diorama] ${m}`);
   const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -1609,6 +1660,7 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
     const sections = Array.isArray(c.sections) ? c.sections : [];
     if (!sections.length) warn('collection.js has no sections');
     if (sections.length > 9) warn(`collection.js has ${sections.length} sections; use at most 9`);
+    if (c.explain !== undefined && c.explain !== 'inside' && c.explain !== 'side') warn(`collection.js: explain ${JSON.stringify(c.explain)} is not "inside" or "side"; the explanation is shown inside the stage card`);
     const byId = new Map(), shown = [];
     sections.forEach((sec, si) => {
       if (!isObject(sec)) { warn(`section ${si + 1} is not an object`); return; }
@@ -2059,7 +2111,7 @@ a.item-card:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--drop)
       resetScroll();
       const v = tpl.mount($('main'), w, {
         labels, start: placeOf(ps, at, id, null), crumb: crumbOf(e), searchHint: true,
-        docTitle: `${w.title || e.title} · ${c.title || ''}`, minutes: e.minutes, level: e.level,
+        docTitle: `${w.title || e.title} · ${c.title || ''}`, minutes: e.minutes, level: e.level, explain: c.explain,
         prev: prevE ? { title: prevE.title, go: () => navigate(prevE.id, 'last') } : null,
         end: nextE
           ? { label: `${labels.next}: ${nextE.title}`, icon: 'arrow', go: () => navigate(nextE.id, 'first') }
@@ -4959,6 +5011,7 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
   const LABELS = {
     goals: "What you'll learn", strip: 'In this walkthrough', changes: 'What changed', back: 'Back', restart: 'Start again', chapters: {},
     sources: 'Where this comes from', sourced: 'sourced', assumed: 'assumption', try: 'Try it', reset: 'Reset',
+    numbers: 'Running numbers',
   };
 
   // Returns a reason when the data cannot be drawn at all; smaller mistakes are only warned about.
@@ -4970,8 +5023,33 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     return stage.unusable({ nodes: w.nodes, links: w.links });
   }
 
+  // The explanation: one step's text in a slot as tall as the walkthrough's longest step, so that
+  // Back and Next stay in one place from step to step, then the buttons, then goals and sources.
+  // Inside the stage card ("inside", the default) all of it is one pane over the picture; in
+  // "side" it is a column of three cards beside the stage card: the step, the running numbers
+  // and the goals with the sources.
   function viewMarkup(opts) {
     const S = stage.parts({ replayTitle: 'Replay this step (R)' });
+    const side = !!opts.side;
+    const metrics = `<div data-ref="metrics" class="metrics" role="list" aria-label="${esc(opts.labels.numbers)}"></div>`;
+    const step = `<div class="guide-slot">
+            <div data-ref="guide" class="guide still" aria-live="polite"></div>
+            <div data-ref="sizers" class="guide-sizers" aria-hidden="true" inert></div>
+          </div>
+      <div class="nav">
+        <button data-ref="backBtn" class="btn" type="button"></button>
+        <button data-ref="nextBtn" class="btn primary" type="button"></button>
+      </div>
+      <p class="kbd-hint"><span><kbd>←</kbd> <kbd>→</kbd> step</span> · <span data-ref="tryHint" hidden></span><span><kbd>R</kbd> replay</span> · <span><kbd>Space</kbd> pause</span>${opts.searchHint ? ' · <span><kbd>/</kbd> search</span>' : ''}</p>
+      <p data-ref="tryLive" class="sr-only" aria-live="polite"></p>`;
+    const more = `<details data-ref="goals" class="goals" hidden>
+        <summary data-ref="goalsHead"></summary>
+        <ul data-ref="goalsList"></ul>
+      </details>
+      <details data-ref="sources" class="sources" hidden>
+        <summary data-ref="sourcesHead"></summary>
+        <ul data-ref="sourcesList"></ul>
+      </details>`;
     return `<div class="page">
   <header class="wt-head">
     <div>
@@ -4983,38 +5061,38 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     </div>
     <ul data-ref="pills" class="pills" aria-label="About this walkthrough"></ul>
   </header>
-  <div class="layout">
+  <div class="layout${side ? ' side' : ''}" data-explain="${side ? 'side' : 'inside'}">
     <section class="stage card" aria-label="Stage">
       <div class="stage-top">
-        <div data-ref="metrics" class="metrics" role="list" aria-label="Running numbers"></div>
+        ${side ? '' : metrics}
         <div class="stage-controls">
           ${S.controls}
         </div>
       </div>
       <div class="stage-body">
         ${S.scene}
-        <aside data-ref="pane" class="explain" aria-label="Explanation">
-          <div data-ref="guide" class="guide still" aria-live="polite"></div>
-      <div class="nav">
-        <button data-ref="backBtn" class="btn" type="button"></button>
-        <button data-ref="nextBtn" class="btn primary" type="button"></button>
-      </div>
-      <p class="kbd-hint"><span><kbd>←</kbd> <kbd>→</kbd> step</span> · <span data-ref="tryHint" hidden></span><span><kbd>R</kbd> replay</span> · <span><kbd>Space</kbd> pause</span>${opts.searchHint ? ' · <span><kbd>/</kbd> search</span>' : ''}</p>
-      <p data-ref="tryLive" class="sr-only" aria-live="polite"></p>
-      <details data-ref="goals" class="goals" hidden>
-        <summary data-ref="goalsHead"></summary>
-        <ul data-ref="goalsList"></ul>
-      </details>
-      <details data-ref="sources" class="sources" hidden>
-        <summary data-ref="sourcesHead"></summary>
-        <ul data-ref="sourcesList"></ul>
-      </details>
-        </aside>
+        ${side ? '' : `<aside data-ref="pane" class="explain" aria-label="Explanation">
+          ${step}
+          ${more}
+        </aside>`}
       </div>
       <ul data-ref="legend" class="legend" aria-label="Legend"></ul>
       ${S.text}
     </section>
-
+${side ? `
+    <aside class="rail" aria-label="Explanation">
+      <section data-ref="pane" class="explain card">
+          ${step}
+      </section>
+      <section data-ref="numbersCard" class="numbers card" hidden>
+        <h3 class="section-h">${esc(opts.labels.numbers)}</h3>
+        ${metrics}
+      </section>
+      <section data-ref="moreCard" class="more card" hidden>
+        ${more}
+      </section>
+    </aside>
+` : ''}
     <nav class="strip card" aria-label="Steps">
       <div class="strip-head"><span data-ref="stripHead"></span><span data-ref="stripCount"></span></div>
       <div data-ref="stripScroll" class="strip-scroll">
@@ -5173,6 +5251,7 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
 
       shapes.forEach(warn);
       if (typeof w.id !== 'string' || !KEBAB.test(w.id)) warn(`id ${JSON.stringify(w.id)} should be a kebab-case string`);
+      if (w.explain !== undefined && w.explain !== 'inside' && w.explain !== 'side') warn(`explain ${JSON.stringify(w.explain)} is not "inside" or "side"; the explanation is shown inside the stage card`);
       picture.wiring().forEach(warn);
       perScene(checkScene);
       GOALS.forEach((g, k) => {
@@ -5291,7 +5370,9 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     const M = modelOf(w);
     const { STEPS, SCENES, METRICS, GOALS, LEGEND, tries } = M;
     const LBL = opts.labels;
-    host.innerHTML = viewMarkup(opts);
+    // Where the explanation sits: the walkthrough's own "explain", else the collection's.
+    const SIDE = (w.explain ?? opts.explain) === 'side';
+    host.innerHTML = viewMarkup({ ...opts, side: SIDE });
     const R = {};
     for (const el of host.querySelectorAll('[data-ref]')) R[el.dataset.ref] = el;
     const $ = (name) => R[name];
@@ -5342,6 +5423,7 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
       $('stripHead').textContent = LBL.strip;
       $('goals').hidden = !GOALS.length;
       renderSources();
+      if (SIDE) $('moreCard').hidden = $('goals').hidden && $('sources').hidden;
     }
 
     // The ledger under the goals: where each fact and number comes from, collapsed by default.
@@ -5377,6 +5459,7 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     function buildMetrics() {
       const box = $('metrics');
       box.hidden = !METRICS.length;
+      if (SIDE) $('numbersCard').hidden = !METRICS.length;
       METRICS.forEach((m, k) => {
         const el = document.createElement('div');
         el.className = `chip${k === METRICS.length - 1 && METRICS.length > 1 ? ' total' : ''}`;
@@ -5392,10 +5475,14 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
       c.unit.textContent = v === null ? '' : (c.m.unit || '');
     }
 
+    // A number this step (or the chosen option) changed stays tinted until the next step.
     function updateMetrics(i, animate) {
       const vals = SCENES[i].metrics || {};
+      const before = i === cur ? (cur > 0 ? SCENES[cur - 1].metrics || {} : {}) : SCENES[cur].metrics || {};
       for (const c of chips) {
         const v = typeof vals[c.m.id] === 'number' ? vals[c.m.id] : null;
+        const was = typeof before[c.m.id] === 'number' ? before[c.m.id] : null;
+        c.el.classList.toggle('now', v !== null && v !== was);
         if (v === c.value) continue;
         const old = c.value;
         c.value = v;
@@ -5420,7 +5507,7 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     /* ---------- Explanation ---------- */
 
     function renderGuide(i, dir) {
-      const s = STEPS[i], guide = $('guide');
+      const guide = $('guide');
       if (dir && !reduce && guide.childElementCount) {
         const old = guide.cloneNode(true);
         old.removeAttribute('data-ref');
@@ -5435,12 +5522,19 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
         guide.parentNode.appendChild(old);
         later(() => old.remove(), 200);
       }
-      const blocks = [];
+      guide.className = dir && !reduce ? 'guide' : 'guide still';
+      guide.style.setProperty('--slide', `${dir > 0 ? 36 : -36}px`);
+      guide.innerHTML = guideBlocks(i).map((b, k) => `<div class="blk" style="--i:${k}">${b}</div>`).join('');
+    }
+
+    // The blocks of one step's text: head, title, body, try, callout, what changed.
+    function guideBlocks(i, sizing) {
+      const s = STEPS[i], blocks = [];
       const chapter = s.chapter || 'setup';
       blocks.push(`<div class="guide-head"><span>${i + 1} / ${STEPS.length}</span><span class="badge tone-${CHAPTER_TONE[chapter] || 'gray'}">${esc(LBL.chapters[chapter] || chapter)}</span></div>`);
       blocks.push(`<h2>${esc(s.title || '')}</h2>`);
       for (const para of s.body || []) blocks.push(/^\s*<(ul|ol|p)\b/i.test(para) ? `<div class="body">${para}</div>` : `<div class="body"><p>${para}</p></div>`);
-      if (tries[i]) blocks.push(tryBlock(tries[i]));
+      if (tries[i] && !sizing) blocks.push(tryBlock(tries[i]));
       if (s.callout && s.callout.text) {
         const c = CALLOUT[s.callout.kind] || CALLOUT.insight;
         blocks.push(`<div class="callout tone-${c.tone}"><span class="callout-icon">${iconHtml(c.icon)}</span><div><strong>${c.label}</strong><p>${s.callout.text}</p></div></div>`);
@@ -5454,9 +5548,18 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
         }).join('');
         blocks.push(`<section class="changes"><h3 class="section-h">${esc(LBL.changes)}</h3><ul>${items}</ul></section>`);
       }
-      guide.className = dir && !reduce ? 'guide' : 'guide still';
-      guide.style.setProperty('--slide', `${dir > 0 ? 36 : -36}px`);
-      guide.innerHTML = blocks.map((b, k) => `<div class="blk" style="--i:${k}">${b}</div>`).join('');
+      return blocks;
+    }
+
+    // Every step's text, invisible, in the same place as the shown one: the slot is then as tall as
+    // the longest step at any width, and Back and Next below it do not move from step to step.
+    // A try's options and verdict are not in it: on a try step they may push the buttons down,
+    // and where the pane scrolls they are brought into view (reveal).
+    function buildSizers() {
+      const box = $('sizers');
+      box.innerHTML = STEPS.map((_, i) => `<div class="guide still">${guideBlocks(i, true).map((b) => `<div class="blk">${b}</div>`).join('')}</div>`).join('');
+      box.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
+      box.querySelectorAll('[aria-labelledby]').forEach((n) => n.removeAttribute('aria-labelledby'));
     }
 
     /* ---------- Try it ---------- */
@@ -5683,9 +5786,27 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     const onMotion = (e) => { reduce = e.matches; };
     motionQuery.addEventListener('change', onMotion);
 
+    // Beside the stage, the goals card is given room for its closed size only: the step card's
+    // height is worked out as if it were closed, so opening the goals or the sources never takes
+    // room from the step; an open list scrolls inside the goals card instead. Its closed height,
+    // which changes with the width, is measured whenever both lists are closed.
+    let moreWatch = null;
+    function watchMore() {
+      const more = $('moreCard'), rail = more.parentNode;
+      const fit = () => {
+        if (more.hidden) rail.style.setProperty('--more', '0px');
+        else if (!more.querySelector('details[open]')) rail.style.setProperty('--more', `${more.scrollHeight}px`);
+      };
+      // A frame later, so the size it sets is not measured again in the same frame.
+      moreWatch = new ResizeObserver(() => nextFrame(fit));
+      moreWatch.observe(more);
+      more.addEventListener('toggle', fit, true);
+    }
+
     function destroy() {
       if (!alive) return;
       alive = false;
+      if (moreWatch) moreWatch.disconnect();
       S.destroy();
       life.end();
       uiAnims.length = 0;
@@ -5698,7 +5819,9 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     renderHeader();
     renderLegend();
     buildMetrics();
+    buildSizers();
     buildStrip();
+    if (SIDE) watchMore();
     // The stage measures the room it has, so it comes to life once the regions around it are in place.
     S = stage.mount(host, M.picture, { titleOf: (k) => M.titleOf(k, LBL.try), onReplay: replay });
     const start = clamp(Math.floor(Number(opts.start) || 0), 0, STEPS.length - 1);

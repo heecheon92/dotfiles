@@ -47,14 +47,65 @@
    clear of the pane's rounded corners. Firefox has no such pseudo-elements and gets a thin
    bar in the same colours. */
 @supports selector(::-webkit-scrollbar) {
-  .explain::-webkit-scrollbar { width: 12px; }
-  .explain::-webkit-scrollbar-track { background: transparent; margin: 10px 0; }
-  .explain::-webkit-scrollbar-thumb { background: var(--line); border: 4px solid transparent; border-radius: 999px; background-clip: padding-box; min-height: 36px; }
-  .explain:hover::-webkit-scrollbar-thumb, .explain:focus-within::-webkit-scrollbar-thumb { background-color: var(--muted); }
-  .explain::-webkit-scrollbar-button, .explain::-webkit-scrollbar-corner { display: none; }
+  .explain::-webkit-scrollbar, .rail::-webkit-scrollbar, .more::-webkit-scrollbar { width: 12px; }
+  .explain::-webkit-scrollbar-track, .rail::-webkit-scrollbar-track, .more::-webkit-scrollbar-track { background: transparent; margin: 10px 0; }
+  .explain::-webkit-scrollbar-thumb, .rail::-webkit-scrollbar-thumb, .more::-webkit-scrollbar-thumb { background: var(--line); border: 4px solid transparent; border-radius: 999px; background-clip: padding-box; min-height: 36px; }
+  .explain:hover::-webkit-scrollbar-thumb, .explain:focus-within::-webkit-scrollbar-thumb, .rail:hover::-webkit-scrollbar-thumb, .more:hover::-webkit-scrollbar-thumb { background-color: var(--muted); }
+  .explain::-webkit-scrollbar-button, .explain::-webkit-scrollbar-corner, .rail::-webkit-scrollbar-button, .more::-webkit-scrollbar-button { display: none; }
 }
 @supports not selector(::-webkit-scrollbar) {
-  .explain { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  .explain, .rail, .more { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+}
+
+/* The step's text sits in a slot as tall as the walkthrough's longest step: every step's text is
+   in it, invisible, under the shown one. Back and Next below it then stay in one place from step
+   to step, and the card around them keeps its size. Only where the explanation is beside the
+   picture: under it, the page scrolls and Back and Next are held at the bottom of the screen. */
+.guide-slot { display: grid; min-width: 0; }
+.guide-slot > .guide, .guide-sizers, .guide-sizers > .guide { grid-area: 1 / 1; min-width: 0; }
+.guide-sizers { display: none; visibility: hidden; pointer-events: none; }
+@container dio (min-width: 1100px) {
+  .guide-sizers { display: grid; }
+}
+
+/* "side": the explanation is a column of three cards beside the stage card, as in engine 0.5:
+   the step with Back and Next, the running numbers as rows, then the goals and the sources.
+   On a narrow page the column follows the stage card. */
+.rail { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.side .stage-top { justify-content: flex-end; }
+.side .explain { margin: 0; padding: 16px 18px 14px; border-top: 1.3px solid var(--ink); }
+.side .explain .nav { margin: 12px -18px 0; padding: 10px 18px; }
+.numbers { padding: 12px 14px 10px 18px; }
+.numbers .section-h { margin: 0 0 6px; }
+.side .metrics { display: grid; gap: 2px; margin-left: -8px; }
+.side .chip { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-width: 0; padding: 2px 8px; border-color: transparent; background: none; --cs: 0 0 0 transparent; }
+.side .chip-l { font-size: 12.5px; color: var(--ink); white-space: normal; }
+.side .chip-v { font-size: 15px; }
+.side .chip.total { border-color: var(--ink); background: var(--amber-b); }
+.more { padding: 0 18px 4px; }
+.more .goals { border-top: 0; margin-top: 0; }
+/* A number the step changed stays tinted until the next step. */
+.chip.now:not(.total) { border-color: var(--ink); background: var(--green-b); }
+.chip.now:not(.total) .chip-l, .chip.now:not(.total) .chip-u { color: var(--green-f); }
+@container dio (min-width: 1100px) {
+  .layout.side { grid-template-columns: minmax(0, 1fr) clamp(340px, 30%, 430px); }
+  .layout.side > .stage, .layout.side > .strip { grid-column: 1; }
+  .layout.side > .rail { grid-column: 2; grid-row: 1 / span 2; }
+  .side .stage-body { grid-template-columns: minmax(0, 1fr); }
+  .side .explain { grid-column: auto; grid-row: auto; align-self: auto; margin: 0; border-radius: 16px; box-shadow: 0 3px 0 var(--drop); }
+}
+/* Desktop app shell: the column fills the height beside the stage. The step card takes the
+   room the numbers and the closed goals card leave (--more, measured by the template), up to
+   its full height, and scrolls inside itself when that is less, keeping Back and Next at its
+   bottom edge. Opening the goals or the sources never shrinks it: the open list scrolls inside
+   the goals card. Below the step card's smallest size the column itself scrolls. */
+@media (min-width: 1100px) and (min-height: 640px) {
+  @container dio (min-width: 1100px) {
+    .side .rail { display: grid; grid-template-rows: minmax(220px, max-content) max-content minmax(var(--more, 0px), 1fr); min-height: 0; overflow-y: auto; margin: 0 -6px; padding: 0 6px 4px; }
+    .side .explain { grid-row: 1; min-height: 0; max-height: none; }
+    .side .numbers { grid-row: 2; }
+    .side .more { grid-row: 3; align-self: start; min-height: 0; max-height: 100%; overflow-y: auto; }
+  }
 }
 
 /* Stage */

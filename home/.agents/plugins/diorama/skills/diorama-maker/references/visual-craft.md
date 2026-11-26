@@ -206,7 +206,10 @@ The scene for the next step is diffed against the current one by object id.
 
 - A metric counts up to its new value over 900 ms, flashes a soft ring and hops 2 px.
 - The explanation pane's blocks slide in 36 px from the direction of travel, 30 ms apart,
-  360 ms each, while the old content fades out in 150 ms.
+  360 ms each, while the old content fades out in 150 ms. Beside the picture the pane does
+  not change size while they do, and Back and Next do not move (except on a try step, whose
+  options are not counted in the pane's height).
+- A running number the step changed stays tinted green until the next step.
 - A bubble fades in over 320 ms once its object has landed and finished changing, and fades
   out in 200 ms when the step no longer has it. It never moves while it is shown.
 - The progress line in the step strip eases to the new position in 0.7 s.

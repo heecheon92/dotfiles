@@ -69,7 +69,7 @@ test template the string `'page'`). The shell never does arithmetic on them.
   opens at `first`, Back from the next one at `last`. `count`: how many positions there are.
 
 **mount opts:** `labels`, `start` (a position), `crumb`, `searchHint` (show the `/` key), `docTitle`,
-`minutes`, `level`, `prev` (`{ title, go() }` or null: where Back before `first` leads), `end`
+`minutes`, `level`, `explain` (the collection's `explain`, or absent; a template may ignore it), `prev` (`{ title, go() }` or null: where Back before `first` leads), `end`
 (`{ label, icon, go() }` or absent: what the primary button does at `last`), `onMove(pos)`. Call
 `onMove` after every change of position, and from `go()` even when the position stays: the shell
 updates the address, the progress and the "read" mark from it.
@@ -104,7 +104,9 @@ The factory returns: `unusable(data)`, `model(data)`, `parts(opts)`, `mount(host
     scene `k` settled, at the reference size or `{ W, H }`.
 - `parts({ replayTitle })` → `{ controls, scene, text }`, HTML for the template to place in its page.
   The stage sizes itself to the element that holds `scene`; a template may lay other things over
-  or beside that element (the story puts its explanation pane beside it, inside the stage card).
+  or beside that element (the story puts its explanation pane beside it, inside the stage card,
+  or, with `"explain": "side"`, in a column beside the stage card; the shell passes the
+  collection's `explain` to the template's `mount` in `opts.explain`).
 - `mount(host, model, opts)` binds to those parts inside `host`, measures the room and starts its
   frame loop; call it once the page around them is in place. `opts`: `titleOf(k)` (the title in
   the scene's text alternative), `onReplay()` (the Replay button). The stage view:

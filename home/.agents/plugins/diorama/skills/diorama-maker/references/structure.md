@@ -36,7 +36,10 @@ a link to every state, keyboard control, the sheet, and state drawn on the pictu
 
 The explanation sits inside the stage card, as a pane floating over the right of the stage,
 so the words are next to the picture they describe and the reader's eyes do not cross the
-page. The picture is framed in the room beside the pane and never runs under it. On a desktop
+page. Beside the picture, the step's text sits in a slot as tall as the walkthrough's longest
+step, so the pane keeps one size and Back and Next stay in one place from step to step; a
+try's options and verdict are left out of that height, so on a try step they may push them
+down. The picture is framed in the room beside the pane and never runs under it. On a desktop
 the page is an app shell that fills the whole window: the stage takes all spare room and
 scales its scene up with it, and the pane scrolls inside itself when a step is long, with
 Back and Next kept at its bottom edge, so the page itself never scrolls. On a narrow screen
@@ -44,6 +47,15 @@ the pane cannot float: the explanation follows the picture inside the same card,
 sequence; the page scrolls normally, Back and Next stay at the bottom of the screen while
 the explanation is read, and the collection map collapses. Goals and sources are collapsed
 lists at the end of the pane, so a step's own text comes first.
+
+With `"explain": "side"` (`walkthrough-schema.md`) the explanation is instead a column of three
+cards beside the stage card: the step with Back and Next, the running numbers as rows with
+the ones the step changed tinted, and the goals and sources. Each card keeps its size from
+step to step, and opening the goals or the sources never shrinks the step card: the open list
+scrolls inside its own card. On a desktop the column fills the height beside the stage and the step card
+scrolls inside itself when the window is short; on a narrow screen the cards follow the
+stage card. Use it when the numbers matter as much as the picture, or when a reader should
+be able to keep the picture whole; the default suits most walkthroughs.
 
 The stage is not the place for paragraphs, and the explanation pane is never the place for
 the picture. The one exception on the stage is a bubble: a single short note beside the
@@ -78,7 +90,7 @@ that uses them). Do not mix two families inside one walkthrough.
   as 1–2 `Case:` steps or as a try step where the reader chooses the value (at most two
   try steps; `techniques.md`, "Letting the reader try").
 - Step 1 shows one or two objects. Each later step adds at most one or two more.
-- Running numbers above the stage start empty and fill in only when the stage has earned them.
+- Running numbers (above the stage, or in the numbers card with `"side"`) start empty and fill in only when the stage has earned them.
 - Every step after the first has a "what changed" list.
 
 Chapter meanings:

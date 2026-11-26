@@ -29,6 +29,7 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
   const LABELS = {
     goals: "What you'll learn", strip: 'In this walkthrough', changes: 'What changed', back: 'Back', restart: 'Start again', chapters: {},
     sources: 'Where this comes from', sourced: 'sourced', assumed: 'assumption', try: 'Try it', reset: 'Reset',
+    numbers: 'Running numbers',
   };
 
   // Returns a reason when the data cannot be drawn at all; smaller mistakes are only warned about.
@@ -40,8 +41,33 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     return stage.unusable({ nodes: w.nodes, links: w.links });
   }
 
+  // The explanation: one step's text in a slot as tall as the walkthrough's longest step, so that
+  // Back and Next stay in one place from step to step, then the buttons, then goals and sources.
+  // Inside the stage card ("inside", the default) all of it is one pane over the picture; in
+  // "side" it is a column of three cards beside the stage card: the step, the running numbers
+  // and the goals with the sources.
   function viewMarkup(opts) {
     const S = stage.parts({ replayTitle: 'Replay this step (R)' });
+    const side = !!opts.side;
+    const metrics = `<div data-ref="metrics" class="metrics" role="list" aria-label="${esc(opts.labels.numbers)}"></div>`;
+    const step = `<div class="guide-slot">
+            <div data-ref="guide" class="guide still" aria-live="polite"></div>
+            <div data-ref="sizers" class="guide-sizers" aria-hidden="true" inert></div>
+          </div>
+      <div class="nav">
+        <button data-ref="backBtn" class="btn" type="button"></button>
+        <button data-ref="nextBtn" class="btn primary" type="button"></button>
+      </div>
+      <p class="kbd-hint"><span><kbd>←</kbd> <kbd>→</kbd> step</span> · <span data-ref="tryHint" hidden></span><span><kbd>R</kbd> replay</span> · <span><kbd>Space</kbd> pause</span>${opts.searchHint ? ' · <span><kbd>/</kbd> search</span>' : ''}</p>
+      <p data-ref="tryLive" class="sr-only" aria-live="polite"></p>`;
+    const more = `<details data-ref="goals" class="goals" hidden>
+        <summary data-ref="goalsHead"></summary>
+        <ul data-ref="goalsList"></ul>
+      </details>
+      <details data-ref="sources" class="sources" hidden>
+        <summary data-ref="sourcesHead"></summary>
+        <ul data-ref="sourcesList"></ul>
+      </details>`;
     return `<div class="page">
   <header class="wt-head">
     <div>
@@ -53,38 +79,38 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     </div>
     <ul data-ref="pills" class="pills" aria-label="About this walkthrough"></ul>
   </header>
-  <div class="layout">
+  <div class="layout${side ? ' side' : ''}" data-explain="${side ? 'side' : 'inside'}">
     <section class="stage card" aria-label="Stage">
       <div class="stage-top">
-        <div data-ref="metrics" class="metrics" role="list" aria-label="Running numbers"></div>
+        ${side ? '' : metrics}
         <div class="stage-controls">
           ${S.controls}
         </div>
       </div>
       <div class="stage-body">
         ${S.scene}
-        <aside data-ref="pane" class="explain" aria-label="Explanation">
-          <div data-ref="guide" class="guide still" aria-live="polite"></div>
-      <div class="nav">
-        <button data-ref="backBtn" class="btn" type="button"></button>
-        <button data-ref="nextBtn" class="btn primary" type="button"></button>
-      </div>
-      <p class="kbd-hint"><span><kbd>←</kbd> <kbd>→</kbd> step</span> · <span data-ref="tryHint" hidden></span><span><kbd>R</kbd> replay</span> · <span><kbd>Space</kbd> pause</span>${opts.searchHint ? ' · <span><kbd>/</kbd> search</span>' : ''}</p>
-      <p data-ref="tryLive" class="sr-only" aria-live="polite"></p>
-      <details data-ref="goals" class="goals" hidden>
-        <summary data-ref="goalsHead"></summary>
-        <ul data-ref="goalsList"></ul>
-      </details>
-      <details data-ref="sources" class="sources" hidden>
-        <summary data-ref="sourcesHead"></summary>
-        <ul data-ref="sourcesList"></ul>
-      </details>
-        </aside>
+        ${side ? '' : `<aside data-ref="pane" class="explain" aria-label="Explanation">
+          ${step}
+          ${more}
+        </aside>`}
       </div>
       <ul data-ref="legend" class="legend" aria-label="Legend"></ul>
       ${S.text}
     </section>
-
+${side ? `
+    <aside class="rail" aria-label="Explanation">
+      <section data-ref="pane" class="explain card">
+          ${step}
+      </section>
+      <section data-ref="numbersCard" class="numbers card" hidden>
+        <h3 class="section-h">${esc(opts.labels.numbers)}</h3>
+        ${metrics}
+      </section>
+      <section data-ref="moreCard" class="more card" hidden>
+        ${more}
+      </section>
+    </aside>
+` : ''}
     <nav class="strip card" aria-label="Steps">
       <div class="strip-head"><span data-ref="stripHead"></span><span data-ref="stripCount"></span></div>
       <div data-ref="stripScroll" class="strip-scroll">
@@ -243,6 +269,7 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
 
       shapes.forEach(warn);
       if (typeof w.id !== 'string' || !KEBAB.test(w.id)) warn(`id ${JSON.stringify(w.id)} should be a kebab-case string`);
+      if (w.explain !== undefined && w.explain !== 'inside' && w.explain !== 'side') warn(`explain ${JSON.stringify(w.explain)} is not "inside" or "side"; the explanation is shown inside the stage card`);
       picture.wiring().forEach(warn);
       perScene(checkScene);
       GOALS.forEach((g, k) => {
@@ -361,7 +388,9 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     const M = modelOf(w);
     const { STEPS, SCENES, METRICS, GOALS, LEGEND, tries } = M;
     const LBL = opts.labels;
-    host.innerHTML = viewMarkup(opts);
+    // Where the explanation sits: the walkthrough's own "explain", else the collection's.
+    const SIDE = (w.explain ?? opts.explain) === 'side';
+    host.innerHTML = viewMarkup({ ...opts, side: SIDE });
     const R = {};
     for (const el of host.querySelectorAll('[data-ref]')) R[el.dataset.ref] = el;
     const $ = (name) => R[name];
@@ -412,6 +441,7 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
       $('stripHead').textContent = LBL.strip;
       $('goals').hidden = !GOALS.length;
       renderSources();
+      if (SIDE) $('moreCard').hidden = $('goals').hidden && $('sources').hidden;
     }
 
     // The ledger under the goals: where each fact and number comes from, collapsed by default.
@@ -447,6 +477,7 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     function buildMetrics() {
       const box = $('metrics');
       box.hidden = !METRICS.length;
+      if (SIDE) $('numbersCard').hidden = !METRICS.length;
       METRICS.forEach((m, k) => {
         const el = document.createElement('div');
         el.className = `chip${k === METRICS.length - 1 && METRICS.length > 1 ? ' total' : ''}`;
@@ -462,10 +493,14 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
       c.unit.textContent = v === null ? '' : (c.m.unit || '');
     }
 
+    // A number this step (or the chosen option) changed stays tinted until the next step.
     function updateMetrics(i, animate) {
       const vals = SCENES[i].metrics || {};
+      const before = i === cur ? (cur > 0 ? SCENES[cur - 1].metrics || {} : {}) : SCENES[cur].metrics || {};
       for (const c of chips) {
         const v = typeof vals[c.m.id] === 'number' ? vals[c.m.id] : null;
+        const was = typeof before[c.m.id] === 'number' ? before[c.m.id] : null;
+        c.el.classList.toggle('now', v !== null && v !== was);
         if (v === c.value) continue;
         const old = c.value;
         c.value = v;
@@ -490,7 +525,7 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     /* ---------- Explanation ---------- */
 
     function renderGuide(i, dir) {
-      const s = STEPS[i], guide = $('guide');
+      const guide = $('guide');
       if (dir && !reduce && guide.childElementCount) {
         const old = guide.cloneNode(true);
         old.removeAttribute('data-ref');
@@ -505,12 +540,19 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
         guide.parentNode.appendChild(old);
         later(() => old.remove(), 200);
       }
-      const blocks = [];
+      guide.className = dir && !reduce ? 'guide' : 'guide still';
+      guide.style.setProperty('--slide', `${dir > 0 ? 36 : -36}px`);
+      guide.innerHTML = guideBlocks(i).map((b, k) => `<div class="blk" style="--i:${k}">${b}</div>`).join('');
+    }
+
+    // The blocks of one step's text: head, title, body, try, callout, what changed.
+    function guideBlocks(i, sizing) {
+      const s = STEPS[i], blocks = [];
       const chapter = s.chapter || 'setup';
       blocks.push(`<div class="guide-head"><span>${i + 1} / ${STEPS.length}</span><span class="badge tone-${CHAPTER_TONE[chapter] || 'gray'}">${esc(LBL.chapters[chapter] || chapter)}</span></div>`);
       blocks.push(`<h2>${esc(s.title || '')}</h2>`);
       for (const para of s.body || []) blocks.push(/^\s*<(ul|ol|p)\b/i.test(para) ? `<div class="body">${para}</div>` : `<div class="body"><p>${para}</p></div>`);
-      if (tries[i]) blocks.push(tryBlock(tries[i]));
+      if (tries[i] && !sizing) blocks.push(tryBlock(tries[i]));
       if (s.callout && s.callout.text) {
         const c = CALLOUT[s.callout.kind] || CALLOUT.insight;
         blocks.push(`<div class="callout tone-${c.tone}"><span class="callout-icon">${iconHtml(c.icon)}</span><div><strong>${c.label}</strong><p>${s.callout.text}</p></div></div>`);
@@ -524,9 +566,18 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
         }).join('');
         blocks.push(`<section class="changes"><h3 class="section-h">${esc(LBL.changes)}</h3><ul>${items}</ul></section>`);
       }
-      guide.className = dir && !reduce ? 'guide' : 'guide still';
-      guide.style.setProperty('--slide', `${dir > 0 ? 36 : -36}px`);
-      guide.innerHTML = blocks.map((b, k) => `<div class="blk" style="--i:${k}">${b}</div>`).join('');
+      return blocks;
+    }
+
+    // Every step's text, invisible, in the same place as the shown one: the slot is then as tall as
+    // the longest step at any width, and Back and Next below it do not move from step to step.
+    // A try's options and verdict are not in it: on a try step they may push the buttons down,
+    // and where the pane scrolls they are brought into view (reveal).
+    function buildSizers() {
+      const box = $('sizers');
+      box.innerHTML = STEPS.map((_, i) => `<div class="guide still">${guideBlocks(i, true).map((b) => `<div class="blk">${b}</div>`).join('')}</div>`).join('');
+      box.querySelectorAll('[id]').forEach((n) => n.removeAttribute('id'));
+      box.querySelectorAll('[aria-labelledby]').forEach((n) => n.removeAttribute('aria-labelledby'));
     }
 
     /* ---------- Try it ---------- */
@@ -753,9 +804,27 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     const onMotion = (e) => { reduce = e.matches; };
     motionQuery.addEventListener('change', onMotion);
 
+    // Beside the stage, the goals card is given room for its closed size only: the step card's
+    // height is worked out as if it were closed, so opening the goals or the sources never takes
+    // room from the step; an open list scrolls inside the goals card instead. Its closed height,
+    // which changes with the width, is measured whenever both lists are closed.
+    let moreWatch = null;
+    function watchMore() {
+      const more = $('moreCard'), rail = more.parentNode;
+      const fit = () => {
+        if (more.hidden) rail.style.setProperty('--more', '0px');
+        else if (!more.querySelector('details[open]')) rail.style.setProperty('--more', `${more.scrollHeight}px`);
+      };
+      // A frame later, so the size it sets is not measured again in the same frame.
+      moreWatch = new ResizeObserver(() => nextFrame(fit));
+      moreWatch.observe(more);
+      more.addEventListener('toggle', fit, true);
+    }
+
     function destroy() {
       if (!alive) return;
       alive = false;
+      if (moreWatch) moreWatch.disconnect();
       S.destroy();
       life.end();
       uiAnims.length = 0;
@@ -768,7 +837,9 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     renderHeader();
     renderLegend();
     buildMetrics();
+    buildSizers();
     buildStrip();
+    if (SIDE) watchMore();
     // The stage measures the room it has, so it comes to life once the regions around it are in place.
     S = stage.mount(host, M.picture, { titleOf: (k) => M.titleOf(k, LBL.try), onReplay: replay });
     const start = clamp(Math.floor(Number(opts.start) || 0), 0, STEPS.length - 1);

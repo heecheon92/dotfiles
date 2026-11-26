@@ -19,7 +19,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '0.6.0';
+  const VERSION = '0.7.0';
   const motionQuery = matchMedia('(prefers-reduced-motion: reduce)');
   const warn = (m) => console.warn(`[diorama] ${m}`);
   const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -553,6 +553,7 @@
     const sections = Array.isArray(c.sections) ? c.sections : [];
     if (!sections.length) warn('collection.js has no sections');
     if (sections.length > 9) warn(`collection.js has ${sections.length} sections; use at most 9`);
+    if (c.explain !== undefined && c.explain !== 'inside' && c.explain !== 'side') warn(`collection.js: explain ${JSON.stringify(c.explain)} is not "inside" or "side"; the explanation is shown inside the stage card`);
     const byId = new Map(), shown = [];
     sections.forEach((sec, si) => {
       if (!isObject(sec)) { warn(`section ${si + 1} is not an object`); return; }
@@ -1003,7 +1004,7 @@
       resetScroll();
       const v = tpl.mount($('main'), w, {
         labels, start: placeOf(ps, at, id, null), crumb: crumbOf(e), searchHint: true,
-        docTitle: `${w.title || e.title} · ${c.title || ''}`, minutes: e.minutes, level: e.level,
+        docTitle: `${w.title || e.title} · ${c.title || ''}`, minutes: e.minutes, level: e.level, explain: c.explain,
         prev: prevE ? { title: prevE.title, go: () => navigate(prevE.id, 'last') } : null,
         end: nextE
           ? { label: `${labels.next}: ${nextE.title}`, icon: 'arrow', go: () => navigate(nextE.id, 'first') }

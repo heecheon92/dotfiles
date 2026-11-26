@@ -61,6 +61,7 @@ Write strict JSON inside the call: double quotes, no comments, no trailing comma
   "note": "Timings are illustrative round numbers.",
   "options": { "ordered": true, "progress": true, "showPlanned": true, "showDrafts": false },
   "labels": { "goals": "What you'll learn" },
+  "explain": "inside",
   "sections": [
     {
       "id": "one-door",
@@ -83,6 +84,7 @@ Write strict JSON inside the call: double quotes, no comments, no trailing comma
 | `options.progress` | `true`: the shell remembers which walkthroughs were read to the end and where the reader stopped, shows counts per section and offers "Continue" on the home view. Stored in the reader's browser only |
 | `options.showPlanned` | `true`: items with status `planned` appear greyed out as "planned". `false`: they are hidden |
 | `options.showDrafts` | `true`: items that exist but are not approved are listed with a "draft" tag. `false`: only approved items are listed. Use `true` while building, `false` when sharing |
+| `explain` | optional: `"inside"` (default) puts each walkthrough's explanation in a pane inside the stage card; `"side"` puts it in a column of three cards beside the stage card. A walkthrough's own `explain` overrides it (see `walkthrough-schema.md`) |
 | `labels` | optional heading overrides applied to every walkthrough (see `walkthrough-schema.md`), plus `sections` ("Sections"), `home` ("Overview"), `continue` ("Continue"), `planned` ("planned"), `draft` ("draft") |
 | `sections[]` | 1–9 groups. A collection with one section shows no section heading |
 | `sections[].items[]` | the walkthroughs in reading order: `id`, `title`, `summary`, `status`, optional `minutes` and `level` (used on cards, and by the walkthrough when it sets none itself) |
@@ -185,3 +187,14 @@ gains a bubble by itself. The update is the same procedure, and `index.html` did
 A page that styles `.explain` or `.layout` itself must be checked: the explanation is no
 longer a card in a second column. The reader can now also zoom out, to half the size of the
 starting view.
+
+Engine 0.7.0 keeps Back and Next in one place: where the explanation is beside the picture,
+the step's text sits in a slot as tall as the walkthrough's longest step, so a short step
+leaves room below its text instead of moving the buttons. It adds `explain` to
+`collection.js` and to a walkthrough: `"side"` brings back a column beside the stage card, now
+as three cards (the step, the running numbers as rows, the goals and sources). A running
+number the step changed stays tinted until the next step, and a new label, `numbers`, names
+the numbers card. No existing file needs an edit; without `explain` the layout is the one
+of 0.6.0, with the steady buttons and the tinted numbers. An unknown `explain` in
+`collection.js` prints a `[diorama]` warning to the console; in a walkthrough it is reported
+in Checks. The update is the same procedure, and `index.html` did not change.

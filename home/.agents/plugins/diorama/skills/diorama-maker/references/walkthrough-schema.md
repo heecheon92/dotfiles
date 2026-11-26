@@ -41,7 +41,8 @@ is not a kebab-case string gets the same message.
 | `sources` | entry[], optional | the ledger: where every fact and number comes from (see below). Give one whenever the walkthrough shows numbers |
 | `goals` | `{text, step}`[], optional | 4–6 things the reader will be able to say afterwards; `step` is the 0-based step index that shows it. Omit to hide the checklist. The page shows it collapsed at the end of the explanation pane, with a count of how many are covered so far |
 | `labels` | object, optional | override the page's headings (see below) |
-| `metrics` | `{id, label, unit, icon?}`[] | 0–5 running numbers shown above the stage; the last is the total |
+| `explain` | string, optional | where the explanation sits: `"inside"` (default) as a pane inside the stage card, beside the picture; `"side"` as a column of three cards beside the stage card: the step, the running numbers, the goals and sources. Overrides the collection's `explain`. Any other value is reported in Checks and shown as `"inside"` |
+| `metrics` | `{id, label, unit, icon?}`[] | 0–5 running numbers, shown above the stage (in the numbers card with `"side"`); the last is the total. A number the step changed stays tinted until the next step |
 | `legend` | `{kind, label}`[] | one entry per flow kind used |
 | `nodes` | map id → node | every object that ever appears, with a fixed place on the floor |
 | `links` | map id → link | every connection that ever appears |
@@ -66,6 +67,7 @@ briefing without sounding like the wrong one. Every key is optional.
 | `assumed` | "assumption" | |
 | `try` | "Try it" | "Your turn" |
 | `reset` | "Reset" | |
+| `numbers` | "Running numbers" | "Time so far" |
 
 In a collection, labels set in `collection.js` apply to every walkthrough and a
 walkthrough's own `labels` override them.

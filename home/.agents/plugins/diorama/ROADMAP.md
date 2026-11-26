@@ -50,7 +50,9 @@ inside an initiative track its parts; they are not separate statuses.
 > Chromium, and it waits for the owner's check of the animation. Engine 0.6.0 moves the
 > explanation into the stage card as a pane beside the picture and adds an optional bubble, a
 > short note beside one object; an agent built and checked both in Chromium, and they wait for
-> the owner's check. The trace
+> the owner's check. Engine 0.7.0 holds Back and Next in one place from step to step and
+> brings back the explanation beside the stage card as an option, `"explain": "side"`; an
+> agent built and checked it in Chromium, and it waits for the owner's check. The trace
 > template is next. The planner and reviewer skills have still not been run end to end by
 > an agent on a real collection.
 
@@ -507,6 +509,7 @@ Depends on: initiative 5.
 ### 11. Explanation beside the picture
 
 - [ ] **Active:** the explanation sits inside the stage card next to the picture, and a step may put one short note on the stage beside an object. Built as engine 0.6.0; waits for the owner's check.
+- [ ] **Active:** Back and Next stay in one place from step to step, and a collection or a walkthrough may put the explanation beside the stage card instead, as three cards (`"explain": "side"`). Built as engine 0.7.0 after the owner compared another lesson site whose side cards keep their size (2026-11-26); waits for the owner's check.
 
 Why: readers of a published collection said they had to look back and forth between the
 picture in the middle and the explanation at the far right edge, and that the explanation
@@ -525,8 +528,17 @@ Scope:
   into view in a pane that scrolls.
 - `scene.bubble`, `{ at, text }`: one short note beside one object. The stage places it; it
   has no pointer, comes in after its object lands, and does not move.
+- (0.7.0) Beside the picture, the step's text sits in a slot as tall as the walkthrough's
+  longest step (every step's text is laid out, invisible, in the same place), so the pane keeps
+  its size and Back and Next do not move. A try's options and verdict are left out of the slot.
+- (0.7.0) `explain`, in `collection.js` or a walkthrough: `"inside"` (default) or `"side"`, a
+  column of three cards beside the stage card: the step, the running numbers as rows, the goals
+  and sources. A running number the step changed stays tinted until the next step. The step
+  card is sized as if the goals card were closed, so opening the goals or the sources never
+  shrinks it (asked for by the owner on 2026-11-26); the open list scrolls inside its card.
 
-Data format: one optional scene key, `bubble`. No existing file needs an edit.
+Data format: one optional scene key, `bubble` (0.6.0); one optional field, `explain`, and one
+label, `numbers` (0.7.0). No existing file needs an edit.
 
 Acceptance:
 
@@ -538,6 +550,9 @@ Acceptance:
 - [x] A malformed bubble (unknown object, a zone, an object not shown, empty text, not an object) is reported in Checks and nothing fails to draw.
 - [x] The automatic checks note a bubble over 20 words and report a bubble that covers something (rule 8).
 - [x] `walkthrough-schema.md`, `wording.md`, `techniques.md`, `checklist.md`, `structure.md`, `templates.md`, `collection.md`, the reviewer's rubric and both READMEs describe the behaviour.
+- [x] (0.7.0) Back and Next sit at the same height on all ten steps of both shipped examples and of a ten-step walkthrough with bubbles, in both layouts, at 1440 × 900 and 1440 × 1280; the one exception is a try step, 3 px lower at 1440 × 1280, whose options are not counted in the slot. In 0.6.0 they moved by up to 104 px.
+- [x] (0.7.0) With `"side"`, the column fills the height beside the stage at 1440 × 900 without the page scrolling, and follows the stage card at 1000 px and at phone width; a walkthrough's `explain` overrides the collection's, and an unknown value is reported in Checks.
+- [x] (0.7.0) The owner has checked both layouts (2026-11-26).
 - [ ] The owner has read a walkthrough in the new layout and checked the bubble's timing at full frame rate.
 - [ ] A walkthrough written by an agent from the updated references uses bubbles sensibly.
 
