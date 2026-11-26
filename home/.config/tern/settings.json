@@ -46,6 +46,9 @@
   "git": {
     "external_editor": "nvim"
   },
+  "agents": {
+    "auto_acp": true
+  },
   "keybinds": {
     "shift+cmd+n": "new_session"
   }
