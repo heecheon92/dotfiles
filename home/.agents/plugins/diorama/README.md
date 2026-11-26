@@ -121,6 +121,8 @@ agent will propose the rest.
   internet. Arrow keys step, `R` replays, Space pauses, and every step has its own link.
 - **For the reader, on every page:**
   - the question the walkthrough answers, right under the title;
+  - the explanation right beside the picture, in a pane inside the stage, and where a step
+    has one, a short note on the stage next to the object the step is about;
   - try-it steps, where you pick a value (click, or press `1`–`5`) and the page shows what
     happens and why; `0` resets;
   - a "Where this comes from" list that says which facts and numbers have a source and
@@ -272,7 +274,7 @@ If you remember three things:
 ## Maintaining
 
 The engine has one source, `skills/diorama-maker/assets/collection/engine/` (version
-0.5.1), in three layers. The shell (`diorama.js`, `diorama.css`) is the page around a
+0.6.0), in three layers. The shell (`diorama.js`, `diorama.css`) is the page around a
 walkthrough: the collection, search, progress and links. The stage (`stage-iso.*`) draws
 the isometric picture. The template (`template-story.*`) is the step story, the only
 template today. `skills/diorama-maker/references/templates.md` describes the contracts

@@ -1,26 +1,60 @@
-/* Diorama step story ("story"): the walkthrough page (header pills, stage card, explanation, step
+/* Diorama step story ("story"): the walkthrough page (header pills, stage card with the explanation pane, step
    strip) and the story's parts of the contact sheet. Loaded with template-story.js, after
    engine/diorama.css and the stage's stylesheet. */
 
 .pills { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0 0 4px; flex-shrink: 0; }
 
-/* Layout */
-.layout { display: grid; grid-template-columns: minmax(0, 1fr) 380px; grid-template-rows: auto 1fr; grid-template-areas: "stage explain" "strip explain"; gap: 18px; align-items: start; }
-.stage { grid-area: stage; padding: 12px 12px 10px; min-width: 0; }
-.explain { grid-area: explain; padding: 18px 20px 16px; min-width: 0; position: relative; }
-.strip { grid-area: strip; padding: 12px 16px 8px; min-width: 0; }
-@container dio (max-width: 1099px) {
-  .layout { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: "stage" "explain" "strip"; }
+/* Layout: the stage card, with the picture and the explanation pane inside it, then the strip */
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; align-items: start; }
+.stage { padding: 12px 12px 10px; min-width: 0; }
+.strip { padding: 12px 16px 8px; min-width: 0; }
+.stage-body { position: relative; min-width: 0; }
+/* Narrow page: the explanation follows the picture, inside the same card. Back and Next stay at
+   the bottom of the screen while the explanation is being read. */
+.explain { position: relative; min-width: 0; margin-top: 12px; padding: 16px 6px 4px; border-top: 1px solid var(--line); }
+.explain .nav { position: sticky; bottom: 0; z-index: 1; margin: 12px -6px 0; padding: 10px 6px; background: var(--card); border-top: 1px solid var(--line); }
+/* A soft edge above the buttons says that the text goes on under them. */
+.explain .nav::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 16px; margin-bottom: 1px; background: linear-gradient(to top, var(--card), transparent); pointer-events: none; }
+@container dio (min-width: 601px) and (max-width: 1099px) {
+  /* A shorter picture keeps the start of the explanation on the same screen. */
+  .stage-body .scene { height: clamp(280px, calc(100vh - 560px), 760px); }
 }
-/* Desktop app shell: the stage takes all spare room and the explanation scrolls inside its card. */
+/* Wide page: the pane floats over the stage surface, which runs under it; the picture is framed
+   in the room beside it, so the pane never covers an object. */
+@container dio (min-width: 1100px) {
+  .stage-body { display: grid; grid-template-columns: minmax(0, 1fr) clamp(330px, 34%, 430px); background: var(--stage); border: 1px solid var(--line); border-radius: 12px; }
+  .stage-body > * { grid-column: 1; }
+  .stage-body .scene-wrap { border: 0; background: none; }
+  .stage-body .scene { height: 100%; min-height: clamp(340px, calc(100vh - 392px), 760px); }
+  .explain .nav { margin: 12px -18px 0; padding: 10px 18px; }
+  .explain { grid-column: 2; grid-row: 1 / span 3; align-self: start; margin: 14px 14px 14px 0; padding: 16px 18px 14px; background: var(--card); border: 1.3px solid var(--ink); border-radius: 14px; box-shadow: 0 3px 0 var(--drop), 0 14px 30px rgba(0, 0, 0, .16); }
+}
+/* Desktop app shell: the page does not scroll. The stage takes all spare room, the pane scrolls
+   inside it when a step is long, and Back and Next stay in reach at the pane's bottom edge. */
 @media (min-width: 1100px) and (min-height: 640px) {
   @container dio (min-width: 1100px) {
-    .layout { flex: 1; min-height: 0; grid-template-columns: minmax(0, 1fr) clamp(360px, 26cqw, 460px); grid-template-rows: minmax(0, 1fr) auto; align-items: stretch; gap: 16px; }
+    .layout { flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr) auto; align-items: stretch; gap: 16px; }
     .stage { display: flex; flex-direction: column; min-height: 0; }
-    .scene-wrap { flex: 1; min-height: 0; }
-    .scene-wrap .scene { position: absolute; inset: 0; height: 100%; }
-    .explain { min-height: 0; overflow-y: auto; }
+    .stage-body { flex: 1; min-height: 0; grid-template-rows: minmax(0, 1fr) auto auto; }
+    .stage-body .scene-wrap { min-height: 0; }
+    .stage-body .scene { position: absolute; inset: 0; height: 100%; min-height: 0; }
+    .explain { max-height: calc(100% - 28px); min-height: 0; overflow-x: hidden; overflow-y: auto; }
+    .explain .nav { bottom: -14px; margin: 10px -18px 0; padding: 10px 18px 14px; }
+    .explain .kbd-hint { margin-top: 0; }
   }
+}
+/* The pane's own scrollbar: a slim rounded thumb in the page's colours, with no track, kept
+   clear of the pane's rounded corners. Firefox has no such pseudo-elements and gets a thin
+   bar in the same colours. */
+@supports selector(::-webkit-scrollbar) {
+  .explain::-webkit-scrollbar { width: 12px; }
+  .explain::-webkit-scrollbar-track { background: transparent; margin: 10px 0; }
+  .explain::-webkit-scrollbar-thumb { background: var(--line); border: 4px solid transparent; border-radius: 999px; background-clip: padding-box; min-height: 36px; }
+  .explain:hover::-webkit-scrollbar-thumb, .explain:focus-within::-webkit-scrollbar-thumb { background-color: var(--muted); }
+  .explain::-webkit-scrollbar-button, .explain::-webkit-scrollbar-corner { display: none; }
+}
+@supports not selector(::-webkit-scrollbar) {
+  .explain { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
 }
 
 /* Stage */
@@ -107,6 +141,8 @@
 .kbd-hint span { white-space: nowrap; }
 
 .goals { border-top: 1px solid var(--line); margin-top: 16px; }
+.goals summary { cursor: pointer; margin: 12px 0 6px; font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--muted); font-variant-numeric: tabular-nums; }
+.goals + .sources { margin-top: 0; }
 .goals li { display: flex; gap: 9px; align-items: flex-start; margin: 6px 0; font-size: 12.5px; color: var(--muted); }
 .check { flex-shrink: 0; width: 17px; height: 17px; margin-top: 2px; border-radius: 4px; border: 1.3px solid var(--muted); display: grid; place-items: center; transition: background .25s, border-color .25s; }
 .check .ic { width: 12px; height: 12px; opacity: 0; color: var(--green-f); stroke-width: 2.6; transition: opacity .25s; }
@@ -135,7 +171,6 @@
 
 @container dio (max-width: 760px) {
   .stage { padding: 10px 8px 8px; }
-  .explain { padding: 16px 14px 14px; }
   .stage-top { flex-direction: column-reverse; align-items: stretch; }
   .stage-controls { justify-content: flex-end; }
   .chip { min-width: 0; flex: 1 1 calc(33% - 8px); }

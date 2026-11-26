@@ -1,5 +1,6 @@
 /*
  * Diorama step story ("story"): presents a walkthrough as numbered steps on the isometric stage,
+ * the explanation in a pane beside the picture inside the stage card,
  * with try steps, goals, sources, a step strip, word budgets, automatic checks and a contact sheet.
  * It is the default template: a walkthrough that names no "template" is a step story.
  *
@@ -18,7 +19,8 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
   const fmtNum = (v, dec = decimalsOf(v)) => v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 
   /* ================= Walkthrough view ================= */
-  // One walkthrough in four regions: header, stage, explanation and step strip. A view owns its
+  // One walkthrough in three regions: header, stage card and step strip. The stage card holds the
+  // picture and, beside it (under it on a narrow page), the explanation pane. A view owns its
   // DOM, timers and listeners and the stage view inside it; destroy() releases all of them, so
   // views can be created and thrown away as often as the reader switches walkthroughs.
 
@@ -59,28 +61,29 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
           ${S.controls}
         </div>
       </div>
-      ${S.scene}
-      <ul data-ref="legend" class="legend" aria-label="Legend"></ul>
-      ${S.text}
-    </section>
-
-    <aside class="explain card" aria-label="Explanation">
-      <div data-ref="guide" class="guide still" aria-live="polite"></div>
+      <div class="stage-body">
+        ${S.scene}
+        <aside data-ref="pane" class="explain" aria-label="Explanation">
+          <div data-ref="guide" class="guide still" aria-live="polite"></div>
       <div class="nav">
         <button data-ref="backBtn" class="btn" type="button"></button>
         <button data-ref="nextBtn" class="btn primary" type="button"></button>
       </div>
       <p class="kbd-hint"><span><kbd>←</kbd> <kbd>→</kbd> step</span> · <span data-ref="tryHint" hidden></span><span><kbd>R</kbd> replay</span> · <span><kbd>Space</kbd> pause</span>${opts.searchHint ? ' · <span><kbd>/</kbd> search</span>' : ''}</p>
       <p data-ref="tryLive" class="sr-only" aria-live="polite"></p>
-      <section data-ref="goals" class="goals" aria-labelledby="dio-goals-head" hidden>
-        <h3 id="dio-goals-head" data-ref="goalsHead" class="section-h"></h3>
+      <details data-ref="goals" class="goals" hidden>
+        <summary data-ref="goalsHead"></summary>
         <ul data-ref="goalsList"></ul>
-      </section>
+      </details>
       <details data-ref="sources" class="sources" hidden>
         <summary data-ref="sourcesHead"></summary>
         <ul data-ref="sourcesList"></ul>
       </details>
-    </aside>
+        </aside>
+      </div>
+      <ul data-ref="legend" class="legend" aria-label="Legend"></ul>
+      ${S.text}
+    </section>
 
     <nav class="strip card" aria-label="Steps">
       <div class="strip-head"><span data-ref="stripHead"></span><span data-ref="stripCount"></span></div>
@@ -100,6 +103,7 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
 
   const models = new WeakMap();
   const OPTION_LETTERS = 'abcde';
+  const BUBBLE_WORDS = 20;
   const UNSPACED = /\p{Script=Han}|\p{Script=Hiragana}|\p{Script=Katakana}|\p{Script=Thai}/gu;
 
   function modelOf(w) {
@@ -294,6 +298,13 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
         if (tw !== null && tw > 8) note(`${n}: the title has ${tw} words; keep it to 8 or fewer`);
         if (Array.isArray(s.changes) && s.changes.length > 3) note(`${n}: "changes" has ${s.changes.length} lines; keep it to 3 or fewer`);
       });
+      // A bubble is a short note; an option is checked only when its bubble is its own.
+      SCENES.forEach((_, k) => {
+        const b = picture.bubble(k), m = META[k], base = m.opt >= 0 ? picture.bubble(m.step) : null;
+        if (!b || (base && base.text === b.text)) return;
+        const bw = words.text(b.text);
+        if (bw !== null && bw > BUBBLE_WORDS) note(`${m.name}: the bubble has ${bw} words; keep it to ${BUBBLE_WORDS} or fewer, in one or two short sentences`);
+      });
       const first = picture.objects(0);
       if (first.length > 2) note(`step 1 shows ${first.length} nodes; start with 1 or 2 and bring in the rest as the story needs them`);
       for (let i = 1; i < STEPS.length; i++) {
@@ -399,7 +410,6 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
       pills.push(['layers', `${STEPS.length} steps`, 'violet']);
       $('pills').innerHTML = pills.map(([ic, t, tone]) => `<li class="pill tone-${tone}">${iconHtml(ic)}${esc(t)}</li>`).join('');
       $('stripHead').textContent = LBL.strip;
-      $('goalsHead').textContent = LBL.goals;
       $('goals').hidden = !GOALS.length;
       renderSources();
     }
@@ -556,11 +566,24 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
       S.show(k);
     }
 
+    // In a pane that scrolls, a try step's options, and then the verdict of a choice, are brought
+    // into view above Back and Next, moving the text no further than that takes.
+    function reveal(sel) {
+      const pane = $('pane'), els = [...$('guide').querySelectorAll(sel)].filter((el) => !el.hidden);
+      if (!els.length || pane.scrollHeight <= pane.clientHeight + 1) return;
+      const p = pane.getBoundingClientRect(), nav = pane.querySelector('.nav');
+      const floor = p.bottom - (getComputedStyle(nav).position === 'sticky' ? nav.offsetHeight : 0) - 10;
+      const top = Math.min(...els.map((el) => el.getBoundingClientRect().top)), bottom = Math.max(...els.map((el) => el.getBoundingClientRect().bottom));
+      if (bottom > floor) pane.scrollTop += Math.min(bottom - floor, Math.max(0, top - p.top - 8));
+      else if (top < p.top) pane.scrollTop -= p.top - top + 8;
+    }
+
     function choose(k) {
       const t = tries[cur];
       if (!t || k < 0 || k >= t.options.length || k === choice) return;
       choice = k;
       showChoice();
+      reveal('.try-verdict');
       const o = t.options[k];
       $('tryLive').textContent = `${o.label}: ${o.verdict.text.replace(/[.!?]$/, '')}.${o.verdict.why ? ` ${o.verdict.why}` : ''}`;
     }
@@ -603,7 +626,9 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
       }
     }
 
+    // Collapsed by default, so the step's own text has the pane; the heading counts what is covered.
     function renderGoals(i) {
+      $('goalsHead').innerHTML = `<span class="sources-h">${esc(LBL.goals)}</span> · ${GOALS.filter((g) => i >= g.step).length} / ${GOALS.length}`;
       $('goalsList').innerHTML = GOALS.map((g) => {
         const done = i >= g.step;
         return `<li class="${done ? 'done' : ''}"><span class="check" aria-hidden="true">${iconHtml('check')}</span><span>${esc(g.text)}<span class="sr-only">${done ? ' (covered)' : ''}</span></span></li>`;
@@ -672,6 +697,8 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
         choice = -1;
         S.pause(false);
         renderGuide(i, opt.instant ? 0 : dir);
+        $('pane').scrollTop = 0;
+        reveal('.try-options');
         updateMetrics(i, !opt.instant);
         renderNav(i);
         renderGoals(i);
@@ -748,7 +775,8 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
     // Opening on the first step lets its objects drop in; deep links open settled.
     if (start === 0) go(0);
     else go(start, { instant: true });
-    nextFrame(() => nextFrame(() => $('stepStrip').classList.remove('still')));
+    // The pane has its final size only once the page has been laid out.
+    nextFrame(() => nextFrame(() => { $('stepStrip').classList.remove('still'); reveal('.try-options'); }));
 
     return {
       get position() { return cur; },
@@ -790,6 +818,8 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
       const words = opt
         ? [budget('verdict', M.words.text(opt.verdict.text), 4), budget('why', M.words.text(opt.verdict.why), 20)]
         : (Array.isArray(s.body) ? s.body : []).map((p, j) => (M.isList(p) ? `<span>¶${j + 1} list ${M.words.html(p) ?? '–'}</span>` : budget(`¶${j + 1}`, M.words.html(p), 40)));
+      const bubble = picture.bubble(k);
+      if (bubble) words.push(budget('bubble', M.words.text(bubble.text), BUBBLE_WORDS));
       let extra = '';
       if (opt) {
         extra = `<p class="tile-opt"><span>${esc(LBL.try)}: <b>${esc(opt.label)}</b></span><span class="badge tone-${opt.verdict.tone}">${esc(opt.verdict.text || '?')}</span></p>`
@@ -853,7 +883,8 @@ Diorama.defineTemplate('story', { stage: 'iso' }, (kit, stage) => {
       const html = [].concat(s.body || [], s.callout && s.callout.text ? [s.callout.text] : []).join(' ');
       const terms = [...new Set([...html.matchAll(/<span\s+class=["']term["']\s*>([\s\S]*?)<\/span>/gi)].map((m) => plainText(m[1])))];
       const title = String(s.title || ''), short = String(s.short || '');
-      return { at: i, title, sub: terms.join(' · '), text: `${title} ${short} ${terms.join(' ')}` };
+      const bubble = isObject(s.scene) && isObject(s.scene.bubble) && typeof s.scene.bubble.text === 'string' ? s.scene.bubble.text : '';
+      return { at: i, title, sub: terms.join(' · '), text: `${title} ${short} ${terms.join(' ')} ${bubble}` };
     });
   }
 

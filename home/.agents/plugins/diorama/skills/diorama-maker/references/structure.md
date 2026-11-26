@@ -30,17 +30,25 @@ a link to every state, keyboard control, the sheet, and state drawn on the pictu
 | Region | Job | Share of width | Rules |
 |---|---|---|---|
 | Stage | Show the thing | about 60%, the largest | One scene. It changes; it is never replaced by a different picture mid-walkthrough |
-| Explanation | Say what the stage is showing now | about 22% | Narrow on purpose, so text cannot grow |
+| Explanation | Say what the stage is showing now | a pane beside the picture, about a third of the stage card | Narrow on purpose, so text cannot grow |
 | Sequence | Show where you are and how much is left | a strip | Every step has a 1–2 word name; any step is one click away |
 | Collection map | Show the whole subject and progress | about 17%, collapsible | Sections of 2–11 walkthroughs, counts like `1/3` |
 
-On a desktop the page is an app shell that fills the whole window: the stage takes all
-spare room and scales its scene up with it, and the explanation scrolls inside its own card
-so the page itself never scrolls. On a narrow screen the order is stage, explanation,
-sequence, the page scrolls normally, and the collection map collapses.
+The explanation sits inside the stage card, as a pane floating over the right of the stage,
+so the words are next to the picture they describe and the reader's eyes do not cross the
+page. The picture is framed in the room beside the pane and never runs under it. On a desktop
+the page is an app shell that fills the whole window: the stage takes all spare room and
+scales its scene up with it, and the pane scrolls inside itself when a step is long, with
+Back and Next kept at its bottom edge, so the page itself never scrolls. On a narrow screen
+the pane cannot float: the explanation follows the picture inside the same card, then the
+sequence; the page scrolls normally, Back and Next stay at the bottom of the screen while
+the explanation is read, and the collection map collapses. Goals and sources are collapsed
+lists at the end of the pane, so a step's own text comes first.
 
-The stage is never the place for sentences. The explanation panel is never the place for the
-picture. If a step needs a third paragraph, it is two steps.
+The stage is not the place for paragraphs, and the explanation pane is never the place for
+the picture. The one exception on the stage is a bubble: a single short note beside the
+object a step is about (`walkthrough-schema.md`, "Bubble"). If a step needs a third
+paragraph, it is two steps.
 
 ## Four walkthrough families
 
@@ -140,10 +148,10 @@ See [collection.md](collection.md) for the folder layout and shell.
 | Keys | ← → step, R replay, Space pause. On a try step also `1`–`5` choose an option and `0` resets. Shown as a one-line hint under the buttons. `+` and `-` zoom and `F` fits the scene; the zoom buttons' tooltips name these keys, the hint does not |
 | Step strip | Click any dot to jump. Try steps are marked |
 | Zoom out, zoom in, fit / replay / pause / speed | Always on the stage, top right, outside the picture so they never cover it |
-| Zoom and pan | The reader's own view on top of the author's framing, from 1× (that framing) to 4×. The wheel zooms toward the pointer where the page does not scroll (the desktop layout); where it scrolls, the wheel scrolls the page and only Ctrl/⌘ + wheel or a trackpad pinch zooms. Two-finger pinch on touch screens. Drag pans (one finger only while zoomed in, so at 1× a finger still scrolls); the centre of the view stays over the scene. Double-click or double-tap an object to centre it at 2× or more; on empty floor to fit again. The view returns to the author's framing on every step change, on Replay and when the layout changes; choosing a try option keeps it |
+| Zoom and pan | The reader's own view on top of the author's framing, from 0.5× to 4×, where 1× is that framing. Zooming out past 1× shows the scene smaller with room around it; the zoom buttons and keys stop on 1× on the way, and Fit returns to it. The wheel zooms toward the pointer where the page does not scroll (the desktop layout); where it scrolls, the wheel scrolls the page and only Ctrl/⌘ + wheel or a trackpad pinch zooms. Two-finger pinch on touch screens. Drag pans (one finger only while zoomed in, so at 1× a finger still scrolls); the centre of the view stays over the scene. Double-click or double-tap an object to centre it at 2× or more; on empty floor to fit again. The view returns to the author's framing on every step change, on Replay and when the layout changes; choosing a try option keeps it |
 | Tracing | Pointing at an object keeps it, its links in this scene and the objects at their other ends at full strength and dims the rest of the scene; pointing at a link or its label keeps the link, its dots and its two ends. Tab reaches each object in the order the step lists them, with the same trace and a focus ring; Escape clears it. On touch screens a tap traces and a tap on the floor clears. The trace ends on a step change and on Replay, and on a try option only if its object is no longer shown |
-| Try it | On a try step: option buttons, Reset and the verdict, after the body |
-| Sources | A collapsed list under the goals: where the facts and numbers come from |
+| Try it | On a try step: option buttons, Reset and the verdict, after the body. In a pane that scrolls, the options are brought into view when the step opens and the verdict when an option is chosen |
+| Sources | A collapsed list under the goals, which are collapsed too: where the facts and numbers come from |
 | Deep link | `#/<walkthrough-id>/<step>` |
 | Sheet | `#/<walkthrough-id>/sheet`: every step and try option as stills, with the automatic checks. For authors and reviewers; not linked from the page (`walkthrough-schema.md`, "The sheet") |
 | Search | Across walkthroughs and terms, ⌘K |

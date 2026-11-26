@@ -107,7 +107,7 @@ Judge these on the sheet's tiles, which show each step at the framing a reader g
   A block is 4 units wide, so 9 leaves about 5 units of floor between two objects, room
   for their tags, pills and link labels. At 7 the objects read as crowded.
 - **The reader zooms; do not cram for the first framing.** The camera fits every visible
-  object, and the reader can zoom up to 4×, pan and double-click an object to centre it.
+  object, and the reader can zoom from 0.5× to 4×, pan and double-click an object to centre it.
   Do not pull objects closer only so that the whole scene's labels stay large at the
   default framing.
 - **Labels stay readable when zoomed.** The smallest text on the stage is the 9 px line under
@@ -183,7 +183,7 @@ The scene for the next step is diffed against the current one by object id.
 ### The reader's camera and tracing
 
 - The reader's zoom and pan sit on top of the planned framing and never change it: a factor
-  from 1× (the planned framing, the furthest out) to 4×, and a pan that keeps the view's
+  from 0.5× to 4× (1× is the planned framing), and a pan that keeps the view's
   centre inside the bounds of the step's scene. The summary card and the stage buttons
   stay put in screen pixels; pills and labels are part of the scene and scale with it.
 - Wheel, pinch and drag follow the pointer at once: the point under the pointer stays under
@@ -205,8 +205,10 @@ The scene for the next step is diffed against the current one by object id.
 ### Numbers and text around the stage
 
 - A metric counts up to its new value over 900 ms, flashes a soft ring and hops 2 px.
-- The explanation panel's blocks slide in 36 px from the direction of travel, 30 ms apart,
+- The explanation pane's blocks slide in 36 px from the direction of travel, 30 ms apart,
   360 ms each, while the old content fades out in 150 ms.
+- A bubble fades in over 320 ms once its object has landed and finished changing, and fades
+  out in 200 ms when the step no longer has it. It never moves while it is shown.
 - The progress line in the step strip eases to the new position in 0.7 s.
 - UI easing is one curve everywhere, `cubic-bezier(.2,.7,.2,1)`, with 150–450 ms durations.
   A second, overshooting curve is reserved for things that pop.

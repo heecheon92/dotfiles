@@ -25,6 +25,7 @@ Read on the sheet first, then in the walkthrough for transitions.
 | Each note in Checks | the severity of the matching row under "Words" or "Arc"; S for a note about small labels or too many new objects |
 | No tile shows objects or labels covering each other, or a label covering the thing it names | B if it hides information, else S |
 | No tile shows text that is cut off or too small to read | S |
+| Each bubble sits beside the object it is about, and what it says is true of that object in this step | B if it states something false or points at the wrong object, else S |
 | On every tile the numbers match what the picture shows | B |
 | No step adds more than two new objects | S |
 | No object changes position between steps | B |
@@ -76,7 +77,7 @@ Choose every option of every try step before judging these.
 |---|---|
 | Two paragraphs per step, each 40 words or fewer (count them) | S; C if over by three words or fewer |
 | Step title is a statement of about five words; short name is one or two words | C |
-| Question, try prompt, option labels, verdict text and why, and ledger claims are within the budgets in `wording.md` | C |
+| Question, try prompt, option labels, verdict text and why, bubbles and ledger claims are within the budgets in `wording.md` | C |
 | At most one new term per step, explained in the same sentence | S |
 | At most one callout per step, of the right kind | C |
 | Second person, present tense, plain verbs; no filler, no praise | C |

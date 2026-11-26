@@ -47,7 +47,10 @@ inside an initiative track its parts; they are not separate statuses.
 > a locked screen at about 30 frames a second, and wait for the owner's check at full frame
 > rate before they count as shipped. None of 0.3.0 or 0.4.0 is committed yet. Engine 0.5.0
 > adds a theme button (light, dark, system) to every page; an agent built and checked it in
-> Chromium, and it waits for the owner's check of the animation. The trace
+> Chromium, and it waits for the owner's check of the animation. Engine 0.6.0 moves the
+> explanation into the stage card as a pane beside the picture and adds an optional bubble, a
+> short note beside one object; an agent built and checked both in Chromium, and they wait for
+> the owner's check. The trace
 > template is next. The planner and reviewer skills have still not been run end to end by
 > an agent on a real collection.
 
@@ -58,6 +61,7 @@ inside an initiative track its parts; they are not separate statuses.
 - [Move the camera](#1-move-the-camera)
 - [Hover to trace](#2-hover-to-trace)
 - [Separate the shell from the template](#5-separate-the-shell-from-the-template)
+- [Explanation beside the picture](#11-explanation-beside-the-picture)
 
 ### Proposed
 
@@ -126,6 +130,7 @@ Acceptance:
 - [x] Dragging pans, clamped so the scene cannot be lost off-stage.
 - [x] Double-click on an object zooms to it; double-click on empty floor fits.
 - [x] On-stage zoom in, zoom out and fit controls, each with a key.
+- [x] The reader can zoom out past the starting view, to 0.5× (engine 0.6.0, asked for by the owner on 2026-11-26). The buttons and keys stop on 1× on the way; Fit returns to 1×.
 - [x] Changing step, replaying, and choosing a try option behave as before; the view returns to the author's framing on a step change.
 - [x] On a page that scrolls (narrow layout), the wheel still scrolls the page unless the reader asks to zoom.
 - [x] Reduced motion: the view changes without easing.
@@ -498,6 +503,53 @@ Open question: whether a field may be marked as an example value that differs pe
 Candidates not chosen now are listed under [Collected for later](#collected-for-later).
 
 Depends on: initiative 5.
+
+### 11. Explanation beside the picture
+
+- [ ] **Active:** the explanation sits inside the stage card next to the picture, and a step may put one short note on the stage beside an object. Built as engine 0.6.0; waits for the owner's check.
+
+Why: readers of a published collection said they had to look back and forth between the
+picture in the middle and the explanation at the far right edge, and that the explanation
+did not sink in. A layout experiment on that collection (2026-11-25) compared four places
+for the explanation; readers liked the note beside the object, and the owner chose the pane
+inside the stage card. The owner asked that the note be a component a scene may add, not a
+layout mode.
+
+Scope:
+
+- The explanation is a pane floating over the right of the stage, inside the stage card; the
+  picture is framed in the room beside it. On a narrow page it follows the picture in the
+  same card. Goals and sources are collapsed lists at the end of the pane.
+- Back and Next stay in reach: at the pane's bottom edge when the pane scrolls, at the bottom
+  of the screen on a narrow page. A try step's options, and then the verdict, are brought
+  into view in a pane that scrolls.
+- `scene.bubble`, `{ at, text }`: one short note beside one object. The stage places it; it
+  has no pointer, comes in after its object lands, and does not move.
+
+Data format: one optional scene key, `bubble`. No existing file needs an edit.
+
+Acceptance:
+
+- [x] Both shipped examples open, step through and show no warnings on their sheets, with no bubble.
+- [x] At 1440 × 900 and on a wide monitor the pane covers no object, label or bubble; Back and Next are always visible.
+- [x] On a try step the options are visible when the step opens and the verdict after a choice, at 1440 × 900 and at phone width.
+- [x] A bubble is drawn on the stage, on its sheet tile and in the text alternative; it appears after its object lands and holds one place.
+- [x] A bubble prefers the room its scene already takes, so the framing changes little (checked on a ten-step walkthrough with a bubble on every step: the same framing on 2 steps, within 4% on 5 and up to 10% wider on 3).
+- [x] A malformed bubble (unknown object, a zone, an object not shown, empty text, not an object) is reported in Checks and nothing fails to draw.
+- [x] The automatic checks note a bubble over 20 words and report a bubble that covers something (rule 8).
+- [x] `walkthrough-schema.md`, `wording.md`, `techniques.md`, `checklist.md`, `structure.md`, `templates.md`, `collection.md`, the reviewer's rubric and both READMEs describe the behaviour.
+- [ ] The owner has read a walkthrough in the new layout and checked the bubble's timing at full frame rate.
+- [ ] A walkthrough written by an agent from the updated references uses bubbles sensibly.
+
+Not verified: a window between 601 and 1099 px wide was looked at once only; right-to-left
+text; a bubble on a scene with a summary card in the same corner beyond the one case tried.
+
+Relation to initiative 3 (click an object to inspect it): the bubble is the author's note
+for a step, always shown and one per scene. The inspect card is the reader's question about
+any object, shown on demand. They can share the placement code; neither replaces the other.
+
+Out of scope: several bubbles in one scene; a pointer from the bubble to its object; a
+bubble on a link or a zone; a reader control to hide bubbles; dragging the pane.
 
 ## Collected for later
 

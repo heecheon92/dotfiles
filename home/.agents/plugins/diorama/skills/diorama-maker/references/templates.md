@@ -98,10 +98,13 @@ The factory returns: `unusable(data)`, `model(data)`, `parts(opts)`, `mount(host
   - `shapes` (problems of nodes and links) and `sceneShapes[k]` (problems of scene `k`'s keys);
   - checks: `wiring()`, `rules(k)`, `spacing()` (string lists), `layout(k)` →
     `{ overlaps, smallest, zoom }` at `reference` (`{ W, H }`), `signature(k)` (equal strings mean
-    the same picture), `objects(k)` (ids shown, zones excluded), `numbers()` (a tag shows a digit);
+    the same picture), `objects(k)` (ids shown, zones excluded), `numbers()` (a tag shows a digit),
+    `bubble(k)` (`{ at, text }` of the bubble scene `k` draws, or `null`);
   - `describe(k)` → one line of text per thing in scene `k`; `still(k, size?)` → `{ viewBox, svg }`,
     scene `k` settled, at the reference size or `{ W, H }`.
 - `parts({ replayTitle })` → `{ controls, scene, text }`, HTML for the template to place in its page.
+  The stage sizes itself to the element that holds `scene`; a template may lay other things over
+  or beside that element (the story puts its explanation pane beside it, inside the stage card).
 - `mount(host, model, opts)` binds to those parts inside `host`, measures the room and starts its
   frame loop; call it once the page around them is in place. `opts`: `titleOf(k)` (the title in
   the scene's text alternative), `onReplay()` (the Replay button). The stage view:

@@ -248,6 +248,45 @@ Diorama.defineStage('iso', (kit) => {
 
   const tagSpec = (t) => ({ lines: [{ t: String(t.text ?? ''), size: 10.5, w: 700 }], tone: t.tone, icon: t.icon });
 
+  /* ================= Bubble ================= */
+  // A short note beside one object: a step's scene may carry one. It has no pointer; it reads as
+  // belonging to its object because it sits nearer to it than to anything else.
+
+  const BUBBLE = { size: 10.5, weight: 600, lh: 15.5, padX: 10, padY: 8, maxW: 172 };
+
+  // The text broken into lines no wider than BUBBLE.maxW: at spaces, and inside a word only when
+  // the word alone is too wide (text written without spaces).
+  function bubbleLines(text) {
+    const fits = (s) => textW(s, BUBBLE.size, BUBBLE.weight) <= BUBBLE.maxW;
+    const lines = [];
+    let line = '';
+    for (const word of String(text).trim().split(/\s+/)) {
+      if (line && fits(`${line} ${word}`)) { line += ` ${word}`; continue; }
+      if (line) lines.push(line);
+      line = '';
+      for (const ch of word) {
+        if (line && !fits(line + ch)) { lines.push(line); line = ''; }
+        line += ch;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  function bubbleSize(lines) {
+    let w = 0;
+    for (const l of lines) w = Math.max(w, textW(l, BUBBLE.size, BUBBLE.weight));
+    return [Math.ceil(w + 2 * BUBBLE.padX), Math.ceil(lines.length * BUBBLE.lh + 2 * BUBBLE.padY - 3)];
+  }
+
+  // b: { box, lines } from a scene's plan.
+  function bubbleSvg(b) {
+    const { x0, y0, x1, y1 } = b.box, w = x1 - x0, h = y1 - y0;
+    let s = `<rect class="bubble-drop" x="${n1(x0)}" y="${n1(y0 + 2.5)}" width="${n1(w)}" height="${n1(h)}" rx="9"/><rect class="bubble-bg" x="${n1(x0)}" y="${n1(y0)}" width="${n1(w)}" height="${n1(h)}" rx="9"/>`;
+    b.lines.forEach((l, k) => { s += `<text class="bubble-t" x="${n1(x0 + BUBBLE.padX)}" y="${n1(y0 + BUBBLE.padY + 9 + k * BUBBLE.lh)}">${esc(l)}</text>`; });
+    return s;
+  }
+
   function labelSpec(n, t) {
     if (!t.label && !t.sub) return null;
     const lines = [];
@@ -604,6 +643,7 @@ Diorama.defineStage('iso', (kit) => {
           <g data-ref="layerEnts" aria-hidden="true"></g>
           <g data-ref="layerFx" aria-hidden="true"></g>
           <g data-ref="layerOver" aria-hidden="true"></g>
+          <g data-ref="layerBubble" aria-hidden="true"></g>
           <g data-ref="layerFocus"></g>
           <g data-ref="layerHud" aria-hidden="true"></g>
         </svg>
@@ -636,7 +676,7 @@ Diorama.defineStage('iso', (kit) => {
   // and the template's contact sheet both draw from it.
 
   const internals = new WeakMap();   // model → what mount() needs
-  const SCENE_KEYS = ['show', 'state', 'links', 'flows', 'panel'];
+  const SCENE_KEYS = ['show', 'state', 'links', 'flows', 'panel', 'bubble'];
   // The stage size the checks and the stills assume: about what a 1440 × 900 window leaves for the stage.
   const REF = { W: 960, H: 540 };
 
@@ -725,6 +765,13 @@ Diorama.defineStage('iso', (kit) => {
         if (v == null) out.panel = null;
         else if (!isObject(v) || !Array.isArray(v.lines)) bad(where, 'scene.panel', 'is not an object with a "lines" list', end);
         else out.panel = v;
+      }
+      if ('bubble' in raw) {
+        const v = raw.bubble;
+        if (v == null) out.bubble = null;
+        else if (!isObject(v) || typeof v.at !== 'string' || typeof v.text !== 'string') bad(where, 'scene.bubble', 'is not an object with an "at" (a node id) and a "text"', end);
+        else if (!v.text.trim()) bad(where, 'scene.bubble.text', 'is empty', end);
+        else out.bubble = { at: v.at, text: v.text.trim() };
       }
       return out;
     }
@@ -949,6 +996,33 @@ Diorama.defineStage('iso', (kit) => {
       return out;
     }
 
+    // Where a scene's bubble sits: the place around its object that covers nothing, lies nearer to
+    // that object than to any other, and, when there is one, stays inside the room the scene
+    // already takes, so a step with a bubble is framed like a step without. Null when the scene
+    // has no bubble or its object is not drawn (rules() reports that).
+    function placeBubble(plan, raw) {
+      const info = raw && plan.ents[raw.at];
+      if (!info || !info.d.hull) return null;
+      const lines = bubbleLines(raw.text), [w, h] = bubbleSize(lines);
+      const own = bboxOf(info.d.hull), others = plan.hullIds.filter((id) => id !== raw.at).map((id) => bboxOf(plan.ents[id].d.hull));
+      const gap = (a, b) => Math.hypot(Math.max(a.x0 - b.x1, b.x0 - a.x1, 0), Math.max(a.y0 - b.y1, b.y0 - a.y1, 0));
+      const room = plan.bounds, reach = 70;
+      let best = null;
+      for (let x = own.x0 - w - reach; x <= own.x1 + reach; x += 8) {
+        for (let y = own.y0 - h - reach; y <= own.y1 + reach; y += 8) {
+          const box = { x0: x, y0: y, x1: x + w, y1: y + h }, d = gap(box, own);
+          let cost = placementCost(box, plan.ctx, null) + Math.abs(d - 9) * 1.4;
+          for (const t of plan.texts) if (t.box ? overlapArea(box, inflate(t.box, 2)) > 0 : polyBoxOverlap(t.poly, box)) cost += 90;
+          for (const o of others) if (gap(box, o) < d + 12) cost += 60;
+          // Leaving that room costs less than covering anything, however far out it goes.
+          const out = Math.max(0, room.x0 - box.x0) + Math.max(0, box.x1 - room.x1) + Math.max(0, room.y0 - box.y0) + Math.max(0, box.y1 - room.y1);
+          cost += Math.min(75, 4 * out) + .25 * out;
+          if (!best || cost < best.cost) best = { box, cost };
+        }
+      }
+      return { at: raw.at, text: raw.text, lines, box: best.box, key: JSON.stringify([raw.at, raw.text, n1(best.box.x0), n1(best.box.y0)]) };
+    }
+
     function buildPlan(i) {
       const sc = SCENES[i].scene || {};
       const show = (sc.show || []).filter((id) => NODES[id]);
@@ -999,6 +1073,14 @@ Diorama.defineStage('iso', (kit) => {
       plan.ctx = best.ctx;
       plan.items = best.items.concat(texts);
       plan.texts = texts;
+      // The bubble is placed last, around everything else, and then counts as a pill: the summary
+      // card keeps clear of it and rule 8 checks it.
+      plan.bubble = placeBubble(plan, sc.bubble);
+      if (plan.bubble) {
+        plan.ctx.pills.push(plan.bubble.box);
+        plan.items.push({ box: plan.bubble.box, what: 'the bubble' });
+        plan.bounds = bboxOf(boxCorners(plan.bounds).concat(boxCorners(plan.bubble.box)));
+      }
       return plan;
     }
 
@@ -1223,6 +1305,7 @@ Diorama.defineStage('iso', (kit) => {
         const g = linkGeom(leg.id), hi = Math.max(4, g.len - (hasHead(linkStyle(k, leg.id)) ? 10 : 2));
         return { L: hi - 2, at: (s) => pointAt(g.pts, leg.rev ? hi - s : 2 + s).p };
       }, (id) => linkStyle(k, id) === 'cut');
+      if (plan.bubble) over += `<g class="bubble">${bubbleSvg(plan.bubble)}</g>`;
       if (plan.panel && !V.inlinePanel && cam.corner) {
         const L = panelLayout(plan.panel), m = 12;
         const sx = cam.corner[1] === 'r' ? V.W - m - L.w * V.hud : m;
@@ -1268,6 +1351,7 @@ Diorama.defineStage('iso', (kit) => {
         items.push(`Moving: ${f.kind || 'request'} dots ${stops.join(' → ')}${end}`);
       }
       if (plan.panel) items.push(`${plan.panel.title || 'Summary'}: ${plan.panel.lines.map((l) => String(l).replace(/^[=!#] /, '').replace(/\s+/g, ' ')).join('; ')}`);
+      if (plan.bubble) items.push(`Note beside ${name(plan.bubble.at)}: ${plan.bubble.text}`);
       return items;
     }
 
@@ -1281,6 +1365,12 @@ Diorama.defineStage('iso', (kit) => {
       const n = META[k].name, sc = SCENES[k].scene || {}, show = sc.show || [], links = sc.links || {};
       for (const id of show) if (!NODES[id]) warn(`${n}: scene.show names unknown node "${id}" (rule 1)`);
       for (const id of Object.keys(sc.state || {})) if (!NODES[id]) warn(`${n}: scene.state names unknown node "${id}" (rule 1)`);
+      if (sc.bubble) {
+        const at = sc.bubble.at;
+        if (!NODES[at]) warn(`${n}: scene.bubble names unknown node "${at}" (rule 1)`);
+        else if (NODES[at].type === 'zone') warn(`${n}: scene.bubble points at the zone "${at}"; point it at an object, so it is not drawn (rule 2)`);
+        else if (!show.includes(at)) warn(`${n}: scene.bubble points at "${at}", which this scene does not show, so it is not drawn (rule 2)`);
+      }
       for (const id of Object.keys(links)) {
         const L = LINKS[id];
         if (!L) warn(`${n}: scene.links names unknown link "${id}" (rule 1)`);
@@ -1345,6 +1435,7 @@ Diorama.defineStage('iso', (kit) => {
         if (stackOf(n, pr).length) min = Math.min(min, 10.5);
       }
       if (Object.keys(plan.labels).length) min = Math.min(min, 9.5);
+      if (plan.bubble) min = Math.min(min, BUBBLE.size);
       return min;
     }
 
@@ -1360,7 +1451,8 @@ Diorama.defineStage('iso', (kit) => {
       const flows = flowList(k, (id) => plan.linkIds.includes(id)).map((fl) => JSON.stringify([fl.kind, fl.legs.map((l) => (l.rev ? '~' : '') + l.id),
         !!fl.f.bounce, num(fl.f.rate, .8), num(fl.f.speed, 1), clamp(Number(fl.f.fail) || 0, 0, 1), Number(fl.f.hold) || 0])).sort();
       const panel = plan.panel ? [String(plan.panel.title || ''), plan.panel.lines.map(String)] : null;
-      return JSON.stringify({ props, links, flows, panel });
+      const bubble = plan.bubble ? [plan.bubble.at, plan.bubble.text] : null;
+      return JSON.stringify({ props, links, flows, panel, bubble });
     }
 
     // Links that join a node that does not exist (rule 1).
@@ -1411,7 +1503,10 @@ Diorama.defineStage('iso', (kit) => {
       return stillSvg(k, s.cams[k], s.V);
     }
 
-    const model = { shapes, sceneShapes, reference: { W: REF.W, H: REF.H }, wiring, rules, spacing, layout, signature, objects, numbers, describe, still };
+    // The bubble scene k draws ({ at, text }), or null.
+    const bubble = (k) => (plans[k].bubble ? { at: plans[k].bubble.at, text: plans[k].bubble.text } : null);
+
+    const model = { shapes, sceneShapes, reference: { W: REF.W, H: REF.H }, wiring, rules, spacing, layout, signature, objects, numbers, bubble, describe, still };
     internals.set(model, {
       NODES, LINKS, SCENES, plans, groupBounds, groupIndex, queueCaps, linkGeom, hasHead, linkStyle, linkText, linkLabelSpec, depthOf, fadeOutOf, fadeInOf,
       overlayFor, arrowPath, panelRows, panelLayout, panelSvg, flowList, chevronsSvg, planCameras, describe,
@@ -1442,7 +1537,7 @@ Diorama.defineStage('iso', (kit) => {
     /* ================= Runtime state ================= */
 
     const svg = $('scene'), wrap = $('sceneWrap');
-    const layer = { geo: $('layerGeo'), floor: $('layerFloor'), links: $('layerLinks'), packets: $('layerPackets'), ents: $('layerEnts'), fx: $('layerFx'), over: $('layerOver'), focus: $('layerFocus'), hud: $('layerHud') };
+    const layer = { geo: $('layerGeo'), floor: $('layerFloor'), links: $('layerLinks'), packets: $('layerPackets'), ents: $('layerEnts'), fx: $('layerFx'), over: $('layerOver'), bubble: $('layerBubble'), focus: $('layerFocus'), hud: $('layerHud') };
     const gridFadeEl = $('sceneDefs').querySelector('#grid-fade');
     const gridFade = () => gridFadeEl;
 
@@ -1459,7 +1554,8 @@ Diorama.defineStage('iso', (kit) => {
     // The reader's view on top of it: a zoom factor (1 = the author's framing) and a pan of the
     // view's centre in scene units. It never changes the planned cameras.
     const uv = { z: 1, px: 0, py: 0 };
-    const ZOOM_MAX = 4;
+    // The reader may also step back from the author's framing, to half its size.
+    const ZOOM_MIN = .5, ZOOM_MAX = 4;
     // What the reader is tracing: { node } or { link }, with src 'hover', 'focus' or 'tap'; keepN
     // and keepL hold the ids that stay at full strength, or are null when nothing is traced.
     let trace = null, keepN = null, keepL = null;
@@ -1626,13 +1722,14 @@ Diorama.defineStage('iso', (kit) => {
 
     let camControls = '';
     function syncCamControls() {
-      const zoomed = uv.z > 1.001, top = uv.z >= ZOOM_MAX - .001, fitted = !zoomed && Math.abs(uv.px) < .5 && Math.abs(uv.py) < .5;
-      const key = `${zoomed}${top}${fitted}`;
+      const zoomed = uv.z > 1.001, top = uv.z >= ZOOM_MAX - .001, bottom = uv.z <= ZOOM_MIN + .001;
+      const fitted = Math.abs(uv.z - 1) < .001 && Math.abs(uv.px) < .5 && Math.abs(uv.py) < .5;
+      const key = `${zoomed}${top}${bottom}${fitted}`;
       if (key === camControls) return;
       camControls = key;
       // While zoomed in, one finger pans the scene instead of scrolling the page (touch-action in the CSS).
       svg.classList.toggle('zoomed', zoomed);
-      $('zoomOutBtn').setAttribute('aria-disabled', String(!zoomed));
+      $('zoomOutBtn').setAttribute('aria-disabled', String(bottom));
       $('zoomInBtn').setAttribute('aria-disabled', String(top));
       $('fitBtn').setAttribute('aria-disabled', String(fitted));
     }
@@ -1679,6 +1776,35 @@ Diorama.defineStage('iso', (kit) => {
       if (html === inlineHtml) return;
       box.innerHTML = inlineHtml = html;
       if (animate && html && !reduce) restartAnim(box, 'swap');
+    }
+
+    /* ---------- Bubble ---------- */
+    // One bubble at a time, drawn in scene units so it stays beside its object as the camera
+    // moves. A scene that keeps the same bubble in the same place leaves it alone.
+
+    const bub = { g: null, key: '', op: 0, old: [], dirty: false };
+
+    function setBubble(k, instant, delay) {
+      const b = k >= 0 ? plans[k].bubble : null, key = b ? b.key : '';
+      if (key === bub.key) return;
+      if (bub.g) {
+        const old = bub.g;
+        bub.g = null;
+        if (instant || reduce) old.remove();
+        else { const o = { op: bub.op }; tween(o, 'op', 0, 200, { done: () => old.remove() }); bub.old.push({ g: old, o }); }
+      }
+      for (let t = tweens.length - 1; t >= 0; t--) if (tweens[t].target === bub) tweens.splice(t, 1);
+      bub.key = key;
+      if (!b) return;
+      bub.g = svgEl('g', { class: 'bubble', opacity: '0' }, layer.bubble);
+      bub.g.innerHTML = bubbleSvg(b);
+      bub.op = 0;
+      tween(bub, 'op', 1, instant ? 0 : 320, { delay, owner: bub, ease: outCubic });
+    }
+
+    function renderBubble() {
+      bub.dirty = false;
+      if (bub.g) bub.g.setAttribute('opacity', n2(bub.op));
     }
 
     /* ---------- Floor effects ---------- */
@@ -1728,9 +1854,12 @@ Diorama.defineStage('iso', (kit) => {
         }
         for (const h of hud.old) h.g.remove();
         hud.old = [];
+        for (const h of bub.old) h.g.remove();
+        bub.old = [];
         if (plan) Object.assign(cam, camTargetOf(cams[i]), { dirty: true });
         if (fit) animateView(FIT, 0);
         setPanel(i, true, 0);
+        setBubble(i, true, 0);
         if (plan) startFlows(i);
         staged(i);
         return 0;
@@ -1833,6 +1962,9 @@ Diorama.defineStage('iso', (kit) => {
         end = Math.max(end, tCam + CAM);
       }
       setPanel(i, false, Math.max(0, end - 300));
+      // The bubble comes in once its object has landed and stopped changing.
+      const anchor = plan && plan.bubble ? ents.get(plan.bubble.at) : null;
+      setBubble(i, false, anchor ? (anchor.landAt || 0) + (moves.some((m) => m.e === anchor) ? MOVE * .6 : 0) + 140 : 0);
       staged(i);
 
       after(end + 40, () => {
@@ -1987,11 +2119,14 @@ Diorama.defineStage('iso', (kit) => {
         }
         for (const h of hud.old) h.g.setAttribute('opacity', n2(h.o.op));
         hud.old = hud.old.filter((h) => h.g.isConnected);
+        for (const h of bub.old) h.g.setAttribute('opacity', n2(h.o.op));
+        bub.old = bub.old.filter((h) => h.g.isConnected);
       }
       for (const e of ents.values()) if (e.dirty) renderEnt(e);
       for (const lk of lks.values()) if (lk.dirty) renderLink(lk);
       if (cam.dirty) { applyCamera(); hud.dirty = true; }
       if (hud.dirty) renderHud();
+      if (bub.dirty) renderBubble();
       if (!paused && !reduce) stepPackets(dt / 1000);
       nextFrame(frame);
     }
@@ -2046,7 +2181,7 @@ Diorama.defineStage('iso', (kit) => {
     // Keeps the centre of the view over the step's scene (its bounds, and the author's own centre),
     // so the picture can never be dragged out of sight.
     function clampView(v) {
-      const z = clamp(v.z, 1, ZOOM_MAX);
+      const z = clamp(v.z, ZOOM_MIN, ZOOM_MAX);
       if (stageIdx < 0) return { z, px: 0, py: 0 };
       const b = M.groupBounds[M.groupIndex[stageIdx]], c = cams[stageIdx];
       const cx = cam.x + cam.w / 2, cy = cam.y + cam.h / 2;
@@ -2068,7 +2203,7 @@ Diorama.defineStage('iso', (kit) => {
 
     // The view at zoom z that shows scene point (wx, wy) at place (fx, fy) of the stage.
     function viewKeeping(z, wx, wy, fx, fy) {
-      z = clamp(z, 1, ZOOM_MAX);
+      z = clamp(z, ZOOM_MIN, ZOOM_MAX);
       const w = cam.w / z, h = cam.h / z;
       return clampView({ z, px: wx - (fx - .5) * w - (cam.x + cam.w / 2), py: wy - (fy - .5) * h - (cam.y + cam.h / 2) });
     }
@@ -2098,7 +2233,10 @@ Diorama.defineStage('iso', (kit) => {
     function zoomStep(dir) {
       if (stageIdx < 0) return;
       const base = viewGoal || uv, v = effView(base), { mid } = visibleSpan();
-      animateView(viewKeeping(base.z * (dir > 0 ? ZOOM_STEP : 1 / ZOOM_STEP), v.x + mid * v.w, v.y + v.h / 2, mid, .5), ZOOM_EASE);
+      // A step that would pass the author's framing stops on it, so 1× is always one of the stops.
+      let z = base.z * (dir > 0 ? ZOOM_STEP : 1 / ZOOM_STEP);
+      if ((base.z - 1) * (z - 1) < -1e-6) z = 1;
+      animateView(viewKeeping(z, v.x + mid * v.w, v.y + v.h / 2, mid, .5), ZOOM_EASE);
     }
 
     function fitView() { animateView(FIT, FOCUS_EASE); }

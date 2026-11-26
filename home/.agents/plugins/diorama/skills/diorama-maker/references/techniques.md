@@ -74,6 +74,13 @@ They are grouped by the decision they belong to, in the order the decisions are 
 23. **Put a summary table on the stage at the end.** The recap scene carries the breakdown,
     so the final picture can be read without the text.
 
+**A bubble for the one thing to see.** A step may put one short note on the stage beside an
+object (`scene.bubble`). Use it when the point of the step is easy to miss in the picture, or
+when readers have to look away to the text to learn what they are looking at: where a decision
+is made, what just failed to happen, which object did the work. Do not put one on every step
+out of habit; a step whose picture already says it (a tag, a counter, a cut link) needs none,
+and a bubble on every step stops marking anything. One bubble per step, about one object.
+
 ## Sequencing
 
 24. **Problem and solution alternate.** Each mechanism arrives as the answer to something

@@ -35,7 +35,8 @@ story's. `templates.md` holds the contracts a template follows.
 ## Stage (read on the sheet)
 
 - [ ] The Checks block lists no warnings. Every note is fixed or explained in the handoff.
-- [ ] No tile shows objects or labels covering each other (label, tag, gauge, link label, summary card), or a label covering the thing it names.
+- [ ] No tile shows objects or labels covering each other (label, tag, gauge, link label, summary card, bubble), or a label covering the thing it names.
+- [ ] Each bubble sits beside the object it is about and says something true of that object in this step; no step has one that only repeats its title.
 - [ ] No tile shows text that is cut off, a lonely object, or objects crowded together (neighbours under about 9 grid units apart). Labels that are small at the default framing are acceptable: the reader can zoom to them.
 - [ ] On every tile the numbers match what the picture shows.
 - [ ] No step adds more than two new objects; step 1 shows at most two.
@@ -49,6 +50,7 @@ story's. `templates.md` holds the contracts a template follows.
 ## Transitions (step through once)
 
 - [ ] New objects visibly arrive and changed numbers visibly change; nothing else moves.
+- [ ] A bubble comes in after its object has arrived, and on a try step the options and the verdict are in view without the reader hunting for them.
 - [ ] Back, replay and pause work; every step has its own link.
 - [ ] The keyboard works and the hint is visible, including `1`–`5` and `0` on a try step.
 
@@ -66,7 +68,7 @@ story's. `templates.md` holds the contracts a template follows.
 
 - [ ] Body is two paragraphs, each ≤ 40 words.
 - [ ] Step title is a statement of about five words; short name is 1–2 words.
-- [ ] Question, try prompt, option labels, verdicts and ledger claims are within the budgets in `wording.md`.
+- [ ] Question, try prompt, option labels, verdicts, bubbles and ledger claims are within the budgets in `wording.md`.
 - [ ] At most one new term per step, defined where it first appears.
 - [ ] At most one callout per step, of the right kind.
 - [ ] No sentence could be deleted without losing information.

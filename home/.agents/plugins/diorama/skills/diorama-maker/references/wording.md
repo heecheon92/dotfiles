@@ -20,6 +20,7 @@ targets to pad towards. A typical figure is given where it helps to aim below th
 | Option label | 1–3 words: the value with its unit | |
 | Verdict text | ≤ 4 words | |
 | Verdict why | 1 sentence, ≤ 20 words | |
+| Bubble | 1–2 short sentences, ≤ 20 words | about 12 |
 | Ledger claim | 1 line, ≤ 15 words, one value with its unit | |
 | Goals (teaching material) | 4–6 per walkthrough, 4–8 words each | |
 | Part callout (object lab) | title 1–2 words, body ≤ 2 short lines | body about 7 words |
@@ -148,6 +149,14 @@ last goal usually names the cases.
   hesitates", "Tap fails". Pick the tone to match: green fine, amber worse, red broken.
 - **Why:** one sentence that names the number that decided it: "110 ms in total, under the
   300 ms people notice."
+
+## Bubble
+
+The bubble is the one sentence the reader should take from the picture, said where they are
+looking. Write it as a plain statement about the object it sits beside: "The decision is made
+here, in the office, not at the door." It does not repeat the title, does not introduce a
+term the body has not defined, and carries no number the stage does not show. If it needs a
+third sentence it belongs in the body.
 
 ## Sources
 

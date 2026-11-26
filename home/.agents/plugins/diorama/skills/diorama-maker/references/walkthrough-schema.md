@@ -39,7 +39,7 @@ is not a kebab-case string gets the same message.
 | `level` | string, optional | `beginner` \| `intermediate` \| `advanced`. Omit outside teaching material |
 | `note` | string, optional | one line that labels what is simplified or invented |
 | `sources` | entry[], optional | the ledger: where every fact and number comes from (see below). Give one whenever the walkthrough shows numbers |
-| `goals` | `{text, step}`[], optional | 4–6 things the reader will be able to say afterwards; `step` is the 0-based step index that shows it. Omit to hide the checklist |
+| `goals` | `{text, step}`[], optional | 4–6 things the reader will be able to say afterwards; `step` is the 0-based step index that shows it. Omit to hide the checklist. The page shows it collapsed at the end of the explanation pane, with a count of how many are covered so far |
 | `labels` | object, optional | override the page's headings (see below) |
 | `metrics` | `{id, label, unit, icon?}`[] | 0–5 running numbers shown above the stage; the last is the total |
 | `legend` | `{kind, label}`[] | one entry per flow kind used |
@@ -92,7 +92,7 @@ shows you whether you understand the subject, and a reader trusts a page that sa
 its numbers come from; that is why the list is on the page and not only in review notes.
 Never invent a number or a source.
 
-The page shows the ledger in the explanation card below the goals list, collapsed, under a
+The page shows the ledger in the explanation pane below the goals list, collapsed, under a
 line with the heading and a count per kind: `Where this comes from · sourced 4 · assumption 2`
 (a kind with no entries is left out). Each row is a tag (the `sourced` label in green for
 `data`, the `assumed` label in amber for `assumption`), the claim, then where it comes from.
@@ -142,7 +142,8 @@ that shows numbers needs `sources`; `note` alone does not say which numbers are 
     },
     "links": { "tap": {}, "wire": { "label": "card number" }, "ask": { "label": "may 0412 enter?" } },
     "flows": [{ "route": ["ask"], "kind": "request", "bounce": true }],
-    "panel": null
+    "panel": null,
+    "bubble": { "at": "server", "text": "The decision is made here, in the office, not at the door." }
   }
 }
 ```
@@ -162,6 +163,31 @@ that shows numbers needs `sources`; `note` alone does not say which numbers are 
 | `scene.links` | link ids visible; value may override `label` or set `style`. Set `"label": ""` to hide the label, as on an `off` link |
 | `scene.flows` | moving dots (see below) |
 | `scene.panel` | optional `{title, lines[]}` summary card docked in a free corner of the stage; use on the recap step. A line starting `= ` is the emphasised total, `! ` a problem row, `# ` a muted note |
+| `scene.bubble` | optional `{at, text}`: a short note drawn beside one object (see "Bubble") |
+
+### Bubble
+
+A step may put one short note on the stage, beside the object the step is about. It is for
+the single sentence a reader should take from the picture, read without looking away from
+it. `techniques.md` says when a step earns one; `wording.md` has the budget.
+
+| Field | Rule |
+|---|---|
+| `at` | the id of a node this scene shows. Not a zone |
+| `text` | plain text, one or two short sentences, 20 words at most. No markup |
+
+- A step without `scene.bubble` has no bubble. The engine never writes one for you.
+- The stage chooses the place: beside its object, nearer to it than to any other object,
+  covering nothing, and inside the room the scene already takes where there is some, so the
+  step is framed as it would be without the bubble. It has no pointer. You do not position it.
+- It appears once its object has arrived and finished changing, and stays put for the step.
+- Each step states its bubble; nothing carries over. Two neighbouring steps with the same
+  `at` and `text` keep the bubble on screen between them.
+- A bubble whose object is unknown, is a zone or is not shown in that scene is not drawn and
+  is reported in Checks. A bubble that covers something is a rule 8 overlap: shorten the text
+  or move a node.
+- The sheet draws the bubble on the step's tile and counts its words; the text alternative
+  of the stage reads it as "Note beside <object>: …".
 
 The recap step's `body` is one sentence stating the result in numbers, then an HTML
 `<ul class="takeaways">` of 3–5 bullets with the key noun in `<b>`. Its callout is `kind: "next"`;
@@ -196,7 +222,7 @@ budgets.
 | `options[].label` | the text on the button: the value, with its unit |
 | `options[].verdict` | `tone` is a tag tone (`green`, `amber`, `red`, `paper`, `violet`, `gray`); `text` is the outcome in a few words; `why` is one sentence |
 | `options[].metrics` | optional; when present it replaces the step's `metrics` as a whole |
-| `options[].scene` | optional; may hold `show`, `state`, `links`, `flows`, `panel`. A key that is present replaces the step's value for that key as a whole; a key that is absent is inherited |
+| `options[].scene` | optional; may hold `show`, `state`, `links`, `flows`, `panel`, `bubble`. A key that is present replaces the step's value for that key as a whole; a key that is absent is inherited |
 
 - The step's own `scene` and `metrics` are the **base**: what the reader sees before
   choosing. Every option, including the right one, must change something on the stage; a tag
@@ -204,7 +230,7 @@ budgets.
 - Because a key is replaced as a whole, an option that sets `state` restates the state of
   every node that has one, as a step does.
 - Choosing an option moves the stage to it with the usual transitions and counts the
-  metrics up; the text beside the stage stays put. The view is framed once for the base and
+  metrics up; the text in the pane stays put, moving only as far as it takes to show the verdict. The view is framed once for the base and
   all options, so choosing never moves the camera. Lay out option-only nodes with that in mind.
 - Replay with an option chosen replays the move from the base to that option, the metrics
   and an inline summary card included.

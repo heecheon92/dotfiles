@@ -177,3 +177,11 @@ the data format or to `index.html`. The update is the same procedure. Dark colou
 under `:root[data-theme="dark"]` instead of `@media (prefers-color-scheme: dark)`, so a
 template or stage of your own must move its dark values the same way, or they will no longer
 apply.
+
+Engine 0.6.0 moves the explanation into the stage card, as a pane beside the picture (under
+it on a narrow screen), collapses the goals list, and adds an optional `scene.bubble` to a
+step: a short note drawn beside one object. No existing walkthrough needs an edit and none
+gains a bubble by itself. The update is the same procedure, and `index.html` did not change.
+A page that styles `.explain` or `.layout` itself must be checked: the explanation is no
+longer a card in a second column. The reader can now also zoom out, to half the size of the
+starting view.

@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "diorama",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Explains things as step-by-step walkthroughs on an illustrated, animated stage: one self-contained page, or a collection of them planned, written and reviewed with the owner.",
   "author": {
     "name": "Heecheon Park"
