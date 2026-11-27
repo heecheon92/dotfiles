@@ -170,6 +170,7 @@ retry:
       - openrouter/z-ai/glm-5.3-flash:max
       - openrouter/deepseek/deepseek-v4.1-flash-1017:low
     docs:
+      - anthropic/claude-opus-5-5:high
       - openai-codex/gpt-6.2-astra:medium
 dev:
   autoqaConsent: granted
