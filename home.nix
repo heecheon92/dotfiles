@@ -247,6 +247,8 @@ in
       n = "nvim";
       cc = "claude --permission-mode auto";
       cx = "codex --yolo";
+      omp-anthropic = "omp --profile anthropic-api --config ~/.omp/agent/config.yml";
+      omp-openai = "omp --profile openai-api";
       ob = "omp --config ~/.omp/agent/config-budget.yml";
       oe = "omp --config ~/.omp/agent/config-experimental.yml";
     };
@@ -407,6 +409,14 @@ in
       "${dotfiles}/home/.omp/agent/APPEND_SYSTEM.md";
   home.file.".omp/agent/config.yml".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/agent/config.yml";
+  # Manage only the named profile's settings; its credentials and sessions stay local.
+  home.file.".omp/profiles/anthropic-api/agent/config.yml".source =
+    config.lib.file.mkOutOfStoreSymlink
+      "${dotfiles}/home/.omp/profiles/anthropic-api/agent/config.yml";
+  # One source of truth: translate model selectors, not provider-specific settings.
+  home.file.".omp/profiles/openai-api/agent/config.yml".text =
+    builtins.replaceStrings [ "openai-codex/" ] [ "openai/" ]
+      (builtins.readFile ./home/.omp/agent/config.yml);
   home.file.".omp/agent/MODEL-ROUTING.md".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/MODEL-ROUTING.md";

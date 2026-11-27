@@ -572,6 +572,58 @@ OMP를 다시 실행해야 합니다.
 helper와 독립 installer는 skill 디렉터리에 함께 들어 있습니다.
 [독립 설치·checkpoint 사용법](../home/.agents/skills/handmade/omp-update/README.md)을 참고합니다.
 
+## OMP에서 구독과 API 크레딧 구분하기
+
+**OAuth는 로그인 방식이지 결제 수단이 아닙니다.** 아래 첫 두 행은 같은 구독 로그인으로
+요청하되 어느 한도나 잔액을 쓰는지가 다릅니다. 세 번째 행은 별도의 API 조직에 청구되는 경로입니다.
+
+| 사용 경로 | OpenAI | Anthropic |
+|---|---|---|
+| **OAuth — 구독 기본 사용량** | `openai-codex/…`로 요청하면 ChatGPT 플랜에 포함된 Codex 사용량을 먼저 씁니다. | `anthropic/…`에 Claude 구독 OAuth로 요청하면 플랜에 포함된 사용량을 씁니다. Fable의 주간 한도도 여기에 해당합니다. |
+| **OAuth Based Usage Credit — 구독 한도 초과분** | 포함량 소진 후 유료 사용이 허용되고 잔액이 있으면, 같은 로그인으로 계속한 요청이 ChatGPT 사용 크레딧에서 차감됩니다. | Claude에서 사용 크레딧을 활성화했고 잔액이 있으면, 한도 소진 후 같은 로그인으로 계속한 요청이 Claude 사용 크레딧에서 차감됩니다. |
+| **API Key Usage Credit — API 조직 과금** | `openai/…`에 `OPENAI_API_KEY`로 보낸 일반 API 요청은 키가 속한 조직에 청구됩니다. 이 설정의 이미지 생성이 한 예입니다. | `anthropic/…`에 `ANTHROPIC_API_KEY`로 보낸 요청은 키가 속한 Claude Console 조직에 청구됩니다. 같은 Fable이라도 구독 한도를 쓰지 않습니다. |
+
+API 경로에서는 **해당 요청에 적용되는 조직의 월간 API 크레딧을 구매한 API 크레딧보다 먼저** 씁니다.
+월간분을 다 쓰면 구매 잔액이나 조직의 결제 설정에 따라 계속 과금될 수 있습니다.
+구독 한도가 0%가 되어도 API 키로 자동 전환되지는 않으며, 월간 API 크레딧이 구독 한도를 채우지도 않습니다.
+
+차이는 **OMP의 제공자 이름이 결제 수단보다 요청을 보낼 백엔드를 구분한다**는
+데서 생깁니다. OpenAI는 모델 접두사로 두 경로를 선택할 수 있지만, Anthropic은
+모델 이름만 보고 어느 잔액을 쓸지 알 수 없습니다. OMP 19.2.1에서는 저장된
+Anthropic OAuth가 환경 변수의 `ANTHROPIC_API_KEY`보다 우선하므로, 키를 내보내는
+것만으로는 Fable 구독 한도 소진 시 API 결제로 전환되지 않습니다. 아래 `omp-anthropic`
+프로필은 같은 모델 설정을 쓰되 저장된 구독 로그인을 분리하기 위한 것입니다.
+
+확인할 곳: OMP의 `omp://providers.md`(인증 우선순위), `omp://provider-quirks.md`(백엔드),
+OpenAI의 [사용 크레딧](https://help.openai.com/en/articles/12642688)과 [API 크레딧](https://help.openai.com/en/articles/20001626),
+Anthropic의 [사용 크레딧](https://support.claude.com/en/articles/12429409)과 [API 크레딧](https://support.claude.com/en/articles/17154008).
+
+## OMP Anthropic API 프로필
+
+`omp-anthropic`은 `omp --profile anthropic-api --config ~/.omp/agent/config.yml`의 Zsh 별칭입니다.
+인증과 세션은 `anthropic-api` 프로필에 분리하고, 모델 역할과 fallback은 평소 `omp`와
+같은 YAML에서 읽습니다. `--config`는 마지막에 적용되므로 같은 키는 기본 프로필의
+YAML 값이 우선합니다. `omp --profile anthropic-api`만 실행하면 이 오버레이 없이
+프로필 자체 설정(기본 모델 Opus)을 씁니다.
+
+Home Manager는 `home/.omp/profiles/anthropic-api/agent/config.yml`만 연결합니다.
+API 키는 각 Mac의 `ANTHROPIC_API_KEY`로 제공하고 저장소에 넣지 않습니다. API 키로
+사용하려면 이 프로필에서 Anthropic OAuth에 로그인하지 마세요. `omp-anthropic`은 기본 프로필의
+에이전트 정의나 확장을 복사하지 않으며, 다른 제공자 모델에 필요한 인증도 공유하지 않습니다.
+
+## OMP OpenAI API 프로필
+
+`omp-openai`는 `omp --profile openai-api`를 실행합니다. Home Manager는 기본 `config.yml`에서
+`openai-codex/` 모델 접두사만 `openai/`로 바꾸어 이 프로필의 설정을 생성합니다.
+예를 들어 `task`는 같은 Sol 모델과 추론 수준을 유지하되 `OPENAI_API_KEY`로
+일반 API를 사용합니다. 기본 대화 모델은 여전히 Fable이고, 이미 `openai/`인 이미지
+모델과 다른 제공자의 모델도 그대로입니다. 인증과 세션은 프로필별로 분리됩니다.
+
+역할뿐 아니라 fallback, 호출 허용 목록, 모델별 프롬프트 템플릿 키에도 같은 변환을
+적용합니다. 모델 ID가 같아도 Codex 구독의 Ultrafast나 Daybreak 권한이 API 키로
+이전되는 것은 아닙니다. 생성된 파일 대신 `home/.omp/agent/config.yml`을 수정한 뒤
+`./rebuild.sh`를 실행하세요. API 키는 저장소에 넣지 않습니다.
+
 ## OMP 저비용 모델 오버레이
 
 사용 비용을 줄이고 싶을 때는 `ob` Zsh alias로 OMP를 실행합니다. 이 설정은
