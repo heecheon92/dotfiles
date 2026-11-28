@@ -34,19 +34,22 @@ OMP 18.20.2의 [설정 저장 경로](https://github.com/can1357/oh-my-pi/blob/v
 저장 후 주석이 사라졌다면 값 변경은 유지하고 Git diff에서 주석과 주변 배치만 복원합니다.
 이는 편집 절차상의 예방책이며 OMP 자체의 저장 동작을 수정하거나 차단하지는 않습니다.
 
-## OMP TermDraw 제거
-
-OMP 19.2부터 `@termdraw/pi` 0.4.1이 사용하는 이전 UI API를 불러올 수 없어
-`/termdraw`를 제거했습니다. Home Manager도 더 이상 이 패키지를 설치하지 않습니다.
-다른 Mac에서는 dotfiles를 반영하고 재빌드한 뒤 `omp plugin list`로 로컬 설치를
-확인하세요. 남아 있다면 `omp plugin uninstall @termdraw/pi`로 해당 패키지만 제거합니다.
-
 ## Claude Code 설치 채널
 
 `configuration.nix`는 Homebrew의 `claude-code@latest` cask로 Claude Code를 관리합니다.
 일반 `claude-code` cask와는 충돌하므로 두 cask를 동시에 선언하거나 설치하지 않습니다.
 다른 호스트에 일반 cask가 설치되어 있다면 재빌드 전에 해당 cask를 제거하고
 `claude-code@latest`로 전환하세요.
+
+## Claude Code API 프로필 (`cc-api`)
+
+`cc-api`는 재빌드 후 새 Zsh에서 사용할 수 있는 실행 별칭입니다. `home/bin/claude-api`를
+실행하며, Claude Code의 프로필 디렉터리는 기존과 같은 `~/.claude-api`입니다.
+먼저 각 Mac의 로컬 셸에서 `ANTHROPIC_API_KEY`를 내보내세요. 키가 없으면 실행을
+중단합니다. dotfiles는 실행기만 관리하며 키, 로그인, 대화 기록은 공유하지 않습니다.
+`cc-api auth status --text`로 인증 방식을 확인하고, `cc-api --continue`로
+현재 디렉터리의 **API 프로필** 대화를 이어가세요. 기존 `claude-api` 실험과 같은
+프로필 경로이므로 이 Mac에서는 기록을 옮길 필요가 없습니다.
 
 ## Claude Code 개인 설정
 
@@ -606,7 +609,9 @@ Anthropic의 [사용 크레딧](https://support.claude.com/en/articles/12429409)
 YAML 값이 우선합니다. `omp --profile anthropic-api`만 실행하면 이 오버레이 없이
 프로필 자체 설정(기본 모델 Opus)을 씁니다.
 
-Home Manager는 `home/.omp/profiles/anthropic-api/agent/config.yml`만 연결합니다.
+Home Manager는 이 프로필의 `config.yml`을 연결합니다. 두 API 프로필 모두 기본 프로필과
+같은 `home/.omp/agent/models.yml`을 연결하므로 Deploy fallback과 이미지 모델 정의를
+찾을 수 있습니다. 모델 목록을 공유해도 저장된 로그인이나 세션은 공유하지 않습니다.
 API 키는 각 Mac의 `ANTHROPIC_API_KEY`로 제공하고 저장소에 넣지 않습니다. API 키로
 사용하려면 이 프로필에서 Anthropic OAuth에 로그인하지 마세요. `omp-anthropic`은 기본 프로필의
 에이전트 정의나 확장을 복사하지 않으며, 다른 제공자 모델에 필요한 인증도 공유하지 않습니다.

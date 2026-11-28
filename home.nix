@@ -246,6 +246,7 @@ in
       m = "git switch main";
       n = "nvim";
       cc = "claude --permission-mode auto";
+      cc-api = ''"${dotfiles}/home/bin/claude-api"'';
       cx = "codex --yolo";
       omp-anthropic = "omp --profile anthropic-api --config ~/.omp/agent/config.yml";
       omp-openai = "omp --profile openai-api";
@@ -425,6 +426,10 @@ in
       "${dotfiles}/home/.omp/agent/system-templates/gpt-6.2.md";
   home.file.".omp/agent/models.yml".source =
     config.lib.file.mkOutOfStoreSymlink "${dotfiles}/home/.omp/agent/models.yml";
+  home.file.".omp/profiles/anthropic-api/agent/models.yml".source =
+    config.home.file.".omp/agent/models.yml".source;
+  home.file.".omp/profiles/openai-api/agent/models.yml".source =
+    config.home.file.".omp/agent/models.yml".source;
   home.file.".omp/agent/config-budget.yml".source =
     config.lib.file.mkOutOfStoreSymlink
       "${dotfiles}/home/.omp/agent/config-budget.yml";
